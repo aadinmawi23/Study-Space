@@ -901,6 +901,96 @@ body.authenticated #loginScreen {
   transform: translateY(0);
 }
 
+
+
+
+/* COLLAPSIBLE SIDEBAR */
+.sidebar {
+    transition: width 0.25s ease;
+}
+
+.main {
+    transition: margin-left 0.25s ease, width 0.25s ease;
+}
+
+.sidebar-toggle {
+    position: fixed;
+    top: 22px;
+    left: 245px;
+    z-index: 1000;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #D8CEC8;
+    border-radius: 10px;
+    background: #FFFDF9;
+    color: #302D2D;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    box-shadow: 0 3px 12px rgba(40,30,20,0.08);
+    transition: left 0.25s ease;
+}
+
+.sidebar-toggle:hover {
+    transform: scale(1.05);
+}
+
+.app.sidebar-collapsed .sidebar {
+    width: 70px !important;
+    min-width: 70px !important;
+}
+
+.app.sidebar-collapsed .main {
+    margin-left: 70px !important;
+    width: calc(100% - 70px) !important;
+}
+
+.app.sidebar-collapsed .brand-title,
+.app.sidebar-collapsed .brand-subtitle,
+.app.sidebar-collapsed .nav-title {
+    display: none;
+}
+
+.app.sidebar-collapsed .nav button {
+    font-size: 0;
+    text-align: center;
+    padding: 13px 5px;
+}
+
+.app.sidebar-collapsed .nav button::before {
+    content: "•";
+    font-size: 18px;
+}
+
+.app.sidebar-collapsed .sidebar-toggle {
+    left: 82px;
+}
+
+
+/* HIDE ENTIRE SIDEBAR CONTENT WHEN COLLAPSED */
+.app.sidebar-collapsed .sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.app.sidebar-collapsed .sidebar > *:not(.sidebar-toggle) {
+    display: none !important;
+}
+
+.app.sidebar-collapsed .main {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+.app.sidebar-collapsed .sidebar-toggle {
+    left: 18px !important;
+}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -2154,8 +2244,18 @@ async function signOutFromGoogle() {
 </div>
 
 <div class="app">
+<button
+    class="sidebar-toggle"
+    id="sidebarToggle"
+    type="button"
+    onclick="toggleSidebar()"
+    aria-label="Minimize sidebar"
+    title="Minimize sidebar"
+>‹</button>
+
 <aside class="sidebar">
-  <div class="brand">
+
+<div class="brand">
     <h1>Flo's Study<br>Space</h1>
   </div>
   <div class="nav-title">WORKSPACE</div>
@@ -6239,6 +6339,9 @@ document.addEventListener(
 updateMuteButton();
 
 
+
+
+
 </script>
 
 <div
@@ -6316,6 +6419,45 @@ updateMuteButton();
   </div>
 
 </div>
+
+
+<script>
+function toggleSidebar() {
+    const app = document.querySelector(".app");
+    const toggle = document.getElementById("sidebarToggle");
+
+    if (!app || !toggle) return;
+
+    app.classList.toggle("sidebar-collapsed");
+
+    const collapsed = app.classList.contains("sidebar-collapsed");
+
+    toggle.textContent = collapsed ? "›" : "‹";
+
+    toggle.setAttribute(
+        "aria-label",
+        collapsed ? "Expand sidebar" : "Minimize sidebar"
+    );
+
+    localStorage.setItem(
+        "floSidebarCollapsed",
+        collapsed ? "1" : "0"
+    );
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const app = document.querySelector(".app");
+    const toggle = document.getElementById("sidebarToggle");
+
+    if (!app || !toggle) return;
+
+    if (localStorage.getItem("floSidebarCollapsed") === "1") {
+        app.classList.add("sidebar-collapsed");
+        toggle.textContent = "›";
+        toggle.setAttribute("aria-label", "Expand sidebar");
+    }
+});
+</script>
 
 </body>
 </html>

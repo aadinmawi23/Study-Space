@@ -1,0 +1,4133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard</title>
+<style>
+:root{
+  --bg:#f7f1e8;--sidebar:#eee5d8;--card:#fffdf9;--ink:#403a35;--muted:#8d857c;
+  --line:#e6ddd1;--accent:#d28b72;--green:#9fbea7;--red:#d99a98;--shadow:0 8px 24px rgba(71,57,45,.05);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+button{font:inherit;color:inherit}
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;min-width:260px;background:var(--sidebar);padding:34px 20px;display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0}
+.brand{padding:0 14px 42px}
+.brand h1{font-family:Georgia,serif;font-size:29px;line-height:1.05;margin:0 0 9px}
+.brand p{margin:0;color:var(--muted);font-size:14px}
+.nav-title{font-size:11px;letter-spacing:2px;color:#9a9187;margin:0 14px 12px;font-weight:700}
+.nav{display:flex;flex-direction:column;gap:5px}
+.nav button{border:0;background:transparent;text-align:left;padding:13px 14px;border-radius:15px;font-size:15px;cursor:pointer}
+.nav button:hover{background:rgba(255,255,255,.42)}
+.nav button.active{background:#fffdf9;font-weight:700;box-shadow:var(--shadow)}
+.nav button.active:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:12px;vertical-align:middle}
+.settings-nav{margin-top:auto}
+.main{margin-left:260px;width:calc(100% - 260px);padding:54px 52px 70px;min-height:100vh}
+.eyebrow{font-size:11px;letter-spacing:2.5px;font-weight:700;color:#958c83;margin-bottom:7px}
+h2{font:42px Georgia,serif;margin:0 0 30px;letter-spacing:-1px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+.page-head h2{margin-bottom:0}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.subject-card{padding:22px;padding:22px;background:var(--card);border:1px solid rgba(220,211,201,.6);border-radius:22px;padding:27px 28px 25px;min-height:224px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden}
+.subject-card:before{content:"";position:absolute;left:0;right:0;top:0;width:auto;height:8px;background:var(--card-accent,#d9a27f)}
+.subject-card:hover{transform:translateY(-2px);transition:.15s}
+.subject-card h3{font-size:19px;font-size:19px;font:26px Georgia,serif;margin:0 38px 31px 2px;line-height:1.18}
+.more{position:absolute;right:25px;top:24px;border:0;background:transparent;font-size:21px;color:#938a81;cursor:pointer}
+.meta{font-size:13px;color:#91887e;margin-bottom:20px}
+.mastery-label{display:flex;justify-content:space-between;font-size:12px;letter-spacing:1.7px;color:#958b81;margin-bottom:8px}
+.mastery-label strong{letter-spacing:0;color:var(--ink);font-size:13px}
+.bar{height:6px;background:#ebe5de;border-radius:9px;overflow:hidden}
+.fill{height:100%;background:#bfa99a;border-radius:9px;width:0}
+.empty-state{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:40px;text-align:center;color:var(--muted)}
+.btn{border:0;border-radius:12px;background:#403a35;color:white;padding:12px 18px;font-weight:700;cursor:pointer}
+.btn.light{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.topic-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:21px}
+.topic-card h3{font:20px Georgia,serif;margin:0 0 10px}
+.topic-card .topic-meta{font-size:13px;color:var(--muted);margin-bottom:14px}
+.topic-actions{display:flex;gap:8px;margin-top:15px}
+.topic-actions button{font-size:13px}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.tabs button{border:0;background:transparent;padding:13px 17px;cursor:pointer;color:var(--muted)}
+.tabs button.active{color:var(--ink);font-weight:700;border-bottom:2px solid var(--ink)}
+.quiz-shell{max-width:900px;margin:auto}
+.quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.quiz-count{font-size:13px;color:var(--muted)}
+.quiz-progress{height:7px;background:#e8e0d6;border-radius:8px;overflow:hidden;margin-bottom:35px}
+.quiz-progress .fill{background:#a98f7d}
+.question-card{background:var(--card);border:1px solid var(--line);border-radius:25px;padding:38px;box-shadow:var(--shadow)}
+.question-card h3{font:27px Georgia,serif;line-height:1.42;margin:0 0 30px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.option{background:#fffdfa;border:1px solid var(--line);border-radius:16px;padding:22px;text-align:left;cursor:pointer;min-height:92px;display:flex;gap:15px;align-items:flex-start}
+.option:hover{border-color:#b9aaa0}
+.option .letter{font-weight:700;min-width:26px}
+.option.correct{background:#e3f0e6;border-color:#9fc1a9}
+.option.wrong{background:#f6dfdf;border-color:#d59b9b}
+.option.disabled{cursor:default}
+.explanation{margin-top:20px;padding:17px 19px;background:#f5eee6;border-radius:14px;color:#6f675f;line-height:1.5}
+.quiz-actions{display:flex;justify-content:space-between;align-items:center;margin-top:23px}
+.unknown{background:transparent;border:1px solid var(--line);border-radius:12px;padding:11px 18px;cursor:pointer}
+.quiz-next{display:flex;justify-content:flex-end;align-items:center;margin-top:0}
+.review-card,.calendar-card,.progress-card,.settings-card,.trophy-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:var(--shadow)}
+.review-layout{display:grid;grid-template-columns:1.5fr .75fr;gap:20px}
+.review-list{display:flex;flex-direction:column;gap:11px}
+.review-item{padding:17px;border:1px solid var(--line);border-radius:15px;display:flex;justify-content:space-between;gap:20px}
+.badge{font-size:11px;padding:5px 8px;border-radius:20px;background:#eee6dd;color:#73695f}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.calendar-head h3{font:26px Georgia,serif;margin:0}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.day-name{text-align:center;color:var(--muted);font-size:12px;font-weight:700;padding:8px}
+.day{min-height:92px;border:1px solid var(--line);border-radius:13px;padding:9px;background:#fffdfa;cursor:pointer}
+.day.today{border-color:#a98f7d}
+.day .num{font-weight:700;font-size:13px}
+.day .due{font-size:11px;color:#8a7162;margin-top:10px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.stat strong{font:34px Georgia,serif;display:block;margin-bottom:5px}
+.stat span{font-size:12px;color:var(--muted)}
+.subject-progress{display:flex;flex-direction:column;gap:12px}
+.progress-row{border:1px solid var(--line);padding:16px;border-radius:15px}
+.progress-row-top{display:flex;justify-content:space-between;margin-bottom:9px;font-size:14px}
+.trophies{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.trophy{min-height:240px;text-align:center;border:1px solid var(--line);border-radius:18px;padding:20px}
+.trophy img{width:130px;height:130px;object-fit:contain}
+.trophy.locked img{opacity:.18;filter:grayscale(1)}
+.settings-stack{display:flex;flex-direction:column;gap:15px}
+.file-input{display:none}
+.toast{position:fixed;right:24px;bottom:24px;background:#403a35;color:#fff;padding:13px 18px;border-radius:12px;display:none;z-index:30}
+.modal{position:fixed;inset:0;background:rgba(45,38,32,.35);display:none;align-items:center;justify-content:center;z-index:20;padding:20px}
+.modal-box{background:var(--card);border-radius:22px;padding:32px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(40,30,20,.2)}
+.modal-box h3{font:29px Georgia,serif;margin:0 0 10px}
+.modal-box p{color:var(--muted);line-height:1.5}
+.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}
+.small{font-size:12px;color:var(--muted)}
+@media(max-width:1050px){.grid,.topic-grid{grid-template-columns:repeat(2,1fr)}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.sidebar{width:200px;min-width:200px}.main{margin-left:200px;width:calc(100% - 200px);padding:35px 22px}.grid,.topic-grid,.trophies,.review-layout{grid-template-columns:1fr}.options{grid-template-columns:1fr}.calendar-grid{gap:3px}.day{min-height:65px}}
+
+/* Slightly compact the page so the quiz fits on screen */
+@media (min-width: 900px){
+  body{
+    zoom:0.95;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">
+    <h1>Flo's Study<br>Space</h1>
+  </div>
+  <div class="nav-title">WORKSPACE</div>
+  <nav class="nav">
+    <button data-page="home" onclick="navigate('home')">HOME</button>
+    <button data-page="review" onclick="navigate('review')">REVIEW</button>
+    <button data-page="calendar" onclick="navigate('calendar')">SPACED REPETITION</button>
+    <button data-page="trophies" onclick="navigate('trophies')">TROPHY ROOM</button>
+    <button data-page="progress" onclick="navigate('progress')">PROGRESS</button>
+  </nav>
+  <div class="settings-nav">
+    <button class="nav" style="border:0;background:transparent;text-align:left;width:100%;padding:13px 14px;border-radius:15px;font-size:15px;cursor:pointer" data-page="settings" onclick="navigate('settings')">SETTINGS</button>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<script>
+/* =========================================================
+   FLO'S STUDY SPACE
+   Dashboard + Subjects + Topics + Quiz
+   ========================================================= */
+
+/* =========================================================
+   DEFAULT SUBJECT CATALOG
+   ========================================================= */
+
+const DEFAULT_SUBJECT_CATALOG = [
+  {
+    key:"indian-history",
+    name:"Indian History",
+    questionSubject:"Indian History",
+    accent:"#d49a72",
+    topics:[
+      "Harappan / Indus Civilization",
+      "Vedic Culture",
+      "Mahajanapada Period",
+      "Religious Movements",
+      "Maurya Period",
+      "Post-Maurya / Pre-Gupta Period",
+      "Sangam Period",
+      "Gupta Period",
+      "Post-Gupta Period / Vardhana Dynasty",
+      "Early Medieval Period — North India (Rajput Period)",
+      "Early Medieval Period — South India (Cholas & Others)",
+      "Sultanate Period — Delhi Sultanate",
+      "Sultanate Period — Vijayanagar & Other Kingdoms",
+      "Religious Movements — Bhakti Movement",
+      "Religious Movements — Sufi Movement",
+      "Mughal Period",
+      "Maratha State & Maratha Confederacy",
+      "Advent of the Europeans",
+      "Expansion of British Power",
+      "Economic Impact of British Rule",
+      "Socio-Religious Movements in 19th–20th Centuries",
+      "Freedom Struggle — Revolt of 1857",
+      "Freedom Struggle — Moderate Phase",
+      "Freedom Struggle — Extremist Phase",
+      "Freedom Struggle — Gandhian Era",
+      "Miscellaneous — Important Dates",
+      "Miscellaneous — Places",
+      "Miscellaneous — Foreign Travellers / Envoys",
+      "Miscellaneous — Abbreviated / Alternative Names",
+      "Miscellaneous — Savings",
+      "Miscellaneous — Battles",
+      "Miscellaneous — Reforms / Acts",
+      "Miscellaneous — Committees / Commissions",
+      "Miscellaneous — Congress Sessions",
+      "Miscellaneous — Governor-Generals & Viceroys"
+    ]
+  },
+
+  {
+    key:"world-history",
+    name:"World History",
+    questionSubject:"World History",
+    accent:"#c5a2d8",
+    topics:[
+      "Mesopotamian Civilization",
+      "Egyptian Civilization",
+      "Harappan Civilization",
+      "Chinese Civilization",
+      "Iranian Civilization",
+      "Greek Civilization",
+      "Roman Civilization",
+      "Seven Wonders of Ancient World",
+      "Medieval Europe — Feudalism",
+      "Medieval Europe — Crusades",
+      "Arab Civilization",
+      "Medieval China",
+      "Medieval Japan",
+      "Seven Wonders of Medieval World",
+      "Renaissance",
+      "Reformation",
+      "Geographical Discoveries",
+      "Glorious Revolution",
+      "Industrial Revolution",
+      "American Revolution",
+      "French Revolution",
+      "Unification of Italy",
+      "Unification of Germany",
+      "First World War",
+      "Russian Revolution",
+      "Chinese Revolution",
+      "Turkish Revolution",
+      "World Depression of 1929–34",
+      "Fascism in Italy",
+      "Nazism in Germany",
+      "Militarism in Japan",
+      "Second World War",
+      "Miscellaneous — Important Dates",
+      "Miscellaneous — Association of Places",
+      "Miscellaneous — Abbreviated / Alternative Names",
+      "Miscellaneous — Important Battles"
+    ]
+  },
+
+  {
+    key:"geography",
+    name:"Geography",
+    questionSubject:"Geography",
+    accent:"#a8c8b3",
+    topics:[
+      "Solar System",
+      "Continents and Oceans",
+      "Biosphere",
+      "Lithosphere",
+      "Hydrosphere",
+      "Atmosphere",
+      "Latitudes and Longitudes",
+      "Heat Zones of the Earth",
+      "Longitudes and Time Zones",
+      "International Date Line",
+      "Motion of the Earth",
+      "Effect of Tilted Axis on Day and Night",
+      "Composition and Layers of the Atmosphere",
+      "Weather and Climate",
+      "Atmospheric Pressure",
+      "Internal Structure of the Earth",
+      "Rocks",
+      "Earthquakes and Volcanoes",
+      "Mountains",
+      "Plateaus",
+      "Plains",
+      "Grasslands",
+      "River Landforms",
+      "Glacial Landforms",
+      "Wind Landforms",
+      "Groundwater Landforms",
+      "Indian Subcontinent — Position, Extent & Physical Features",
+      "Climatic Diversity in Indian Subcontinent",
+      "Soil Resources",
+      "Agriculture in India",
+      "Land Use Pattern of India",
+      "Water Resources and Utilization",
+      "Multipurpose River Valley Projects",
+      "Transport in India",
+      "India — Facts and Figures",
+      "States and Capitals",
+      "Population of India and States",
+      "Wildlife Sanctuaries and National Parks",
+      "Irrigation and Power Projects",
+      "Indian Satellites",
+      "Asia",
+      "Countries, Capitals and Currency",
+      "River-side Cities",
+      "Wonders of the World",
+      "Countries and Main Products / Industries",
+      "Towns Associated with Industries",
+      "Famous Sites — India",
+      "Famous Sites — World",
+      "Changed Names",
+      "Continents — Earth Area",
+      "Continents — Highest and Lowest Points",
+      "Three Deepest Oceans",
+      "Highest Mountain Peaks",
+      "Geographical Epithets",
+      "Important Boundary Lines",
+      "Tribes and Homelands",
+      "Glossary"
+    ]
+  },
+
+  {
+    key:"indian-polity",
+    name:"Indian Polity and Constitution",
+    questionSubject:"Indian Polity and Constitution",
+    accent:"#b5c8e9",
+    topics:[
+      "Evolution of Indian Constitution",
+      "Constituent Assembly and Making of Constitution",
+      "Sources of Indian Constitution",
+      "Important Articles",
+      "Important Amendments",
+      "Special Features of Indian Constitution",
+      "Federal and Unitary Features",
+      "Preamble",
+      "Lapse of Paramountcy",
+      "Integration and Merger of Indian States",
+      "Union and its Territories",
+      "Reorganization of States",
+      "Citizenship",
+      "Fundamental Rights",
+      "Directive Principles of State Policy",
+      "Fundamental Duties",
+      "Procedure of Amending Constitution",
+      "Executive of the Union",
+      "Parliament of India",
+      "Executive of the States",
+      "Special Position of J & K",
+      "Panchayats",
+      "Municipalities",
+      "Supreme Court",
+      "High Court",
+      "Inter-State Council",
+      "Finance Commission",
+      "Planning Commission",
+      "National Development Council",
+      "National Integration Council",
+      "Inter-State Relations",
+      "Emergency Provisions",
+      "Public Service Commissions",
+      "Election",
+      "Delimitation Commission of India",
+      "Official Languages",
+      "National Symbols",
+      "Glossary of Constitutional Terms"
+    ]
+  },
+
+  {
+    key:"indian-economy",
+    name:"Indian Economy",
+    questionSubject:"Indian Economy",
+    accent:"#e5c987",
+    topics:[
+      "Characteristics of Indian Economy",
+      "Agriculture & Land Development",
+      "National Income",
+      "Planning",
+      "Unemployment",
+      "Trade & Commerce",
+      "New Economic Policy",
+      "Indian Financial System",
+      "Indian Fiscal System",
+      "Banking in India",
+      "Tax System",
+      "Industry",
+      "Foreign Trade",
+      "Miscellaneous Facts",
+      "Glossary of Economic and Financial Terms"
+    ]
+  },
+
+  {
+    key:"physics",
+    name:"Physics",
+    questionSubject:"Physics",
+    accent:"#a9c7df",
+    topics:[
+      "Unit",
+      "Motion",
+      "Work, Energy and Power",
+      "Gravitation",
+      "Pressure",
+      "Floatation",
+      "Surface Tension",
+      "Viscosity",
+      "Elasticity",
+      "Simple Harmonic Motion",
+      "Wave",
+      "Sound Wave",
+      "Heat",
+      "Light",
+      "Static Electricity",
+      "Current Electricity",
+      "Magnetism",
+      "Atomic & Nuclear Physics",
+      "Electronics",
+      "Scientific Instruments",
+      "Inventions",
+      "Important Discoveries Relating to Physics",
+      "Units of Measurement — Weight",
+      "Conversion of Units"
+    ]
+  },
+
+  {
+    key:"chemistry",
+    name:"Chemistry",
+    questionSubject:"Chemistry",
+    accent:"#d6b1c2",
+    topics:[
+      "Substance & Its Nature",
+      "Atomic Structure",
+      "Periodic Classification of Elements",
+      "Chemical Bonding",
+      "Oxidation & Reduction",
+      "Acids, Bases & Salts",
+      "Behaviour of Gases",
+      "Electrolysis",
+      "Carbon & Its Compounds",
+      "Fuels",
+      "Metallurgy",
+      "Important Facts About Some Metals",
+      "Non-Metals",
+      "Common Facts"
+    ]
+  },
+
+  {
+    key:"biology",
+    name:"Biology",
+    questionSubject:"Biology",
+    accent:"#9fc5ad",
+    topics:[
+      "Introduction",
+      "Classification of Organism",
+      "Cytology",
+      "Genetics",
+      "Organic Evolution",
+      "Botany — Classification of Plant Kingdom",
+      "Botany — Plant Morphology",
+      "Botany — Plant Tissue",
+      "Botany — Photosynthesis",
+      "Botany — Plant Hormones",
+      "Botany — Plant Diseases",
+      "Botany — Ecology",
+      "Botany — Pollution",
+      "Zoology — Classification of Animal Kingdom",
+      "Zoology — Animal Tissue",
+      "Zoology — Human Blood",
+      "Zoology — System of Human Body",
+      "Zoology — Nutrients",
+      "Zoology — Human Diseases",
+      "Miscellaneous"
+    ]
+  },
+
+  {
+    key:"miscellany",
+    name:"Miscellany",
+    questionSubject:"Miscellany",
+    accent:"#d4b49b",
+    topics:[
+      "Firsts in India — Male",
+      "Firsts in India — Female",
+      "Firsts in World — Male & Female",
+      "Superlatives — India",
+      "Superlatives — World",
+      "Important Monuments",
+      "National Emblems",
+      "International Boundaries",
+      "National Animals",
+      "News Agencies",
+      "Political Parties",
+      "Intelligence Agencies",
+      "Parliaments",
+      "Important Signs / Symbols",
+      "Official Books",
+      "Newspapers",
+      "UNO",
+      "World Organisations",
+      "International Decades",
+      "International Years",
+      "SAARC Years",
+      "International Weeks",
+      "National & International Days",
+      "India's World Heritage Sites",
+      "Famous Tourist Spots of India",
+      "Defence of India",
+      "Internal Security of India",
+      "Defence Training Institutions",
+      "Foundation Day of Some States",
+      "Research Centres of India",
+      "Nuclear & Space Research Centres in India",
+      "Health & Medicinal Research Centres in India",
+      "Defence Institutes in India",
+      "Government Industrial Undertakings",
+      "Musical Instruments & Their Exponents",
+      "States & Folk Dances",
+      "Famous Places Associated with Eminent Persons",
+      "Crematoriums of Famous Persons",
+      "Nicknames",
+      "Great Works Associated with Famous Persons",
+      "Awards & Honours",
+      "National Awards",
+      "Gallantry Awards",
+      "Jnanpith Awards",
+      "Dada Saheb Phalke Awards",
+      "Books & Authors",
+      "Olympic Games",
+      "Commonwealth Games",
+      "Asian Games",
+      "SAF Games",
+      "Afro-Asian Games",
+      "Sports Information",
+      "Cricket & World Cups",
+      "Football",
+      "Hockey",
+      "Tennis",
+      "Cups & Trophies",
+      "Famous Stadiums",
+      "National Games & Sports",
+      "Court / Campus / Field",
+      "Number of Players in Popular Games & Sports"
+    ]
+  },
+
+  {
+    key:"computer",
+    name:"Computer",
+    questionSubject:"Computer",
+    accent:"#b7c8b4",
+    topics:[
+      "Introduction",
+      "Generation of Computer",
+      "Important Facts Related to Computers",
+      "Hardware",
+      "Software",
+      "Glossary",
+      "Computer Abbreviations",
+      "Abbreviations"
+    ]
+  }
+];
+
+
+/* =========================================================
+   SUBJECT STORAGE
+   ========================================================= */
+
+const SUBJECT_STORAGE_KEY = "floSubjects";
+
+function cloneDefaultSubjects(){
+  return DEFAULT_SUBJECT_CATALOG.map(subject => ({
+    ...subject,
+    topics:[...subject.topics]
+  }));
+}
+
+function loadSubjects(){
+  try{
+    const saved = JSON.parse(
+      localStorage.getItem(SUBJECT_STORAGE_KEY)
+    );
+
+    if(Array.isArray(saved) && saved.length){
+      return saved;
+    }
+  }catch(error){
+    console.warn("Could not load saved subjects.",error);
+  }
+
+  const defaults = cloneDefaultSubjects();
+  localStorage.setItem(
+    SUBJECT_STORAGE_KEY,
+    JSON.stringify(defaults)
+  );
+
+  return defaults;
+}
+
+let SUBJECT_CATALOG = loadSubjects();
+
+function saveSubjects(){
+  localStorage.setItem(
+    SUBJECT_STORAGE_KEY,
+    JSON.stringify(SUBJECT_CATALOG)
+  );
+}
+
+
+/* =========================================================
+   TROPHIES
+   ========================================================= */
+
+const TROPHIES = [
+  {
+    id:"bronze",
+    name:"Bronze",
+    threshold:60,
+    image:"/trophies/bronze.png"
+  },
+  {
+    id:"silver",
+    name:"Silver",
+    threshold:75,
+    image:"/trophies/silver.png"
+  },
+  {
+    id:"gold",
+    name:"Gold",
+    threshold:90,
+    image:"/trophies/gold.png"
+  }
+];
+
+
+/* =========================================================
+   APPLICATION STATE
+   ========================================================= */
+
+let banks = [];
+
+let performance =
+  JSON.parse(
+    localStorage.getItem("floPerformance") || "{}"
+  );
+
+let answerHistory =
+  JSON.parse(
+    localStorage.getItem("floAnswerHistory") || "[]"
+  );
+
+let currentQuiz = null;
+let selectedSubject = null;
+
+const QUIZ_STATE_KEY = "floCurrentQuiz";
+
+function saveCurrentQuizState(){
+
+  if(!currentQuiz){
+    return;
+  }
+
+  const currentQuestion =
+    currentQuiz.questions[
+      currentQuiz.index
+    ];
+
+  localStorage.setItem(
+    QUIZ_STATE_KEY,
+    JSON.stringify({
+      questionIds:
+        currentQuiz.questions.map(q => q.id),
+
+      index:
+        currentQuiz.index,
+
+      answered:
+        currentQuiz.answered,
+
+      answer:
+        currentQuiz.answered &&
+        currentQuestion
+          ? (currentQuiz.currentAnswer || null)
+          : null
+    })
+  );
+}
+
+function clearCurrentQuizState(){
+
+  localStorage.removeItem(
+    QUIZ_STATE_KEY
+  );
+}
+
+function getSavedQuizState(){
+
+  try{
+
+    const saved =
+      localStorage.getItem(
+        QUIZ_STATE_KEY
+      );
+
+    return saved
+      ? JSON.parse(saved)
+      : null;
+
+  }catch(error){
+
+    return null;
+  }
+}
+
+function sameQuestionSet(
+  ids,
+  questions
+){
+
+  if(
+    !Array.isArray(ids) ||
+    ids.length !== questions.length
+  ){
+    return false;
+  }
+
+  return ids.every(
+    (id,index) =>
+      id === questions[index].id
+  );
+}
+
+
+/* =========================================================
+   BASIC HELPERS
+   ========================================================= */
+
+function save(){
+  localStorage.setItem(
+    "floPerformance",
+    JSON.stringify(performance)
+  );
+
+  localStorage.setItem(
+    "floAnswerHistory",
+    JSON.stringify(answerHistory)
+  );
+}
+
+function toast(message){
+  const t = document.getElementById("toast");
+
+  t.textContent = message;
+  t.style.display = "block";
+
+  clearTimeout(window._toast);
+
+  window._toast = setTimeout(()=>{
+    t.style.display = "none";
+  },2300);
+}
+
+function normalize(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g," ");
+}
+
+function slugify(value){
+  return normalize(value)
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-+|-+$/g,"")
+    .slice(0,60);
+}
+
+function escapeHTML(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function dateKey(date = new Date()){
+  return date.toISOString().slice(0,10);
+}
+
+function addDays(days){
+  const d = new Date();
+
+  d.setDate(
+    d.getDate() + days
+  );
+
+  return dateKey(d);
+}
+
+
+/* =========================================================
+   QUESTION BANK HELPERS
+   ========================================================= */
+
+function allQuestions(){
+
+  return banks.flatMap(bank =>
+    bank.questions.map(question => ({
+      ...question,
+
+      subject:
+        question.subject ||
+        bank.subject,
+
+      topic:
+        question.topic ||
+        bank.topic,
+
+      source:
+        question.source ||
+        bank.source
+    }))
+  );
+}
+
+function getQuestion(id){
+  return allQuestions()
+    .find(question => question.id === id);
+}
+
+function getSubject(key){
+  return SUBJECT_CATALOG
+    .find(subject => subject.key === key);
+}
+
+function getQuestionsForSubject(subject){
+  const questionSubject =
+    subject.questionSubject || subject.name;
+
+  return allQuestions()
+    .filter(question =>
+      normalize(question.subject) ===
+      normalize(questionSubject)
+    );
+}
+
+function getQuestionsForTopic(subject,topic){
+
+  const questionSubject =
+    subject.questionSubject || subject.name;
+
+  return allQuestions()
+    .filter(question =>
+      normalize(question.subject) ===
+      normalize(questionSubject) &&
+      normalize(question.topic) ===
+      normalize(topic)
+    );
+}
+
+
+/* =========================================================
+   PERFORMANCE
+   ========================================================= */
+
+function perf(id){
+
+  if(!performance[id]){
+
+    performance[id] = {
+      attempts:0,
+      correct:0,
+      wrong:0,
+      unknown:0,
+      streak:0,
+      mastery:0,
+      lastAttempted:null,
+      nextReview:null,
+      interval:0
+    };
+  }
+
+  return performance[id];
+}
+
+function calculateMastery(p){
+
+  if(!p.attempts){
+    return 0;
+  }
+
+  const accuracy =
+    p.correct / p.attempts;
+
+  const repetition =
+    Math.min(1,p.streak / 5);
+
+  return Math.round(
+    (
+      accuracy * 0.7 +
+      repetition * 0.3
+    ) * 100
+  );
+}
+
+function recordAnswer(q,chosen,result){
+
+  const p = perf(q.id);
+
+  p.attempts++;
+
+  if(result === "correct"){
+
+    p.correct++;
+    p.streak++;
+
+    const intervals = {
+      0:1,
+      1:3,
+      3:7,
+      7:14,
+      14:30,
+      30:30
+    };
+
+    p.interval =
+      intervals[p.interval] ?? 30;
+
+    p.nextReview =
+      addDays(p.interval);
+
+  }else{
+
+    if(result === "wrong"){
+      p.wrong++;
+    }
+
+    if(result === "unknown"){
+      p.unknown++;
+    }
+
+    p.streak = 0;
+    p.interval = 0;
+    p.nextReview = dateKey();
+  }
+
+  p.mastery =
+    calculateMastery(p);
+
+  p.lastAttempted =
+    new Date().toISOString();
+
+  answerHistory.push({
+    questionId:q.id,
+    timestamp:new Date().toISOString(),
+    answer:chosen,
+    correctAnswer:q.answer,
+    result
+  });
+
+  save();
+
+  /* Also persist to server.js */
+  fetch("/api/performance/answer",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      questionId:q.id,
+      answer:chosen,
+      result,
+      timestamp:p.lastAttempted
+    })
+  }).catch(error=>{
+    console.warn(
+      "Server performance sync failed:",
+      error
+    );
+  });
+}
+
+
+/* =========================================================
+   SUBJECT / TOPIC STATS
+   ========================================================= */
+
+function subjectStats(subject){
+
+  const qs =
+    getQuestionsForSubject(subject);
+
+  const mastered =
+    qs.reduce(
+      (total,q) =>
+        total + perf(q.id).mastery,
+      0
+    );
+
+  return {
+    questions:qs.length,
+
+    mastery:
+      qs.length
+        ? Math.round(mastered / qs.length)
+        : 0,
+
+    answered:
+      qs.filter(
+        q => perf(q.id).attempts > 0
+      ).length,
+
+    due:
+      qs.filter(
+        q =>
+          perf(q.id).nextReview &&
+          perf(q.id).nextReview <= dateKey()
+      ).length
+  };
+}
+
+function topicStats(subject,topic){
+
+  const qs =
+    getQuestionsForTopic(subject,topic);
+
+  const mastery =
+    qs.length
+      ? Math.round(
+          qs.reduce(
+            (total,q) =>
+              total + perf(q.id).mastery,
+            0
+          ) / qs.length
+        )
+      : 0;
+
+  return {
+    questions:qs.length,
+    mastery,
+
+    due:
+      qs.filter(
+        q =>
+          perf(q.id).nextReview &&
+          perf(q.id).nextReview <= dateKey()
+      ).length
+  };
+}
+
+
+/* =========================================================
+   LOAD QUESTION BANKS
+   ========================================================= */
+
+async function loadBanks(){
+
+  try{
+
+    const response =
+      await fetch("/api/question-banks");
+
+    const data =
+      await response.json();
+
+    banks =
+      data.banks || [];
+
+    if(data.errors?.length){
+      console.warn(
+        "Question bank errors:",
+        data.errors
+      );
+    }
+
+    render();
+
+  }catch(error){
+
+    banks = [];
+
+    render();
+
+    toast(
+      "Could not load question banks. Check server.js."
+    );
+  }
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+function navigate(page){
+
+  selectedSubject = null;
+  currentQuiz = null;
+
+  history.replaceState(
+    {},
+    "",
+    `#${page}`
+  );
+
+  render(page);
+}
+
+function render(page){
+
+  page =
+    page ||
+    location.hash.slice(1) ||
+    "home";
+
+  document
+    .querySelectorAll("[data-page]")
+    .forEach(button=>{
+      button.classList.toggle(
+        "active",
+        button.dataset.page === page
+      );
+    });
+
+  if(page === "home"){
+    renderHome();
+  }
+  else if(page === "review"){
+    renderReview();
+  }
+  else if(page === "calendar"){
+    renderCalendar();
+  }
+  else if(page === "trophies"){
+    renderTrophies();
+  }
+  else if(page === "progress"){
+    renderProgress();
+  }
+  else if(page === "settings"){
+    renderSettings();
+  }
+  else{
+    renderHome();
+  }
+}
+
+
+/* =========================================================
+   HOME / DASHBOARD
+   ========================================================= */
+
+function renderHome(){
+
+  const main =
+    document.getElementById("main");
+
+  main.innerHTML = `
+    <div class="eyebrow">
+      STUDY SPACE
+    </div>
+
+    <h2>
+      Dashboard
+    </h2>
+
+    <div class="grid" id="subjectGrid"></div>
+  `;
+
+  const grid =
+    document.getElementById("subjectGrid");
+
+
+  /* SUBJECT CARDS */
+
+  SUBJECT_CATALOG.forEach(subject=>{
+
+    const stats =
+      subjectStats(subject);
+
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "subject-card";
+
+    card.style.setProperty(
+      "--card-accent",
+      subject.accent || "#d9a27f"
+    );
+
+    card.innerHTML = `
+
+      <button
+        class="more"
+        title="Subject options"
+        aria-label="Subject options"
+      >
+        ⋮
+      </button>
+
+      <h3>
+        ${escapeHTML(subject.name)}
+      </h3>
+
+      <div class="meta">
+        ${subject.topics.length} topics
+      </div>
+
+      <div class="mastery-label">
+        <span>MASTERY</span>
+        <strong>${stats.mastery}%</strong>
+      </div>
+
+      <div class="bar">
+        <div
+          class="fill"
+          style="width:${stats.mastery}%"
+        ></div>
+      </div>
+    `;
+
+
+    /* CARD CLICK */
+
+    card.addEventListener(
+      "click",
+      ()=>{
+        openSubject(subject.key);
+      }
+    );
+
+
+    /* THREE DOT MENU */
+
+    const more =
+      card.querySelector(".more");
+
+    more.addEventListener(
+      "click",
+      event=>{
+        event.stopPropagation();
+
+        openSubjectMenu(
+          subject.key,
+          more
+        );
+      }
+    );
+
+
+    grid.appendChild(card);
+  });
+
+
+  /* ADD SUBJECT CARD */
+
+  const addCard =
+    document.createElement("div");
+
+  addCard.className =
+    "subject-card add-subject-card";
+
+  addCard.style.setProperty(
+    "--card-accent",
+    "#b9aea4"
+  );
+
+  addCard.innerHTML = `
+
+    <div
+      style="
+        height:100%;
+        min-height:170px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        color:#8d857c;
+      "
+    >
+      <div
+        style="
+          width:52px;
+          height:52px;
+          border:1.5px solid #b9aea4;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:30px;
+          font-weight:300;
+          line-height:1;
+          margin-bottom:12px;
+        "
+      >
+        +
+      </div>
+
+      <div
+        style="
+          font-size:15px;
+          font-weight:700;
+        "
+      >
+        Add Subject
+      </div>
+    </div>
+  `;
+
+  addCard.addEventListener(
+    "click",
+    openAddSubjectModal
+  );
+
+  grid.appendChild(addCard);
+}
+
+
+/* =========================================================
+   SUBJECT MENU
+   ========================================================= */
+
+function openSubjectMenu(key,anchor){
+
+  const subject =
+    getSubject(key);
+
+  if(!subject){
+    return;
+  }
+
+  document
+    .querySelectorAll(".subject-menu")
+    .forEach(menu=>menu.remove());
+
+  const menu =
+    document.createElement("div");
+
+  menu.className =
+    "subject-menu";
+
+  menu.style.cssText = `
+    position:fixed;
+    z-index:100;
+    min-width:180px;
+    background:#fffdf9;
+    border:1px solid #e6ddd1;
+    border-radius:14px;
+    padding:7px;
+    box-shadow:0 14px 35px rgba(50,40,30,.16);
+  `;
+
+  menu.innerHTML = `
+
+    <button
+      data-action="color"
+      style="${menuButtonStyle()}"
+    >
+      Change Color
+    </button>
+
+    <button
+      data-action="rename"
+      style="${menuButtonStyle()}"
+    >
+      Rename
+    </button>
+
+    <button
+      data-action="delete"
+      style="${menuButtonStyle(true)}"
+    >
+      Delete
+    </button>
+  `;
+
+  document.body.appendChild(menu);
+
+  const rect =
+    anchor.getBoundingClientRect();
+
+  menu.style.top =
+    `${rect.bottom + 6}px`;
+
+  menu.style.left =
+    `${Math.max(10,rect.right - 180)}px`;
+
+
+  menu
+    .querySelector('[data-action="color"]')
+    .onclick = event=>{
+      event.stopPropagation();
+      menu.remove();
+      openColorModal(key);
+    };
+
+
+  menu
+    .querySelector('[data-action="rename"]')
+    .onclick = event=>{
+      event.stopPropagation();
+      menu.remove();
+      openRenameModal(key);
+    };
+
+
+  menu
+    .querySelector('[data-action="delete"]')
+    .onclick = event=>{
+      event.stopPropagation();
+      menu.remove();
+      openDeleteModal(key);
+    };
+
+
+  setTimeout(()=>{
+
+    document.addEventListener(
+      "click",
+      function closeMenu(event){
+
+        if(!menu.contains(event.target)){
+          menu.remove();
+
+          document.removeEventListener(
+            "click",
+            closeMenu
+          );
+        }
+
+      },
+      {once:true}
+    );
+
+  },0);
+}
+
+function menuButtonStyle(danger=false){
+
+  return `
+    display:block;
+    width:100%;
+    border:0;
+    background:transparent;
+    text-align:left;
+    padding:11px 12px;
+    border-radius:9px;
+    cursor:pointer;
+    font-size:14px;
+    color:${danger ? "#a55f5c" : "#403a35"};
+  `;
+}
+
+
+/* =========================================================
+   ADD SUBJECT
+   ========================================================= */
+
+function openAddSubjectModal(){
+
+  showModal(`
+
+    <h3>
+      Add Subject
+    </h3>
+
+    <p>
+      Create a new subject for your dashboard.
+    </p>
+
+    <label
+      style="
+        display:block;
+        font-size:13px;
+        font-weight:700;
+        margin-top:20px;
+        margin-bottom:7px;
+      "
+    >
+      Subject Name
+    </label>
+
+    <input
+      id="newSubjectName"
+      type="text"
+      placeholder="e.g. Cognitive Psychology"
+      style="
+        width:100%;
+        padding:13px 14px;
+        border:1px solid #e6ddd1;
+        border-radius:12px;
+        background:#fffdfa;
+        font:inherit;
+        outline:none;
+      "
+    >
+
+    <label
+      style="
+        display:block;
+        font-size:13px;
+        font-weight:700;
+        margin-top:18px;
+        margin-bottom:7px;
+      "
+    >
+      Color
+    </label>
+
+    <input
+      id="newSubjectColor"
+      type="color"
+      value="#b99ac7"
+      style="
+        width:70px;
+        height:42px;
+        border:1px solid #e6ddd1;
+        border-radius:10px;
+        padding:3px;
+        background:#fffdfa;
+        cursor:pointer;
+      "
+    >
+
+    <div class="modal-actions">
+
+      <button
+        class="btn light"
+        onclick="closeModal()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="btn"
+        onclick="createSubject()"
+      >
+        Add Subject
+      </button>
+
+    </div>
+  `);
+
+  setTimeout(()=>{
+    document
+      .getElementById("newSubjectName")
+      ?.focus();
+  },50);
+}
+
+function createSubject(){
+
+  const input =
+    document.getElementById(
+      "newSubjectName"
+    );
+
+  const color =
+    document.getElementById(
+      "newSubjectColor"
+    );
+
+  const name =
+    input?.value.trim();
+
+  if(!name){
+
+    toast("Enter a subject name.");
+    return;
+  }
+
+  const exists =
+    SUBJECT_CATALOG.some(
+      subject =>
+        normalize(subject.name) ===
+        normalize(name)
+    );
+
+  if(exists){
+
+    toast("That subject already exists.");
+    return;
+  }
+
+  const subject = {
+
+    key:
+      `${slugify(name)}-${Date.now()}`,
+
+    name,
+
+    /*
+     * New subjects do not automatically
+     * connect to an MCQ bank unless the
+     * imported JSON uses the same subject name.
+     */
+    questionSubject:name,
+
+    accent:
+      color?.value || "#b99ac7",
+
+    topics:[]
+  };
+
+  SUBJECT_CATALOG.push(subject);
+
+  saveSubjects();
+
+  closeModal();
+
+  toast("Subject added.");
+
+  renderHome();
+}
+
+
+/* =========================================================
+   CHANGE COLOR
+   ========================================================= */
+
+function openColorModal(key){
+
+  const subject =
+    getSubject(key);
+
+  if(!subject){
+    return;
+  }
+
+  showModal(`
+
+    <h3>
+      Change Color
+    </h3>
+
+    <p>
+      Choose an accent color for
+      <strong>${escapeHTML(subject.name)}</strong>.
+    </p>
+
+    <input
+      id="subjectColorInput"
+      type="color"
+      value="${subject.accent || "#d9a27f"}"
+      style="
+        width:100%;
+        height:70px;
+        border:1px solid #e6ddd1;
+        border-radius:14px;
+        padding:5px;
+        background:#fffdfa;
+        cursor:pointer;
+      "
+    >
+
+    <div class="modal-actions">
+
+      <button
+        class="btn light"
+        onclick="closeModal()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="btn"
+        onclick="saveSubjectColor('${key}')"
+      >
+        Save Color
+      </button>
+
+    </div>
+  `);
+}
+
+function saveSubjectColor(key){
+
+  const subject =
+    getSubject(key);
+
+  const input =
+    document.getElementById(
+      "subjectColorInput"
+    );
+
+  if(!subject || !input){
+    return;
+  }
+
+  subject.accent =
+    input.value;
+
+  saveSubjects();
+
+  closeModal();
+
+  toast("Subject color updated.");
+
+  renderHome();
+}
+
+
+/* =========================================================
+   RENAME SUBJECT
+   ========================================================= */
+
+function openRenameModal(key){
+
+  const subject =
+    getSubject(key);
+
+  if(!subject){
+    return;
+  }
+
+  showModal(`
+
+    <h3>
+      Rename Subject
+    </h3>
+
+    <p>
+      Change the name shown on your dashboard.
+    </p>
+
+    <input
+      id="renameSubjectInput"
+      type="text"
+      value="${escapeHTML(subject.name)}"
+      style="
+        width:100%;
+        padding:13px 14px;
+        border:1px solid #e6ddd1;
+        border-radius:12px;
+        background:#fffdfa;
+        font:inherit;
+        outline:none;
+      "
+    >
+
+    <div class="modal-actions">
+
+      <button
+        class="btn light"
+        onclick="closeModal()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="btn"
+        onclick="renameSubject('${key}')"
+      >
+        Save Name
+      </button>
+
+    </div>
+  `);
+
+  setTimeout(()=>{
+    const input =
+      document.getElementById(
+        "renameSubjectInput"
+      );
+
+    input?.focus();
+    input?.select();
+  },50);
+}
+
+function renameSubject(key){
+
+  const subject =
+    getSubject(key);
+
+  const input =
+    document.getElementById(
+      "renameSubjectInput"
+    );
+
+  if(!subject || !input){
+    return;
+  }
+
+  const newName =
+    input.value.trim();
+
+  if(!newName){
+
+    toast("Enter a subject name.");
+    return;
+  }
+
+  const duplicate =
+    SUBJECT_CATALOG.some(
+      other =>
+        other.key !== key &&
+        normalize(other.name) ===
+        normalize(newName)
+    );
+
+  if(duplicate){
+
+    toast("That subject already exists.");
+    return;
+  }
+
+  subject.name =
+    newName;
+
+  saveSubjects();
+
+  closeModal();
+
+  toast("Subject renamed.");
+
+  renderHome();
+}
+
+
+/* =========================================================
+   DELETE SUBJECT
+   ========================================================= */
+
+function openDeleteModal(key){
+
+  const subject =
+    getSubject(key);
+
+  if(!subject){
+    return;
+  }
+
+  showModal(`
+
+    <h3>
+      Delete Subject?
+    </h3>
+
+    <p>
+      This will remove
+      <strong>${escapeHTML(subject.name)}</strong>
+      from your dashboard.
+    </p>
+
+    <p class="small">
+      Your imported MCQ JSON files are not deleted.
+      This only removes the subject from the dashboard.
+    </p>
+
+    <div class="modal-actions">
+
+      <button
+        class="btn light"
+        onclick="closeModal()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="btn"
+        style="background:#a55f5c"
+        onclick="deleteSubject('${key}')"
+      >
+        Delete
+      </button>
+
+    </div>
+  `);
+}
+
+function deleteSubject(key){
+
+  const index =
+    SUBJECT_CATALOG.findIndex(
+      subject =>
+        subject.key === key
+    );
+
+  if(index === -1){
+    return;
+  }
+
+  const deleted =
+    SUBJECT_CATALOG[index];
+
+  SUBJECT_CATALOG.splice(
+    index,
+    1
+  );
+
+  saveSubjects();
+
+  selectedSubject = null;
+
+  closeModal();
+
+  toast(
+    `${deleted.name} deleted.`
+  );
+
+  renderHome();
+}
+
+
+/* =========================================================
+   OPEN SUBJECT
+   ========================================================= */
+
+function openSubject(key){
+
+  selectedSubject =
+    getSubject(key);
+
+  if(!selectedSubject){
+    return;
+  }
+
+  renderSubject(
+    selectedSubject,
+    "topics"
+  );
+}
+
+
+/* =========================================================
+   SUBJECT PAGE
+   ========================================================= */
+
+function renderSubject(
+  subject,
+  tab="topics"
+){
+
+  if(!subject){
+    navigate("home");
+    return;
+  }
+
+  const stats =
+    subjectStats(subject);
+
+  document
+    .querySelectorAll("[data-page]")
+    .forEach(button =>
+      button.classList.remove("active")
+    );
+
+  document.getElementById("main")
+    .innerHTML = `
+
+      <div class="page-head">
+
+        <div>
+
+          <div
+            class="small"
+            onclick="navigate('home')"
+            style="
+              cursor:pointer;
+              margin-bottom:18px;
+              position:relative;
+              top:-8px
+            "
+          >
+            ← Back to Dashboard
+          </div>
+
+          <div class="eyebrow">
+            SUBJECT
+          </div>
+
+          <h2>
+            ${escapeHTML(subject.name)}
+          </h2>
+
+
+
+        </div>
+
+      </div>
+
+  <div class="tabs">
+
+  <button
+    class="${tab==="topics"?"active":""}"
+    onclick="renderSubject(selectedSubject,'topics')"
+  >
+    Topics
+  </button>
+
+  <button
+    class="${tab==="review"?"active":""}"
+    onclick="renderSubject(selectedSubject,'review')"
+  >
+    Review
+  </button>
+
+  <button
+    class="${tab==="progress"?"active":""}"
+    onclick="renderSubject(selectedSubject,'progress')"
+  >
+    Progress
+  </button>
+
+</div>
+
+      <div id="subjectContent"></div>
+    `;
+
+  const content =
+    document.getElementById(
+      "subjectContent"
+    );
+
+  if(tab === "topics"){
+    renderSubjectTopics(
+      content,
+      subject
+    );
+  }
+
+  if(tab === "review"){
+    renderSubjectReview(
+      content,
+      subject
+    );
+  }
+
+  if(tab === "progress"){
+    renderSubjectProgress(
+      content,
+      subject
+    );
+  }
+}
+
+
+/* =========================================================
+   TOPICS
+   ========================================================= */
+
+function renderSubjectTopics(
+  container,
+  subject
+){
+
+  if(!subject.topics.length){
+
+    const matchingBanks =
+      banks.filter(
+        bank =>
+          normalize(bank.subject) ===
+          normalize(
+            subject.questionSubject ||
+            subject.name
+          )
+      );
+
+    if(matchingBanks.length){
+
+      subject.topics =
+        [
+          ...new Set(
+            matchingBanks.map(
+              bank => bank.topic
+            )
+          )
+        ];
+
+      saveSubjects();
+
+    }
+  }
+
+  if(!subject.topics.length){
+
+    container.innerHTML = `
+
+      <div class="empty-state">
+
+        <h3
+          style="
+            font:24px Georgia,serif;
+            margin-top:0
+          "
+        >
+          No topics yet
+        </h3>
+
+        <p>
+          Import a JSON question bank for
+          this subject to populate its topics.
+        </p>
+
+      </div>
+    `;
+
+    return;
+  }
+
+
+  container.innerHTML = `
+
+    <div class="topic-grid">
+
+      ${subject.topics.map(topic=>{
+
+        const stats =
+          topicStats(
+            subject,
+            topic
+          );
+
+        return `
+
+          <div class="topic-card">
+
+            <h3>
+              ${escapeHTML(topic)}
+            </h3>
+
+            <div class="topic-meta">
+
+              ${stats.questions}
+              questions
+              ·
+              ${stats.mastery}%
+              mastery
+
+              ${
+                stats.due
+                  ? ` · ${stats.due} due`
+                  : ""
+              }
+
+            </div>
+
+            <div class="bar">
+
+              <div
+                class="fill"
+                style="
+                  width:${stats.mastery}%
+                "
+              ></div>
+
+            </div>
+
+            <div class="topic-actions">
+
+              <button
+                class="btn"
+                onclick='startQuizFor(
+                  ${JSON.stringify(subject.name)},
+                  ${JSON.stringify(topic)}
+                )'
+                ${stats.questions ? "" : "disabled"}
+              >
+                Start Quiz
+              </button>
+
+            </div>
+
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   SUBJECT REVIEW
+   ========================================================= */
+
+function renderSubjectReview(
+  container,
+  subject
+){
+
+  const qs =
+    getQuestionsForSubject(subject)
+      .filter(
+        q =>
+          perf(q.id).nextReview &&
+          perf(q.id).nextReview <=
+          dateKey()
+      );
+
+  container.innerHTML = `
+
+    <div class="review-card">
+
+      <h3
+        style="
+          font:27px Georgia,serif;
+          margin-top:0
+        "
+      >
+        Review
+      </h3>
+
+      ${
+        qs.length
+          ? `
+            <div class="review-list">
+              ${qs.map(reviewItem).join("")}
+            </div>
+          `
+          : `
+            <div class="empty-state">
+              Nothing due right now.
+            </div>
+          `
+      }
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   SUBJECT PROGRESS
+   ========================================================= */
+
+function renderSubjectProgress(
+  container,
+  subject
+){
+
+  const qs =
+    getQuestionsForSubject(subject);
+
+  const correct =
+    qs.reduce(
+      (total,q) =>
+        total + perf(q.id).correct,
+      0
+    );
+
+  const attempts =
+    qs.reduce(
+      (total,q) =>
+        total + perf(q.id).attempts,
+      0
+    );
+
+  const stats =
+    subjectStats(subject);
+
+  container.innerHTML = `
+
+    <div class="stat-grid">
+
+      <div class="stat">
+        <strong>
+          ${stats.mastery}%
+        </strong>
+        <span>
+          Mastery
+        </span>
+      </div>
+
+      <div class="stat">
+        <strong>
+          ${
+            attempts
+              ? Math.round(
+                  correct /
+                  attempts *
+                  100
+                )
+              : 0
+          }%
+        </strong>
+        <span>
+          Quiz Accuracy
+        </span>
+      </div>
+
+      <div class="stat">
+        <strong>
+          ${attempts}
+        </strong>
+        <span>
+          Answers
+        </span>
+      </div>
+
+      <div class="stat">
+        <strong>
+          ${stats.due}
+        </strong>
+        <span>
+          Due
+        </span>
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   REVIEW ITEM
+   ========================================================= */
+
+function reviewItem(q){
+
+  const p =
+    perf(q.id);
+
+  return `
+
+    <div class="review-item">
+
+      <div>
+
+        <strong>
+          ${escapeHTML(q.question)}
+        </strong>
+
+        <div class="small">
+          ${escapeHTML(q.subject)}
+          ·
+          ${escapeHTML(q.topic)}
+        </div>
+
+      </div>
+
+      <div>
+
+        <span class="badge">
+          ${
+            p.nextReview === dateKey()
+              ? "Due today"
+              : "Overdue"
+          }
+        </span>
+
+        <button
+          class="btn"
+          style="
+            margin-left:8px;
+            padding:8px 12px
+          "
+          onclick='startQuizByIds(
+            [${JSON.stringify(q.id)}]
+          )'
+        >
+          Review
+        </button>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   QUIZ ENGINE
+   ========================================================= */
+
+function startQuizFor(
+  subjectName,
+  topic
+){
+
+  const subject =
+    SUBJECT_CATALOG.find(
+      s =>
+        normalize(
+          s.questionSubject ||
+          s.name
+        ) ===
+        normalize(subjectName)
+    );
+
+  const qs =
+    subject
+      ? getQuestionsForTopic(
+          subject,
+          topic
+        )
+      : allQuestions().filter(
+          q =>
+            normalize(q.subject) ===
+            normalize(subjectName) &&
+            normalize(q.topic) ===
+            normalize(topic)
+        );
+
+  if(!qs.length){
+
+    toast(
+      "No JSON questions loaded for this topic."
+    );
+
+    return;
+  }
+
+  selectedSubject =
+    subject ||
+    selectedSubject;
+
+  startQuiz(qs);
+}
+
+function startQuizByIds(ids){
+
+  const qs =
+    ids
+      .map(getQuestion)
+      .filter(Boolean);
+
+  if(qs.length){
+    startQuiz(qs);
+  }
+}
+
+function startQuiz(questions){
+
+  const saved =
+    getSavedQuizState();
+
+  if(
+    saved &&
+    sameQuestionSet(
+      saved.questionIds,
+      questions
+    )
+  ){
+
+    currentQuiz = {
+
+      questions:[
+        ...questions
+      ],
+
+      index:Math.min(
+        Math.max(
+          0,
+          Number(saved.index) || 0
+        ),
+        questions.length - 1
+      ),
+
+      answered:
+        saved.answered === true,
+
+      currentAnswer:
+        saved.answer || null,
+
+      results:[]
+    };
+
+  }else{
+
+    currentQuiz = {
+
+      questions:[
+        ...questions
+      ],
+
+      index:0,
+
+      answered:false,
+
+      currentAnswer:null,
+
+      results:[]
+    };
+  }
+
+  renderQuiz();
+}
+
+
+/* =========================================================
+   QUIZ SCREEN
+   ========================================================= */
+
+function renderQuiz(){
+
+  const main =
+    document.getElementById("main");
+
+  const q =
+    currentQuiz.questions[
+      currentQuiz.index
+    ];
+
+  const number =
+    currentQuiz.index + 1;
+
+  const total =
+    currentQuiz.questions.length;
+
+
+  main.innerHTML = `
+
+    <div class="quiz-shell">
+
+      <div class="quiz-top">
+
+        <button
+          class="btn light"
+          onclick="exitQuiz()"
+        >
+          ← Exit Quiz
+        </button>
+
+        <div class="quiz-count">
+          Question ${number} / ${total}
+        </div>
+
+      </div>
+
+      <div class="quiz-progress">
+
+        <div
+          class="fill"
+          style="
+            width:${number / total * 100}%
+          "
+        ></div>
+
+      </div>
+
+      <div class="question-card">
+
+        <h3>
+          ${escapeHTML(q.question)}
+        </h3>
+
+        <div class="options">
+
+          ${["A","B","C","D"].map(letter=>`
+
+            <button
+              class="option"
+              id="opt-${letter}"
+              onclick="answerQuiz('${letter}')"
+            >
+
+              <span class="letter">
+                ${letter}
+              </span>
+
+              <span>
+                ${escapeHTML(q.options[letter])}
+              </span>
+
+            </button>
+
+          `).join("")}
+
+        </div>
+
+        <div class="quiz-actions">
+
+          <button
+            class="unknown"
+            onclick="answerQuiz('UNKNOWN')"
+          >
+            I don't know
+          </button>
+
+          <div
+            class="quiz-next"
+            id="nextArea"
+          ></div>
+
+        </div>
+
+        <div id="feedback"></div>
+
+      </div>
+
+    </div>
+  `;
+
+  restoreSavedAnswer();
+}
+
+function restoreSavedAnswer(){
+
+  if(
+    !currentQuiz ||
+    !currentQuiz.answered
+  ){
+    return;
+  }
+
+  const choice =
+    currentQuiz.currentAnswer;
+
+  const q =
+    currentQuiz.questions[
+      currentQuiz.index
+    ];
+
+  if(!choice || !q){
+    return;
+  }
+
+  const result =
+    choice === "UNKNOWN"
+      ? "unknown"
+      : choice === q.answer
+        ? "correct"
+        : "wrong";
+
+  ["A","B","C","D"].forEach(
+    letter=>{
+
+      const button =
+        document.getElementById(
+          `opt-${letter}`
+        );
+
+      if(button){
+
+        button.classList.add(
+          "disabled"
+        );
+
+        button.onclick = null;
+      }
+    }
+  );
+
+  if(result === "correct"){
+
+    const chosen =
+      document.getElementById(
+        `opt-${choice}`
+      );
+
+    if(chosen){
+      chosen.classList.add("correct");
+    }
+
+  }
+  else if(result === "wrong"){
+
+    const chosen =
+      document.getElementById(
+        `opt-${choice}`
+      );
+
+    const correct =
+      document.getElementById(
+        `opt-${q.answer}`
+      );
+
+    if(chosen){
+      chosen.classList.add("wrong");
+    }
+
+    if(correct){
+      correct.classList.add("correct");
+    }
+
+  }
+  else{
+
+    const correct =
+      document.getElementById(
+        `opt-${q.answer}`
+      );
+
+    if(correct){
+      correct.classList.add("correct");
+    }
+  }
+
+  const feedback =
+    document.getElementById(
+      "feedback"
+    );
+
+  if(feedback){
+
+    feedback.innerHTML = `
+
+      <div class="explanation">
+
+        <strong>
+          ${
+            result === "correct"
+              ? "Correct"
+              : result === "unknown"
+                ? "Not learnt"
+                : "Incorrect"
+          }
+        </strong>
+
+        ${
+          result !== "correct"
+            ? ` · Correct answer: ${q.answer}`
+            : ""
+        }
+
+        ${
+          q.explanation
+            ? `<br>${escapeHTML(q.explanation)}`
+            : ""
+        }
+
+      </div>
+    `;
+  }
+
+  const nextArea =
+    document.getElementById(
+      "nextArea"
+    );
+
+  if(nextArea){
+
+    nextArea.innerHTML = `
+
+      <button
+        class="btn"
+        onclick="nextQuestion()"
+      >
+        ${
+          currentQuiz.index <
+          currentQuiz.questions.length - 1
+            ? "Next Question →"
+            : "Finish Quiz"
+        }
+      </button>
+    `;
+  }
+}
+
+function exitQuiz(){
+
+  saveCurrentQuizState();
+
+  currentQuiz = null;
+
+  if(selectedSubject){
+
+    renderSubject(
+      selectedSubject,
+      "topics"
+    );
+
+  }else{
+
+    navigate("home");
+  }
+}
+
+
+/* =========================================================
+   ANSWER QUESTION
+   ========================================================= */
+
+/* =========================================================
+   QUIZ ANSWER SOUNDS
+   ========================================================= */
+
+let quizAudioContext = null;
+
+function playCorrectSound(){
+
+  const AudioCtx =
+    window.AudioContext ||
+    window.webkitAudioContext;
+
+  if(!AudioCtx){
+    return;
+  }
+
+  if(!quizAudioContext){
+    quizAudioContext = new AudioCtx();
+  }
+
+  if(quizAudioContext.state === "suspended"){
+    quizAudioContext.resume();
+  }
+
+  const now =
+    quizAudioContext.currentTime;
+
+  const osc =
+    quizAudioContext.createOscillator();
+
+  const gain =
+    quizAudioContext.createGain();
+
+  osc.type = "sine";
+
+  osc.frequency.setValueAtTime(
+    523.25,
+    now
+  );
+
+  osc.frequency.setValueAtTime(
+    659.25,
+    now + 0.11
+  );
+
+  gain.gain.setValueAtTime(
+    0.0001,
+    now
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.16,
+    now + 0.015
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    now + 0.32
+  );
+
+  osc.connect(gain);
+  gain.connect(quizAudioContext.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.33);
+}
+
+
+function playWrongSound(){
+
+  const AudioCtx =
+    window.AudioContext ||
+    window.webkitAudioContext;
+
+  if(!AudioCtx){
+    return;
+  }
+
+  if(!quizAudioContext){
+    quizAudioContext = new AudioCtx();
+  }
+
+  if(quizAudioContext.state === "suspended"){
+    quizAudioContext.resume();
+  }
+
+  const now =
+    quizAudioContext.currentTime;
+
+  const osc =
+    quizAudioContext.createOscillator();
+
+  const gain =
+    quizAudioContext.createGain();
+
+  osc.type = "sine";
+
+  osc.frequency.setValueAtTime(
+    330,
+    now
+  );
+
+  osc.frequency.exponentialRampToValueAtTime(
+    220,
+    now + 0.22
+  );
+
+  gain.gain.setValueAtTime(
+    0.0001,
+    now
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.12,
+    now + 0.015
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    now + 0.25
+  );
+
+  osc.connect(gain);
+  gain.connect(quizAudioContext.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.26);
+}
+
+
+function answerQuiz(choice){
+
+
+  if(
+    !currentQuiz ||
+    currentQuiz.answered
+  ){
+    return;
+  }
+
+  const q =
+    currentQuiz.questions[
+      currentQuiz.index
+    ];
+
+  currentQuiz.answered =
+    true;
+
+  currentQuiz.currentAnswer =
+    choice;
+
+  const result =
+    choice === "UNKNOWN"
+      ? "unknown"
+      : choice === q.answer
+        ? "correct"
+        : "wrong";
+
+  if(result === "correct"){
+    playCorrectSound();
+  }
+  else if(result === "wrong"){
+    playWrongSound();
+  }
+
+  recordAnswer(
+    q,
+    choice,
+    result
+  );
+
+
+  ["A","B","C","D"].forEach(
+    letter=>{
+      const button =
+        document.getElementById(
+          `opt-${letter}`
+        );
+
+      button.classList.add(
+        "disabled"
+      );
+
+      button.onclick = null;
+    }
+  );
+
+
+  if(result === "correct"){
+
+    document
+      .getElementById(
+        `opt-${choice}`
+      )
+      .classList.add("correct");
+
+  }
+  else if(result === "wrong"){
+
+    document
+      .getElementById(
+        `opt-${choice}`
+      )
+      .classList.add("wrong");
+
+    document
+      .getElementById(
+        `opt-${q.answer}`
+      )
+      .classList.add("correct");
+
+  }
+  else{
+
+    document
+      .getElementById(
+        `opt-${q.answer}`
+      )
+      .classList.add("correct");
+  }
+
+
+  const feedback =
+    document.getElementById(
+      "feedback"
+    );
+
+  feedback.innerHTML = `
+
+    <div class="explanation">
+
+      <strong>
+        ${
+          result === "correct"
+            ? "Correct"
+            : result === "unknown"
+              ? "Not learnt"
+              : "Incorrect"
+        }
+      </strong>
+
+      ${
+        result !== "correct"
+          ? ` · Correct answer: ${q.answer}`
+          : ""
+      }
+
+      ${
+        q.explanation
+          ? `<br>${escapeHTML(q.explanation)}`
+          : ""
+      }
+
+    </div>
+  `;
+
+
+  document.getElementById(
+    "nextArea"
+  ).innerHTML = `
+
+    <button
+      class="btn"
+      onclick="nextQuestion()"
+    >
+      ${
+        currentQuiz.index <
+        currentQuiz.questions.length - 1
+          ? "Next Question →"
+          : "Finish Quiz"
+      }
+    </button>
+  `;
+
+  saveCurrentQuizState();
+}
+
+
+/* =========================================================
+   NEXT QUESTION
+   ========================================================= */
+
+function nextQuestion(){
+
+  if(
+    currentQuiz.index <
+    currentQuiz.questions.length - 1
+  ){
+
+    currentQuiz.index++;
+    currentQuiz.answered = false;
+    currentQuiz.currentAnswer = null;
+
+    saveCurrentQuizState();
+
+    renderQuiz();
+
+  }else{
+
+    finishQuiz();
+  }
+}
+
+
+/* =========================================================
+   QUIZ RESULTS
+   ========================================================= */
+
+function finishQuiz(){
+
+  clearCurrentQuizState();
+
+  const results =
+    currentQuiz.results;
+
+  /*
+   * Because performance history is
+   * persistent, calculate this quiz's
+   * result from the most recent answer
+   * event for each question.
+   */
+
+  const questions =
+    currentQuiz.questions;
+
+  const quizResults =
+    questions.map(q=>{
+
+      const events =
+        answerHistory.filter(
+          event =>
+            event.questionId === q.id
+        );
+
+      return events.length
+        ? events[events.length - 1].result
+        : null;
+
+    }).filter(Boolean);
+
+  const correct =
+    quizResults.filter(
+      result => result === "correct"
+    ).length;
+
+  const wrong =
+    quizResults.filter(
+      result => result === "wrong"
+    ).length;
+
+  const unknown =
+    quizResults.filter(
+      result => result === "unknown"
+    ).length;
+
+  const answered =
+    correct + wrong + unknown;
+
+  const accuracy =
+    Math.round(
+      correct /
+      Math.max(1,answered) *
+      100
+    );
+
+
+  currentQuiz = null;
+
+
+  showModal(`
+
+    <h3>
+      Quiz Complete
+    </h3>
+
+    <p>
+      You answered
+      <strong>${answered}</strong>
+      questions.
+    </p>
+
+    <div
+      class="stat"
+      style="margin-top:15px"
+    >
+      <strong>
+        ${accuracy}%
+      </strong>
+
+      <span>
+        Accuracy
+      </span>
+    </div>
+
+    <div
+      class="small"
+      style="margin-top:15px"
+    >
+      Correct: ${correct}
+      ·
+      Wrong: ${wrong}
+      ·
+      Not learnt: ${unknown}
+    </div>
+
+    <div class="modal-actions">
+
+      <button
+        class="btn light"
+        onclick="closeModal();renderSubject(selectedSubject,'topics')"
+      >
+        Back to Topics
+      </button>
+
+      <button
+        class="btn"
+        onclick="closeModal();renderProgress()"
+      >
+        View Progress
+      </button>
+
+    </div>
+  `);
+}
+
+
+/* =========================================================
+   GLOBAL REVIEW
+   ========================================================= */
+
+function renderReview(){
+
+  const qs =
+    allQuestions();
+
+  const today =
+    dateKey();
+
+  const due =
+    qs.filter(
+      q =>
+        perf(q.id).nextReview &&
+        perf(q.id).nextReview <= today
+    );
+
+  const overdue =
+    due.filter(
+      q =>
+        perf(q.id).nextReview < today
+    );
+
+
+  document.getElementById("main")
+    .innerHTML = `
+
+      <div class="eyebrow">
+        REVIEW
+      </div>
+
+      <h2>
+        Review
+      </h2>
+
+      <div class="review-layout">
+
+        <div class="review-card">
+
+          <div class="page-head">
+
+            <h3
+              style="
+                font:28px Georgia,serif;
+                margin:0
+              "
+            >
+              Today's Review
+            </h3>
+
+            <span>
+              ${due.length}
+              questions due
+            </span>
+
+          </div>
+
+          ${
+            due.length
+              ? `
+                <div class="review-list">
+                  ${due.map(reviewItem).join("")}
+                </div>
+              `
+              : `
+                <div class="empty-state">
+                  Nothing due right now.
+                  <br>
+                  <span class="small">
+                    Your review queue is clear.
+                  </span>
+                </div>
+              `
+          }
+
+          <button
+            class="btn"
+            style="margin-top:18px"
+            onclick="startDueReview()"
+            ${due.length ? "" : "disabled"}
+          >
+            Start Today's Review →
+          </button>
+
+        </div>
+
+        <div class="review-card">
+
+          <h3
+            style="
+              font:28px Georgia,serif;
+              margin-top:0
+            "
+          >
+            Review Status
+          </h3>
+
+          <div class="stat">
+
+            <strong>
+              ${due.length}
+            </strong>
+
+            <span>
+              Due today
+            </span>
+
+          </div>
+
+          <div
+            class="stat"
+            style="margin-top:12px"
+          >
+
+            <strong>
+              ${
+                answerHistory.filter(
+                  event =>
+                    event.timestamp
+                      .slice(0,10) ===
+                    today
+                ).length
+              }
+            </strong>
+
+            <span>
+              Done today
+            </span>
+
+          </div>
+
+          <div
+            class="stat"
+            style="margin-top:12px"
+          >
+
+            <strong>
+              ${overdue.length}
+            </strong>
+
+            <span>
+              Overdue
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+}
+
+function startDueReview(){
+
+  const qs =
+    allQuestions()
+      .filter(
+        q =>
+          perf(q.id).nextReview &&
+          perf(q.id).nextReview <=
+          dateKey()
+      );
+
+  if(qs.length){
+    startQuiz(qs);
+  }
+}
+
+
+/* =========================================================
+   CALENDAR
+   ========================================================= */
+
+function renderCalendar(){
+
+  const now =
+    new Date();
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    now.getMonth();
+
+  const first =
+    new Date(
+      year,
+      month,
+      1
+    );
+
+  const days =
+    new Date(
+      year,
+      month + 1,
+      0
+    ).getDate();
+
+  const start =
+    first.getDay();
+
+  const dueBy = {};
+
+  allQuestions().forEach(q=>{
+
+    const date =
+      perf(q.id).nextReview;
+
+    if(date){
+
+      if(!dueBy[date]){
+        dueBy[date] = [];
+      }
+
+      dueBy[date].push(q);
+    }
+  });
+
+
+  let cells = "";
+
+  [
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
+  ].forEach(day=>{
+
+    cells += `
+      <div class="day-name">
+        ${day}
+      </div>
+    `;
+  });
+
+
+  for(
+    let i=0;
+    i<start;
+    i++
+  ){
+
+    cells += "<div></div>";
+  }
+
+
+  for(
+    let day=1;
+    day<=days;
+    day++
+  ){
+
+    const key =
+      `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
+    const questions =
+      dueBy[key] || [];
+
+    cells += `
+
+      <div
+        class="day ${
+          key === dateKey()
+            ? "today"
+            : ""
+        }"
+        ${
+          questions.length
+            ? `onclick='startQuizByIds(
+                ${JSON.stringify(
+                  questions.map(q=>q.id)
+                )}
+              )'`
+            : ""
+        }
+      >
+
+        <div class="num">
+          ${day}
+        </div>
+
+        ${
+          questions.length
+            ? `
+              <div class="due">
+                ${questions.length}
+                questions
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+    `;
+  }
+
+
+  document.getElementById("main")
+    .innerHTML = `
+
+      <div class="eyebrow">
+        REVIEW SYSTEM
+      </div>
+
+      <h2>
+        Spaced Repetition
+      </h2>
+
+      <div class="calendar-card">
+
+        <div class="calendar-head">
+
+          <button
+            class="btn light"
+            onclick="changeMonth(-1)"
+          >
+            ←
+          </button>
+
+          <h3>
+            ${now.toLocaleString(
+              "en",
+              {month:"long"}
+            )}
+            ${year}
+          </h3>
+
+          <button
+            class="btn light"
+            onclick="changeMonth(1)"
+          >
+            →
+          </button>
+
+        </div>
+
+        <div class="calendar-grid">
+          ${cells}
+        </div>
+
+      </div>
+    `;
+}
+
+function changeMonth(){
+
+  toast(
+    "Calendar month navigation can be connected next."
+  );
+}
+
+
+/* =========================================================
+   TROPHIES
+   ========================================================= */
+
+function renderTrophies(){
+
+  const qs =
+    allQuestions();
+
+  const overall =
+    qs.length
+      ? Math.round(
+          qs.reduce(
+            (total,q) =>
+              total + perf(q.id).mastery,
+            0
+          ) / qs.length
+        )
+      : 0;
+
+
+  document.getElementById("main")
+    .innerHTML = `
+
+      <div class="eyebrow">
+        COLLECTION
+      </div>
+
+      <h2>
+        Trophy Room
+      </h2>
+
+      <div class="trophy-card">
+
+        <h3
+          style="
+            font:28px Georgia,serif;
+            margin-top:0
+          "
+        >
+          Your Collection
+        </h3>
+
+        <div
+          class="small"
+          style="margin-bottom:24px"
+        >
+          Trophies unlock as mastery grows.
+        </div>
+
+        <div class="trophies">
+
+          ${TROPHIES.map(t=>`
+
+            <div
+              class="trophy ${
+                overall < t.threshold
+                  ? "locked"
+                  : ""
+              }"
+            >
+
+              <img
+                src="${t.image}"
+                onerror="
+                  this.style.display='none'
+                "
+              >
+
+              <h3>
+                ${t.name}
+              </h3>
+
+              <div class="small">
+                ${t.threshold}% mastery
+              </div>
+
+            </div>
+
+          `).join("")}
+
+        </div>
+
+      </div>
+    `;
+}
+
+
+/* =========================================================
+   GLOBAL PROGRESS
+   ========================================================= */
+
+function renderProgress(){
+
+  const qs =
+    allQuestions();
+
+  const attempts =
+    qs.reduce(
+      (total,q) =>
+        total + perf(q.id).attempts,
+      0
+    );
+
+  const correct =
+    qs.reduce(
+      (total,q) =>
+        total + perf(q.id).correct,
+      0
+    );
+
+  const overall =
+    qs.length
+      ? Math.round(
+          qs.reduce(
+            (total,q) =>
+              total + perf(q.id).mastery,
+            0
+          ) / qs.length
+        )
+      : 0;
+
+
+  document.getElementById("main")
+    .innerHTML = `
+
+      <div class="eyebrow">
+        STATISTICS
+      </div>
+
+      <h2>
+        Progress
+      </h2>
+
+      <div class="stat-grid">
+
+        <div class="stat">
+          <strong>
+            ${overall}%
+          </strong>
+          <span>
+            Overall Mastery
+          </span>
+        </div>
+
+        <div class="stat">
+          <strong>
+            ${attempts}
+          </strong>
+          <span>
+            Questions Answered
+          </span>
+        </div>
+
+        <div class="stat">
+          <strong>
+            ${
+              qs.length
+                ? Math.round(
+                    correct /
+                    Math.max(
+                      1,
+                      attempts
+                    ) *
+                    100
+                  )
+                : 0
+            }%
+          </strong>
+          <span>
+            Accuracy
+          </span>
+        </div>
+
+        <div class="stat">
+          <strong>
+            ${answerHistory.length}
+          </strong>
+          <span>
+            Quiz Answers
+          </span>
+        </div>
+
+      </div>
+
+      <div class="progress-card">
+
+        <h3
+          style="
+            font:28px Georgia,serif;
+            margin-top:0
+          "
+        >
+          Subject Mastery
+        </h3>
+
+        <div class="subject-progress">
+
+          ${SUBJECT_CATALOG.map(subject=>{
+
+            const stats =
+              subjectStats(subject);
+
+            return `
+
+              <div class="progress-row">
+
+                <div class="progress-row-top">
+
+                  <span>
+                    ${escapeHTML(
+                      subject.name
+                    )}
+                  </span>
+
+                  <strong>
+                    ${stats.mastery}%
+                  </strong>
+
+                </div>
+
+                <div class="bar">
+
+                  <div
+                    class="fill"
+                    style="
+                      width:${stats.mastery}%
+                    "
+                  ></div>
+
+                </div>
+
+              </div>
+            `;
+          }).join("")}
+
+        </div>
+
+      </div>
+    `;
+}
+
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+function renderSettings(){
+
+  const qs =
+    allQuestions();
+
+  document.getElementById("main")
+    .innerHTML = `
+
+      <div class="eyebrow">
+        PREFERENCES
+      </div>
+
+      <h2>
+        Settings
+      </h2>
+
+      <div class="settings-stack">
+
+        <div class="settings-card">
+
+          <strong>
+            Question database
+          </strong>
+
+          <div
+            class="small"
+            style="margin-top:8px"
+          >
+            ${qs.length.toLocaleString()}
+            questions
+            ·
+            ${SUBJECT_CATALOG.reduce(
+              (total,s) =>
+                total + s.topics.length,
+              0
+            )}
+            topics
+            ·
+            ${SUBJECT_CATALOG.length}
+            subjects
+          </div>
+
+        </div>
+
+        <div class="settings-card">
+
+          <strong>
+            Import MCQs
+          </strong>
+
+          <div
+            class="small"
+            style="
+              margin:8px 0 16px
+            "
+          >
+            Upload a JSON question bank.
+          </div>
+
+          <input
+            class="file-input"
+            id="jsonInput"
+            type="file"
+            accept=".json,application/json"
+          >
+
+          <button
+            class="btn"
+            onclick="
+              document
+                .getElementById('jsonInput')
+                .click()
+            "
+          >
+            Upload JSON
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+
+  document
+    .getElementById("jsonInput")
+    .onchange = importJSON;
+}
+
+
+/* =========================================================
+   JSON IMPORT
+   ========================================================= */
+
+async function importJSON(event){
+
+  const file =
+    event.target.files[0];
+
+  if(!file){
+    return;
+  }
+
+  try{
+
+    const data =
+      JSON.parse(
+        await file.text()
+      );
+
+    const response =
+      await fetch(
+        "/api/question-banks/import",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              filename:file.name,
+              data
+            })
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if(!response.ok){
+      throw new Error(
+        result.error ||
+        "Import failed"
+      );
+    }
+
+    toast(
+      `${result.questionCount} questions imported`
+    );
+
+    await loadBanks();
+
+  }catch(error){
+
+    toast(
+      error.message
+    );
+  }
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+function showModal(html){
+
+  document.getElementById(
+    "modalBox"
+  ).innerHTML = html;
+
+  document.getElementById(
+    "modal"
+  ).style.display = "flex";
+}
+
+function closeModal(){
+
+  document.getElementById(
+    "modal"
+  ).style.display = "none";
+}
+
+
+/* =========================================================
+   MODAL BACKDROP
+   ========================================================= */
+
+document
+  .getElementById("modal")
+  .addEventListener(
+    "click",
+    event=>{
+
+      if(
+        event.target.id ===
+        "modal"
+      ){
+
+        closeModal();
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   HASH NAVIGATION
+   ========================================================= */
+
+window.addEventListener(
+  "hashchange",
+  ()=>{
+    render();
+  }
+);
+
+
+/* =========================================================
+   START APPLICATION
+   ========================================================= */
+
+loadBanks();
+
+</script>
+
+<script>
+/* ================================
+   FLO'S STUDY SPACE — SOUND SYSTEM
+   ================================ */
+
+const appSounds = {
+  click: new Audio("/sounds/click.mp3"),
+  correct: new Audio("/sounds/correct.mp3"),
+  wrong: new Audio("/sounds/wrong.mp3"),
+  complete: new Audio("/sounds/complete.mp3"),
+  trophy: new Audio("/sounds/trophy.mp3")
+};
+
+function playAppSound(name){
+  const sound = appSounds[name];
+
+  if(!sound) return;
+
+  sound.currentTime = 0;
+
+  sound.play().catch(() => {});
+}
+
+/* Quiz answer sounds */
+const originalAnswerQuiz = window.answerQuiz;
+
+window.answerQuiz = function(choice){
+
+  if(
+    typeof currentQuiz !== "undefined" &&
+    currentQuiz &&
+    !currentQuiz.answered
+  ){
+
+    const q =
+      currentQuiz.questions[
+        currentQuiz.index
+      ];
+
+    const result =
+      choice === "UNKNOWN"
+        ? "unknown"
+        : choice === q.answer
+          ? "correct"
+          : "wrong";
+
+    if(result === "correct"){
+      playAppSound("correct");
+    }
+    else if(result === "wrong"){
+      playAppSound("wrong");
+    }
+  }
+
+  return originalAnswerQuiz.apply(this, arguments);
+};
+
+/* General clickable UI sound */
+document.addEventListener("click", function(event){
+
+  const target =
+    event.target.closest(
+      "button, [role='button'], a, input[type='checkbox'], input[type='radio']"
+    );
+
+  if(!target) return;
+
+  /*
+   * Quiz answer buttons have their own correct/wrong sounds,
+   * so don't also play the generic click sound for them.
+   */
+  if(
+    target.id &&
+    /^opt-[ABCD]$/.test(target.id)
+  ){
+    return;
+  }
+
+  playAppSound("click");
+
+}, true);
+
+/* Test completion sound */
+const originalNextQuestion = window.nextQuestion;
+
+window.nextQuestion = function(){
+
+  const isLastQuestion =
+    typeof currentQuiz !== "undefined" &&
+    currentQuiz &&
+    currentQuiz.index ===
+      currentQuiz.questions.length - 1;
+
+  if(isLastQuestion){
+    playAppSound("complete");
+  }
+
+  return originalNextQuestion.apply(this, arguments);
+};
+
+/* Trophy sound */
+const originalRenderTrophies =
+  window.renderTrophies;
+
+if(typeof originalRenderTrophies === "function"){
+
+  window.renderTrophies = function(){
+
+    const before =
+      document.querySelectorAll(".trophy-card.earned").length;
+
+    const result =
+      originalRenderTrophies.apply(this, arguments);
+
+    const after =
+      document.querySelectorAll(".trophy-card.earned").length;
+
+    if(after > before){
+      playAppSound("trophy");
+    }
+
+    return result;
+  };
+}
+</script>
+
+</body>
+</html>

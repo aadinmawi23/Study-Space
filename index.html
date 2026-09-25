@@ -991,6 +991,235 @@ body.authenticated #loginScreen {
     left: 18px !important;
 }
 
+
+/* =========================================
+   MOBILE RESPONSIVE LAYOUT
+========================================= */
+
+@media (max-width: 768px) {
+
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .app {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Main content fills the phone */
+    .main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 24px 16px 50px !important;
+        box-sizing: border-box;
+    }
+
+    /* Sidebar becomes a mobile drawer */
+    .sidebar {
+        width: 245px !important;
+        min-width: 245px !important;
+        z-index: 2000;
+        transform: translateX(0);
+        transition: transform 0.25s ease;
+    }
+
+    /* Hide sidebar when collapsed */
+    .app.sidebar-collapsed .sidebar {
+        width: 245px !important;
+        min-width: 245px !important;
+        transform: translateX(-100%);
+        padding: initial !important;
+        background: initial !important;
+        border: initial !important;
+        box-shadow: initial !important;
+    }
+
+    .app.sidebar-collapsed .sidebar > *:not(.sidebar-toggle) {
+        display: block !important;
+    }
+
+    .app.sidebar-collapsed .main {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Toggle button */
+    .sidebar-toggle {
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 2100;
+    }
+
+    .app:not(.sidebar-collapsed) .sidebar-toggle {
+        left: 255px;
+    }
+
+    .app.sidebar-collapsed .sidebar-toggle {
+        left: 14px !important;
+    }
+
+    /* Page width */
+    .page {
+        width: 100%;
+        max-width: 100% !important;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    /* Headings */
+    .page h1 {
+        font-size: clamp(26px, 7vw, 38px);
+        line-height: 1.15;
+    }
+
+    .page h2 {
+        font-size: clamp(21px, 5.5vw, 30px);
+        line-height: 1.2;
+    }
+
+    .page h3 {
+        font-size: clamp(18px, 5vw, 24px);
+    }
+
+    /* Common card/grid layouts */
+    .cards,
+    .card-grid,
+    .subject-grid,
+    .dashboard-grid,
+    .stats-grid,
+    .review-grid {
+        grid-template-columns: 1fr !important;
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Prevent individual cards from overflowing */
+    .card,
+    .subject-card,
+    .dashboard-card,
+    .stat-card,
+    .review-card {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    /* Flexible rows become vertical */
+    .toolbar,
+    .header-row,
+    .page-header,
+    .action-row,
+    .button-row {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* Buttons remain comfortably tappable */
+    button {
+        min-height: 42px;
+    }
+
+    /* Tables can scroll instead of breaking the page */
+    .table-container,
+    .table-wrapper,
+    .data-table-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    /* Inputs */
+    input,
+    textarea,
+    select {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Modal/dialog sizing */
+    .modal,
+    .dialog,
+    .popup {
+        width: calc(100% - 28px) !important;
+        max-width: calc(100% - 28px) !important;
+        margin: 14px;
+        box-sizing: border-box;
+    }
+
+    /* Calendar */
+    .calendar,
+    .calendar-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    /* Navigation/tab rows */
+    .tabs,
+    .tab-bar,
+    .subject-tabs {
+        max-width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar,
+    .tab-bar::-webkit-scrollbar,
+    .subject-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Images and media */
+    img,
+    video,
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 430px) {
+
+    .main {
+        padding: 20px 12px 40px !important;
+    }
+
+    .page h1 {
+        font-size: 27px;
+    }
+
+    .page h2 {
+        font-size: 21px;
+    }
+
+    .card,
+    .subject-card,
+    .dashboard-card,
+    .stat-card,
+    .review-card {
+        padding: 16px !important;
+    }
+
+    button {
+        font-size: 14px;
+    }
+}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

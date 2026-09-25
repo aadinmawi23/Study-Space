@@ -19,15 +19,15 @@
     ]
   },
   "HISTORY-T1-0001": {
-    "attempts": 13,
-    "correct": 10,
+    "attempts": 14,
+    "correct": 11,
     "wrong": 3,
     "unknown": 0,
-    "streak": 0,
-    "mastery": 54,
-    "lastAttempted": "2026-09-25T17:26:13.329Z",
-    "nextReview": "2026-09-26",
-    "interval": 0,
+    "streak": 1,
+    "mastery": 61,
+    "lastAttempted": "2026-09-25T19:25:30.521Z",
+    "nextReview": "2026-10-25",
+    "interval": 30,
     "history": [
       {
         "timestamp": "2026-09-25T16:00:42.658Z",
@@ -106,22 +106,28 @@
         "answer": "C",
         "result": "wrong",
         "correctAnswer": "B"
+      },
+      {
+        "timestamp": "2026-09-25T19:25:30.521Z",
+        "answer": "B",
+        "result": "correct",
+        "correctAnswer": "B"
       }
     ],
     "normalInterval": 30,
     "normalNextReview": "2026-10-25",
-    "recovery": true
+    "recovery": false
   },
   "HISTORY-T1-0002": {
-    "attempts": 2,
-    "correct": 2,
+    "attempts": 3,
+    "correct": 3,
     "wrong": 0,
     "unknown": 0,
-    "streak": 2,
-    "mastery": 82,
-    "lastAttempted": "2026-09-25T16:30:21.192Z",
-    "nextReview": "2026-09-28",
-    "interval": 3,
+    "streak": 3,
+    "mastery": 88,
+    "lastAttempted": "2026-09-25T19:26:07.004Z",
+    "nextReview": "2026-10-02",
+    "interval": 7,
     "history": [
       {
         "timestamp": "2026-09-25T16:27:00.158Z",
@@ -134,8 +140,16 @@
         "answer": "C",
         "result": "correct",
         "correctAnswer": "C"
+      },
+      {
+        "timestamp": "2026-09-25T19:26:07.004Z",
+        "answer": "C",
+        "result": "correct",
+        "correctAnswer": "C"
       }
-    ]
+    ],
+    "normalInterval": 7,
+    "normalNextReview": "2026-10-02"
   },
   "HISTORY-T1-0003": {
     "attempts": 2,

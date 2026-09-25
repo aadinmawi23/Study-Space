@@ -1617,11 +1617,7 @@ async function signInWithGoogle(){
       options: {
 
         redirectTo:
-          window.location.origin,
-
-        queryParams: {
-          prompt: "select_account"
-        }
+          window.location.origin
 
       }
 
@@ -1645,120 +1641,53 @@ async function signInWithGoogle(){
 
 async function signOutFromGoogle() {
 
-  console.log("Starting sign out...");
-
-  /* Immediately prevent repeated clicks */
-  document.querySelectorAll(
-    ".account-signout, .account-signout-button"
-  ).forEach(button => {
-    button.disabled = true;
-    button.textContent = "Signing out...";
-  });
-
-  /*
-    Clear the local UI immediately.
-    This guarantees the account icon changes
-    even if Google/Supabase takes too long.
-  */
-  supabaseSession = null;
-
   try {
 
-    /*
-      Tell Supabase to sign out, but NEVER allow
-      this request to keep the page stuck.
-    */
-    if (supabaseClient) {
-
-      const signOutPromise =
-        supabaseClient.auth.signOut();
-
-      await Promise.race([
-        signOutPromise,
-        new Promise(resolve =>
-          setTimeout(resolve, 3000)
-        )
-      ]);
-
+    if (!supabaseClient) {
+      console.error("Supabase client is not initialized.");
+      return;
     }
+
+    const { error } =
+      await supabaseClient.auth.signOut();
+
+    /*
+      Only continue if Supabase successfully
+      disconnected the cloud session.
+    */
+    if (error) {
+      console.error(
+        "Sign-out failed:",
+        error
+      );
+      return;
+    }
+
+    /*
+      Supabase confirmed sign-out.
+      Remember this so the refreshed page
+      can show the Signed out indicator.
+    */
+    sessionStorage.setItem(
+      "floStudySpaceSignedOut",
+      "1"
+    );
+
+    supabaseSession = null;
+
+    /*
+      Refresh only after confirmed sign-out.
+    */
+    window.location.reload();
 
   } catch (error) {
 
-    console.warn(
-      "Supabase sign-out request failed or timed out:",
+    console.error(
+      "Sign-out error:",
       error
     );
 
-  } finally {
-
-    /*
-      Force the application into logged-out state.
-    */
-    supabaseSession = null;
-
-    try {
-      sessionStorage.setItem(
-        "floStudySpaceSignedOut",
-        "1"
-      );
-
-      /*
-        Show the same status indication used
-        for successful sign-in.
-      */
-      if (
-        typeof showAuthStatusToast ===
-        "function"
-      ) {
-        showAuthStatusToast("Signed out");
-      }
-    } catch {}
-
-    /*
-      Close account panels.
-    */
-    document
-      .querySelectorAll(
-        ".account-panel, .account-menu"
-      )
-      .forEach(panel => {
-        panel.classList.remove("open");
-      });
-
-    /*
-      Restore the default person icon immediately.
-    */
-    if (
-      typeof refreshAuthUI ===
-      "function"
-    ) {
-      refreshAuthUI();
-    }
-
-    if (
-      typeof updateAuthenticationUI ===
-      "function"
-    ) {
-      updateAuthenticationUI();
-    }
-
-    if (
-      typeof updateAccountUI ===
-      "function"
-    ) {
-      updateAccountUI();
-    }
-
-    /*
-      ALWAYS reload.
-      Do not wait for Google.
-    */
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-
   }
-
 }
 
 </script>
@@ -1929,18 +1858,6 @@ async function signOutFromGoogle() {
 }
 
 </style>
-
-<style>
-.page-label {
-    margin-bottom: 8px;
-    color: #9A918B;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-}
-</style>
-
 </head>
 <body>
 <script>

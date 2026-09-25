@@ -31,66 +31,6 @@ const PERFORMANCE_FILE = path.join(DATA_DIR, "performance.json");
 
 app.use(express.json({ limit: "20mb" }));
 
-async function getAuthenticatedUser(req) {
-  const authHeader = req.headers.authorization || "";
-
-  if (!authHeader.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const accessToken = authHeader.slice(7);
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase configuration is missing.");
-  }
-
-  const supabase = createClient(
-    supabaseUrl,
-    supabaseKey
-  );
-
-  const {
-    data: { user },
-    error
-  } = await supabase.auth.getUser(accessToken);
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
-}
-
-async function getUserSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase configuration is missing.");
-  }
-
-  return createClient(
-    supabaseUrl,
-    supabaseKey
-  );
-}
-
-function requireAuthenticatedUser(user, res) {
-  if (!user) {
-    res.status(401).json({
-      error: "Authentication required."
-    });
-    return false;
-  }
-
-  return true;
-}
-
-
-
 app.get("/api/supabase-config", (_req, res) => {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;
@@ -108,101 +48,6 @@ app.get("/api/supabase-config", (_req, res) => {
 });
 
 app.use(express.urlencoded({ extended: true }));
-
-/* =======================================================
-   GOOGLE OAUTH DISCONNECT
-   Revokes the Google provider token before Supabase logout.
-======================================================= */
-
-app.post("/api/google/revoke", async (req, res) => {
-
-  try {
-
-    const providerToken =
-      String(req.body?.providerToken || "").trim();
-
-    if (!providerToken) {
-      return res.json({
-        ok: true,
-        revoked: false,
-        message: "No Google provider token was available."
-      });
-    }
-
-    const revokeResponse =
-      await fetch(
-        "https://oauth2.googleapis.com/revoke",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded"
-          },
-
-          body:
-            `token=${encodeURIComponent(providerToken)}`
-        }
-      );
-
-    /*
-      Google normally returns HTTP 200 after a successful
-      revocation. A 400 can also mean that the token has
-      already been revoked or is no longer valid.
-    */
-
-    if (
-      !revokeResponse.ok &&
-      revokeResponse.status !== 400
-    ) {
-
-      const details =
-        await revokeResponse.text();
-
-      console.error(
-        "Google token revocation failed:",
-        details
-      );
-
-      return res.status(502).json({
-        ok: false,
-        revoked: false,
-        error:
-          "Google token could not be revoked."
-      });
-
-    }
-
-    return res.json({
-      ok: true,
-      revoked: true
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Google revoke error:",
-      error
-    );
-
-    /*
-      Logout should still be allowed even if Google's
-      revoke endpoint is temporarily unavailable.
-    */
-
-    return res.status(200).json({
-      ok: false,
-      revoked: false,
-      error:
-        error.message ||
-        "Google revoke request failed."
-    });
-
-  }
-
-});
-
-
 
 /* =======================================================
    BASIC HELPERS
@@ -1213,76 +1058,11 @@ app.post(
 
 app.get(
   "/api/performance",
-  async (req, res) => {
+  async (_req, res) => {
 
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const supabase =
-        await getUserSupabaseClient();
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const performance = {};
-
-      (data || []).forEach(row => {
-
-        performance[row.question_id] = {
-
-          attempts: row.attempts,
-          correct: row.correct,
-          wrong: row.wrong,
-          unknown: row.unknown,
-          streak: row.streak,
-          mastery: row.mastery,
-          lastAttempted: row.last_attempted,
-          nextReview: row.next_review,
-          interval: row.interval,
-          normalInterval: row.normal_interval,
-          normalNextReview: row.normal_next_review,
-          recovery: row.recovery,
-          history: row.history || []
-
-        };
-
-      });
-
-      res.json(performance);
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Performance load error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not load performance."
-        });
-
-    }
+    res.json(
+      await readPerformance()
+    );
 
   }
 );
@@ -1348,13 +1128,6 @@ app.post(
 
     try {
 
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
       const {
         questionId,
         answer,
@@ -1418,46 +1191,8 @@ app.post(
 
       }
 
-      const supabase =
-        await getUserSupabaseClient();
-
-      const {
-        data: existingRow,
-        error: loadError
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("question_id", questionId)
-        .maybeSingle();
-
-      if (loadError) {
-        throw loadError;
-      }
-
-      const performance = {};
-
-      if (existingRow) {
-
-        performance[questionId] = {
-
-          attempts: existingRow.attempts,
-          correct: existingRow.correct,
-          wrong: existingRow.wrong,
-          unknown: existingRow.unknown,
-          streak: existingRow.streak,
-          mastery: existingRow.mastery,
-          lastAttempted: existingRow.last_attempted,
-          nextReview: existingRow.next_review,
-          interval: existingRow.interval,
-          normalInterval: existingRow.normal_interval,
-          normalNextReview: existingRow.normal_next_review,
-          recovery: existingRow.recovery,
-          history: existingRow.history || []
-
-        };
-
-      }
+      const performance =
+        await readPerformance();
 
       if (
         !performance[questionId]
@@ -1751,32 +1486,9 @@ app.post(
 
       });
 
-      const {
-        error: saveError
-      } = await supabase
-        .from("question_performance")
-        .upsert({
-          user_id: user.id,
-          question_id: questionId,
-          attempts: p.attempts,
-          correct: p.correct,
-          wrong: p.wrong,
-          unknown: p.unknown,
-          streak: p.streak,
-          mastery: p.mastery,
-          last_attempted: p.lastAttempted,
-          next_review: p.nextReview,
-          interval: p.interval,
-          normal_interval: p.normalInterval,
-          normal_next_review: p.normalNextReview,
-          recovery: p.recovery,
-          history: p.history,
-          updated_at: new Date().toISOString()
-        });
-
-      if (saveError) {
-        throw saveError;
-      }
+      await writePerformance(
+        performance
+      );
 
       res.json({
 
@@ -1818,66 +1530,21 @@ app.post(
 
 app.get(
   "/api/review",
-  async (req, res) => {
+  async (_req, res) => {
 
-    try {
+    const database =
+      await loadQuestionBanks();
 
-      const user =
-        await getAuthenticatedUser(req);
+    const questions =
+      flattenBanks(
+        database
+      );
 
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
+    const performance =
+      await readPerformance();
 
-      const database =
-        await loadQuestionBanks();
-
-      const questions =
-        flattenBanks(
-          database
-        );
-
-      const supabase =
-        await getUserSupabaseClient();
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const performance = {};
-
-      (data || []).forEach(row => {
-
-        performance[row.question_id] = {
-
-          attempts: row.attempts,
-          correct: row.correct,
-          wrong: row.wrong,
-          unknown: row.unknown,
-          streak: row.streak,
-          mastery: row.mastery,
-          lastAttempted: row.last_attempted,
-          nextReview: row.next_review,
-          interval: row.interval,
-          normalInterval: row.normal_interval,
-          normalNextReview: row.normal_next_review,
-          recovery: row.recovery,
-          history: row.history || []
-
-        };
-
-      });
-
-      const todayKey =
-        today();
+    const todayKey =
+      today();
 
     const due =
       questions
@@ -1927,27 +1594,6 @@ app.get(
 
     });
 
-    }
-
-    catch (error) {
-
-      console.error(
-        "Review error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-
-          error:
-            error.message ||
-            "Could not load review data."
-
-        });
-
-    }
-
   }
 );
 
@@ -1957,65 +1603,20 @@ app.get(
 
 app.get(
   "/api/review-calendar",
-  async (req, res) => {
+  async (_req, res) => {
 
-    try {
+    const database =
+      await loadQuestionBanks();
 
-      const user =
-        await getAuthenticatedUser(req);
+    const questions =
+      flattenBanks(
+        database
+      );
 
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
+    const performance =
+      await readPerformance();
 
-      const database =
-        await loadQuestionBanks();
-
-      const questions =
-        flattenBanks(
-          database
-        );
-
-      const supabase =
-        await getUserSupabaseClient();
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const performance = {};
-
-      (data || []).forEach(row => {
-
-        performance[row.question_id] = {
-
-          attempts: row.attempts,
-          correct: row.correct,
-          wrong: row.wrong,
-          unknown: row.unknown,
-          streak: row.streak,
-          mastery: row.mastery,
-          lastAttempted: row.last_attempted,
-          nextReview: row.next_review,
-          interval: row.interval,
-          normalInterval: row.normal_interval,
-          normalNextReview: row.normal_next_review,
-          recovery: row.recovery,
-          history: row.history || []
-
-        };
-
-      });
-
-      const calendar = {};
+    const calendar = {};
 
     /*
      * Group questions by topic and subject.
@@ -2062,25 +1663,6 @@ app.get(
     res.json({
       calendar
     });
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Review calendar error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not load review calendar."
-        });
-
-    }
 
   }
 );

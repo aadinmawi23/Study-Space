@@ -11600,6 +11600,8 @@ async function ensureUsername() {
         currentUsername ||
         "Player";
 
+      renderLobby();
+
       try{
 
         await createPersistentChallengeRoom();
@@ -11613,27 +11615,10 @@ async function ensureUsername() {
 
         toast(
           error?.message ||
-          "Could not save the room."
+          "Could not save the room. The lobby is still open."
         );
 
-        challenge.roomCode = null;
-
-        return;
-
       }
-
-      const connected =
-        await connectRoom();
-
-      if(!connected){
-        return;
-      }
-
-      await savePersistentChallengeRoom({
-        status:"waiting"
-      });
-
-      renderLobby();
 
     };
 

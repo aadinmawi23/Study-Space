@@ -64,12 +64,15 @@ async function getAuthenticatedUser(req) {
   return user;
 }
 
-async function getUserSupabaseClient() {
+async function getUserSupabaseClient(req) {
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase configuration is missing.");
+    throw new Error(
+      "Supabase service-role configuration is missing."
+    );
   }
 
   return createClient(
@@ -853,7 +856,7 @@ app.get(
       }
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data,
@@ -933,7 +936,7 @@ app.get(
       }
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data,
@@ -1027,7 +1030,7 @@ app.post(
       }
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data,
@@ -1134,7 +1137,7 @@ app.post(
       }
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data: room,
@@ -1263,7 +1266,7 @@ app.put(
         .toUpperCase();
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data: existingRoom,
@@ -1427,7 +1430,7 @@ app.post(
         .toUpperCase();
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data: room,
@@ -1912,7 +1915,7 @@ app.get(
       }
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data,
@@ -2106,7 +2109,7 @@ app.post(
       }
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data: existingRow,
@@ -2525,7 +2528,7 @@ app.get(
         );
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data,
@@ -2664,7 +2667,7 @@ app.get(
         );
 
       const supabase =
-        await getUserSupabaseClient();
+        await getUserSupabaseClient(req);
 
       const {
         data,

@@ -9476,21 +9476,34 @@ async function ensureUsername() {
 }
 
 .flo-score-card.score-flash-green{
-  animation:floScoreGreen .9s ease;
+  animation:floScoreGreen 1.6s ease;
 }
 
 .flo-score-card.score-flash-red{
-  animation:floScoreRed .9s ease;
+  animation:floScoreRed 1.6s ease;
 }
 
 @keyframes floScoreGreen{
   0%,100%{
     border-color:#e5dcd2;
     box-shadow:none;
+    transform:scale(1);
   }
-  25%,60%{
+
+  6%,19%,32%,45%{
     border-color:#789572;
-    box-shadow:0 0 0 4px rgba(120,149,114,.18);
+    box-shadow:
+      0 0 0 4px rgba(120,149,114,.30),
+      0 0 16px rgba(120,149,114,.70),
+      0 0 34px rgba(120,149,114,.48),
+      0 0 52px rgba(120,149,114,.25);
+    transform:scale(1.035);
+  }
+
+  12%,25%,38%,51%{
+    border-color:#e5dcd2;
+    box-shadow:none;
+    transform:scale(1);
   }
 }
 
@@ -9498,10 +9511,23 @@ async function ensureUsername() {
   0%,100%{
     border-color:#e5dcd2;
     box-shadow:none;
+    transform:scale(1);
   }
-  25%,60%{
+
+  6%,19%,32%,45%{
     border-color:#b57d77;
-    box-shadow:0 0 0 4px rgba(181,125,119,.16);
+    box-shadow:
+      0 0 0 4px rgba(181,125,119,.30),
+      0 0 16px rgba(181,125,119,.70),
+      0 0 34px rgba(181,125,119,.48),
+      0 0 52px rgba(181,125,119,.25);
+    transform:scale(1.035);
+  }
+
+  12%,25%,38%,51%{
+    border-color:#e5dcd2;
+    box-shadow:none;
+    transform:scale(1);
   }
 }
 
@@ -10887,11 +10913,16 @@ async function ensureUsername() {
           room.status === "paused";
 
         challenge.questions =
-          allQuestions().filter(q =>
-            challenge.questionIds.includes(
-              q.id
+          challenge.questionIds
+            .map(
+              id =>
+                allQuestions().find(
+                  q =>
+                    String(q.id) ===
+                    String(id)
+                )
             )
-          );
+            .filter(Boolean);
 
         challenge.opponentJoined =
           !!room.guest_user_id;
@@ -11123,126 +11154,6 @@ async function ensureUsername() {
             Could not load saved rooms.
           </div>
         `;
-
-      }
-
-    };
-
-
-  window.__floReturnToChallengeRoom =
-    async function(roomCode){
-
-      if(!roomCode){
-        return;
-      }
-
-      if(!supabaseSession?.user){
-
-        toast(
-          "Sign in before returning to a room."
-        );
-
-        return;
-
-      }
-
-      try{
-
-        const room =
-          await loadPersistentChallengeRoom(
-            roomCode
-          );
-
-        if(!room){
-
-          toast(
-            "That room could not be found."
-          );
-
-          return;
-
-        }
-
-        challenge.roomCode =
-          room.room_code;
-
-        challenge.isHost =
-          supabaseSession.user.id ===
-          room.host_user_id;
-
-        challenge.username =
-          currentUsername ||
-          room.guest_username ||
-          room.host_username ||
-          "";
-
-        restorePersistentChallengeRoom(
-          room
-        );
-
-        challenge.questions =
-          allQuestions().filter(q =>
-            challenge.questionIds.includes(
-              q.id
-            )
-          );
-
-        challenge.opponentJoined =
-          !!room.guest_user_id;
-
-        await connectRoom();
-
-        if(challenge.isHost){
-
-          broadcast(
-            "flo-room-state",
-            getRoomState()
-          );
-
-        }else{
-
-          broadcast(
-            "flo-join",
-            {
-              playerId:
-                challenge.playerId,
-
-              username:
-                challenge.username
-            }
-          );
-
-        }
-
-        window.__floCloseChallengeModal();
-
-        if(
-          room.status === "in_progress" &&
-          room.host_user_id &&
-          room.guest_user_id
-        ){
-
-          beginChallenge(
-            challenge.questionIds
-          );
-
-        }else{
-
-          renderLobby();
-
-        }
-
-      }catch(error){
-
-        console.error(
-          "Could not return to challenge room:",
-          error
-        );
-
-        toast(
-          error.message ||
-          "Could not reopen that room."
-        );
 
       }
 
@@ -13700,7 +13611,7 @@ async function ensureUsername() {
         challenge.index
       ];
 
-    if(!slot?.me || !slot?.opponent){
+    if(!slot){
       return;
     }
 
@@ -13709,36 +13620,41 @@ async function ensureUsername() {
         "score-flash-green",
         "score-flash-red"
       );
+
+      void card.offsetWidth;
     });
 
-    if(slot.me.result === "correct"){
+    if(slot.me){
+
       scoreCards[0].classList.add(
-        "score-flash-green"
+        slot.me.result === "correct"
+          ? "score-flash-green"
+          : "score-flash-red"
       );
-    }else{
-      scoreCards[0].classList.add(
-        "score-flash-red"
-      );
+
     }
 
-    if(slot.opponent.result === "correct"){
+    if(slot.opponent){
+
       scoreCards[1].classList.add(
-        "score-flash-green"
+        slot.opponent.result === "correct"
+          ? "score-flash-green"
+          : "score-flash-red"
       );
-    }else{
-      scoreCards[1].classList.add(
-        "score-flash-red"
-      );
+
     }
 
     window.setTimeout(() => {
+
       scoreCards.forEach(card => {
         card.classList.remove(
           "score-flash-green",
           "score-flash-red"
         );
       });
-    }, 950);
+
+    }, 1600);
+
   }
 
 

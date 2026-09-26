@@ -1220,7 +1220,9 @@ app.post(
         throw error;
       }
 
-      res.json(data);
+      res.json({
+        room: data
+      });
 
     }
 

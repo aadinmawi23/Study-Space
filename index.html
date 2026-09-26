@@ -11455,6 +11455,11 @@ async function ensureUsername() {
                 channelName
               );
 
+              challenge.realtimeStatus =
+                "Connected: " + channelName;
+
+              renderLobby();
+
               resolve(
                 true
               );
@@ -12224,6 +12229,13 @@ async function ensureUsername() {
             ? "Share this code with the other player."
             : "You are in the challenge room."
         }
+      </p>
+
+      <div style="font-size:12px;opacity:.7;margin:8px 0;">
+        Realtime: ${escapeHTML(challenge.realtimeStatus || "Connecting…")}
+      </div>
+
+      <p class="flo-quiz-subtitle">
       </p>
 
 

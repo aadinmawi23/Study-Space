@@ -11752,6 +11752,13 @@ async function ensureUsername() {
 
         await createPersistentChallengeRoom();
 
+        const connected =
+          await connectRoom();
+
+        if(!connected){
+          return;
+        }
+
       }catch(error){
 
         console.error(

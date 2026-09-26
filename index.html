@@ -12122,6 +12122,20 @@ async function ensureUsername() {
       );
 
 
+      try{
+
+        await savePersistentChallengeRoom();
+
+      }catch(error){
+
+        console.error(
+          "Could not persist challenge ready state:",
+          error
+        );
+
+      }
+
+
       if(
         challenge.isHost
       ){

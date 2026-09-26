@@ -11431,8 +11431,6 @@ async function ensureUsername() {
     challenge.channel =
       channel;
 
-    startChallengeLobbyPolling();
-
 
     return new Promise(
       resolve => {
@@ -11459,6 +11457,8 @@ async function ensureUsername() {
 
               challenge.realtimeStatus =
                 "Connected: " + channelName;
+
+              startChallengeLobbyPolling();
 
               renderLobby();
 

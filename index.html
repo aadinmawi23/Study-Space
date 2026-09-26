@@ -1433,6 +1433,10 @@ async function initializeSupabase() {
 
               save();
 
+              if(location.hash.slice(1) === "review"){
+                render("review");
+              }
+
               console.log(
                 "Performance loaded after sign-in:",
                 Object.keys(serverPerformance).length,

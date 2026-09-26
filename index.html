@@ -9577,13 +9577,400 @@ async function ensureUsername() {
 
     active:false,
 
-    finished:false
+    finished:false,
+
+    resumeMode:false
 
   };
 
 
   window.__floChallenge =
     challenge;
+
+
+  /*
+   * ========================================================
+   * TWO-PLAYER ROOM PERSISTENCE
+   * ========================================================
+   */
+
+  async function floChallengeApi(
+    path,
+    options = {}
+  ){
+
+    if(!supabaseSession?.access_token){
+      throw new Error("You must be signed in.");
+    }
+
+    const response =
+      await fetch(
+        path,
+        {
+          ...options,
+          headers:{
+            "Content-Type":"application/json",
+            "Authorization":
+              `Bearer ${supabaseSession.access_token}`,
+            ...(options.headers || {})
+          }
+        }
+      );
+
+    let data = null;
+
+    try{
+      data = await response.json();
+    }catch(_){}
+
+    if(!response.ok){
+      throw new Error(
+        data?.error ||
+        "Challenge room request failed."
+      );
+    }
+
+    return data;
+  }
+
+
+  async function createPersistentChallengeRoom(){
+
+    if(!challenge.roomCode){
+      throw new Error("Room code is missing.");
+    }
+
+    return await floChallengeApi(
+      "/api/challenge-rooms",
+      {
+        method:"POST",
+        body:JSON.stringify({
+          roomCode:challenge.roomCode,
+          hostUsername:
+            currentUsername ||
+            challenge.username ||
+            "Player",
+          subjectName:
+            challenge.subjectName || "",
+          topic:
+            challenge.topic || "",
+          questionIds:
+            challenge.questionIds || []
+        })
+      }
+    );
+  }
+
+
+  async function joinPersistentChallengeRoom(){
+
+    if(!challenge.roomCode){
+      throw new Error("Room code is missing.");
+    }
+
+    return await floChallengeApi(
+      `/api/challenge-rooms/${encodeURIComponent(challenge.roomCode)}/join`,
+      {
+        method:"POST",
+        body:JSON.stringify({
+          username:
+            currentUsername ||
+            challenge.username ||
+            "Player"
+        })
+      }
+    );
+  }
+
+
+  async function loadPersistentChallengeRoom(
+    roomCode = challenge.roomCode
+  ){
+
+    if(!roomCode){
+      return null;
+    }
+
+    const result =
+      await floChallengeApi(
+        `/api/challenge-rooms/${encodeURIComponent(roomCode)}`
+      );
+
+    return result?.room || null;
+  }
+
+
+  async function loadMyChallengeRooms(){
+
+    const result =
+      await floChallengeApi(
+        "/api/challenge-rooms"
+      );
+
+    return Array.isArray(result?.rooms)
+      ? result.rooms
+      : [];
+  }
+
+
+  function challengeAnswersForStorage(){
+
+    const hostAnswers = {};
+    const guestAnswers = {};
+
+    Object.entries(
+      challenge.answers || {}
+    ).forEach(
+      ([index, answer]) => {
+
+        if(answer?.me){
+          if(challenge.isHost){
+            hostAnswers[index] =
+              answer.me;
+          }else{
+            guestAnswers[index] =
+              answer.me;
+          }
+        }
+
+        if(answer?.opponent){
+          if(challenge.isHost){
+            guestAnswers[index] =
+              answer.opponent;
+          }else{
+            hostAnswers[index] =
+              answer.opponent;
+          }
+        }
+
+      }
+    );
+
+    return {
+      hostAnswers,
+      guestAnswers
+    };
+  }
+
+
+  async function savePersistentChallengeRoom(
+    extra = {}
+  ){
+
+    if(!challenge.roomCode){
+      return null;
+    }
+
+    const {
+      hostAnswers,
+      guestAnswers
+    } =
+      challengeAnswersForStorage();
+
+    return await floChallengeApi(
+      `/api/challenge-rooms/${encodeURIComponent(challenge.roomCode)}`,
+      {
+        method:"PUT",
+        body:JSON.stringify({
+
+          status:
+            extra.status ??
+            (
+              challenge.finished
+                ? "completed"
+                : challenge.active
+                  ? "in_progress"
+                  : "waiting"
+            ),
+
+          currentIndex:
+            extra.currentIndex ??
+            challenge.index,
+
+          hostReady:
+            extra.hostReady ??
+            (
+              challenge.isHost
+                ? challenge.ready
+                : challenge.opponentReady
+            ),
+
+          guestReady:
+            extra.guestReady ??
+            (
+              challenge.isHost
+                ? challenge.opponentReady
+                : challenge.ready
+            ),
+
+          hostAnswers,
+          guestAnswers,
+
+          hostScore:
+            extra.hostScore ??
+            (
+              challenge.isHost
+                ? challenge.myScore
+                : challenge.opponentScore
+            ),
+
+          guestScore:
+            extra.guestScore ??
+            (
+              challenge.isHost
+                ? challenge.opponentScore
+                : challenge.myScore
+            ),
+
+          hostCorrect:
+            extra.hostCorrect ??
+            (
+              challenge.isHost
+                ? challenge.myCorrect
+                : challenge.opponentCorrect
+            ),
+
+          guestCorrect:
+            extra.guestCorrect ??
+            (
+              challenge.isHost
+                ? challenge.opponentCorrect
+                : challenge.myCorrect
+            )
+
+        })
+      }
+    );
+  }
+
+
+  function restorePersistentChallengeRoom(
+    room
+  ){
+
+    if(!room){
+      return false;
+    }
+
+    challenge.roomCode =
+      room.room_code;
+
+    challenge.subjectName =
+      room.subject_name || "";
+
+    challenge.topic =
+      room.topic || "";
+
+    challenge.questionIds =
+      Array.isArray(room.question_ids)
+        ? room.question_ids
+        : [];
+
+    challenge.opponentJoined =
+      Boolean(room.guest_user_id);
+
+    challenge.opponentUsername =
+      challenge.isHost
+        ? (
+            room.guest_username ||
+            "Waiting…"
+          )
+        : (
+            room.host_username ||
+            "Waiting…"
+          );
+
+    challenge.ready =
+      challenge.isHost
+        ? Boolean(room.host_ready)
+        : Boolean(room.guest_ready);
+
+    challenge.opponentReady =
+      challenge.isHost
+        ? Boolean(room.guest_ready)
+        : Boolean(room.host_ready);
+
+    challenge.index =
+      Number(room.current_index) || 0;
+
+    const hostAnswers =
+      room.host_answers &&
+      typeof room.host_answers === "object"
+        ? room.host_answers
+        : {};
+
+    const guestAnswers =
+      room.guest_answers &&
+      typeof room.guest_answers === "object"
+        ? room.guest_answers
+        : {};
+
+    challenge.answers = {};
+
+    const answerIndexes =
+      new Set([
+        ...Object.keys(hostAnswers),
+        ...Object.keys(guestAnswers)
+      ]);
+
+    answerIndexes.forEach(
+      index => {
+
+        challenge.answers[index] = {
+          me:
+            challenge.isHost
+              ? hostAnswers[index] || null
+              : guestAnswers[index] || null,
+
+          opponent:
+            challenge.isHost
+              ? guestAnswers[index] || null
+              : hostAnswers[index] || null
+        };
+
+      }
+    );
+
+    challenge.myScore =
+      challenge.isHost
+        ? Number(room.host_score) || 0
+        : Number(room.guest_score) || 0;
+
+    challenge.opponentScore =
+      challenge.isHost
+        ? Number(room.guest_score) || 0
+        : Number(room.host_score) || 0;
+
+    challenge.myCorrect =
+      challenge.isHost
+        ? Number(room.host_correct) || 0
+        : Number(room.guest_correct) || 0;
+
+    challenge.opponentCorrect =
+      challenge.isHost
+        ? Number(room.guest_correct) || 0
+        : Number(room.host_correct) || 0;
+
+    challenge.active =
+      room.status === "in_progress" ||
+      room.status === "paused";
+
+    challenge.finished =
+      room.status === "completed";
+
+    return true;
+  }
+
+
+  window.__floChallengePersistence = {
+    createPersistentChallengeRoom,
+    joinPersistentChallengeRoom,
+    loadPersistentChallengeRoom,
+    loadMyChallengeRooms,
+    savePersistentChallengeRoom,
+    restorePersistentChallengeRoom
+  };
+
 
 
   /*
@@ -9863,6 +10250,598 @@ async function ensureUsername() {
    * ========================================================
    */
 
+  async function renderPersistentChallengeRooms(){
+
+      const container =
+        document.getElementById(
+          "floChallengeSavedRooms"
+        );
+
+      if(!container){
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+          YOUR OPEN ROOMS
+        </div>
+
+        <div style="
+          padding:16px;
+          border:1px solid rgba(0,0,0,.08);
+          border-radius:14px;
+          text-align:center;
+          color:#777;
+        ">
+          Loading rooms…
+        </div>
+      `;
+
+      try{
+
+        const rooms =
+          await loadMyChallengeRooms();
+
+        if(!rooms || !rooms.length){
+
+          container.innerHTML = `
+            <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+              YOUR OPEN ROOMS
+            </div>
+
+            <div style="
+              padding:16px;
+              border:1px solid rgba(0,0,0,.08);
+              border-radius:14px;
+              text-align:center;
+              color:#777;
+            ">
+              No saved rooms.
+            </div>
+          `;
+
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+            YOUR OPEN ROOMS
+          </div>
+
+          ${rooms.map(room => {
+
+            const isHost =
+              supabaseSession?.user?.id ===
+              room.host_user_id;
+
+            const opponent =
+              isHost
+                ? (room.guest_username || "Waiting for player…")
+                : (room.host_username || "Host");
+
+            const statusLabel =
+              room.status === "in_progress"
+                ? "IN PROGRESS"
+                : room.status === "paused"
+                  ? "PAUSED"
+                  : "WAITING";
+
+            const progress =
+              Number(room.current_index || 0) + 1;
+
+            const code =
+              String(room.room_code || "");
+
+            return `
+              <div style="
+                margin-top:10px;
+                padding:15px;
+                border:1px solid rgba(0,0,0,.08);
+                border-radius:14px;
+                background:rgba(255,255,255,.7);
+              ">
+
+                <div style="
+                  display:flex;
+                  justify-content:space-between;
+                  align-items:center;
+                  gap:12px;
+                ">
+
+                  <div style="min-width:0;">
+
+                    <div style="
+                      font-weight:700;
+                      font-size:15px;
+                    ">
+                      ${room.topic || "Challenge"}
+                    </div>
+
+                    <div style="
+                      margin-top:4px;
+                      font-size:12px;
+                      color:#777;
+                    ">
+                      Room ${code}
+                      · ${statusLabel}
+                    </div>
+
+                    <div style="
+                      margin-top:4px;
+                      font-size:12px;
+                      color:#777;
+                    ">
+                      ${opponent}
+                      · Question ${progress}
+                    </div>
+
+                  </div>
+
+                  <button
+                    class="btn"
+                    onclick='
+                      window.__floReturnToChallengeRoom(
+                        ${JSON.stringify(code)}
+                      )
+                    '
+                  >
+                    Return to Room
+                  </button>
+
+                </div>
+
+              </div>
+            `;
+
+          }).join("")}
+        `;
+
+      }catch(error){
+
+        console.error(
+          "Could not load saved challenge rooms:",
+          error
+        );
+
+        container.innerHTML = `
+          <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+            YOUR OPEN ROOMS
+          </div>
+
+          <div style="
+            padding:16px;
+            border:1px solid rgba(0,0,0,.08);
+            border-radius:14px;
+            text-align:center;
+            color:#777;
+          ">
+            Could not load saved rooms.
+          </div>
+        `;
+
+      }
+
+    };
+
+
+  window.__floReturnToChallengeRoom =
+    async function(roomCode){
+
+      if(!roomCode){
+        return;
+      }
+
+      if(!supabaseSession?.user){
+
+        toast(
+          "Sign in before returning to a room."
+        );
+
+        return;
+
+      }
+
+      try{
+
+        const room =
+          await loadPersistentChallengeRoom(
+            roomCode
+          );
+
+        if(!room){
+
+          toast(
+            "That room could not be found."
+          );
+
+          return;
+
+        }
+
+        challenge.roomCode =
+          room.room_code;
+
+        challenge.isHost =
+          supabaseSession.user.id ===
+          room.host_user_id;
+
+        challenge.username =
+          currentUsername ||
+          room.guest_username ||
+          room.host_username ||
+          "";
+
+        restorePersistentChallengeRoom(
+          room
+        );
+
+        challenge.resumeMode =
+          room.status === "in_progress" ||
+          room.status === "paused";
+
+        challenge.questions =
+          allQuestions().filter(q =>
+            challenge.questionIds.includes(
+              q.id
+            )
+          );
+
+        challenge.opponentJoined =
+          !!room.guest_user_id;
+
+        await connectRoom();
+
+        if(challenge.isHost){
+
+          broadcast(
+            "flo-room-state",
+            getRoomState()
+          );
+
+        }else{
+
+          broadcast(
+            "flo-join",
+            {
+              playerId:
+                challenge.playerId,
+
+              username:
+                challenge.username
+            }
+          );
+
+        }
+
+        window.__floCloseChallengeModal();
+
+        if(
+          room.status === "in_progress" &&
+          room.host_user_id &&
+          room.guest_user_id
+        ){
+
+          beginChallenge(
+            challenge.questionIds
+          );
+
+        }else{
+
+          renderLobby();
+
+        }
+
+      }catch(error){
+
+        console.error(
+          "Could not return to challenge room:",
+          error
+        );
+
+        toast(
+          error.message ||
+          "Could not reopen that room."
+        );
+
+      }
+
+    };
+
+
+  async function renderPersistentChallengeRooms(){
+
+      const container =
+        document.getElementById(
+          "floChallengeSavedRooms"
+        );
+
+      if(!container){
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+          YOUR OPEN ROOMS
+        </div>
+
+        <div style="
+          padding:16px;
+          border:1px solid rgba(0,0,0,.08);
+          border-radius:14px;
+          text-align:center;
+          color:#777;
+        ">
+          Loading rooms…
+        </div>
+      `;
+
+      try{
+
+        const rooms =
+          await loadMyChallengeRooms();
+
+        if(!rooms || !rooms.length){
+
+          container.innerHTML = `
+            <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+              YOUR OPEN ROOMS
+            </div>
+
+            <div style="
+              padding:16px;
+              border:1px solid rgba(0,0,0,.08);
+              border-radius:14px;
+              text-align:center;
+              color:#777;
+            ">
+              No saved rooms.
+            </div>
+          `;
+
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+            YOUR OPEN ROOMS
+          </div>
+
+          ${rooms.map(room => {
+
+            const isHost =
+              supabaseSession?.user?.id ===
+              room.host_user_id;
+
+            const opponent =
+              isHost
+                ? (room.guest_username || "Waiting for player…")
+                : (room.host_username || "Host");
+
+            const statusLabel =
+              room.status === "in_progress"
+                ? "IN PROGRESS"
+                : room.status === "paused"
+                  ? "PAUSED"
+                  : "WAITING";
+
+            const progress =
+              Number(room.current_index || 0) + 1;
+
+            const code =
+              String(room.room_code || "");
+
+            return `
+              <div style="
+                margin-top:10px;
+                padding:15px;
+                border:1px solid rgba(0,0,0,.08);
+                border-radius:14px;
+                background:rgba(255,255,255,.7);
+              ">
+
+                <div style="
+                  display:flex;
+                  justify-content:space-between;
+                  align-items:center;
+                  gap:12px;
+                ">
+
+                  <div style="min-width:0;">
+
+                    <div style="
+                      font-weight:700;
+                      font-size:15px;
+                    ">
+                      ${room.topic || "Challenge"}
+                    </div>
+
+                    <div style="
+                      margin-top:4px;
+                      font-size:12px;
+                      color:#777;
+                    ">
+                      Room ${code}
+                      · ${statusLabel}
+                    </div>
+
+                    <div style="
+                      margin-top:4px;
+                      font-size:12px;
+                      color:#777;
+                    ">
+                      ${opponent}
+                      · Question ${progress}
+                    </div>
+
+                  </div>
+
+                  <button
+                    class="btn"
+                    onclick='
+                      window.__floReturnToChallengeRoom(
+                        ${JSON.stringify(code)}
+                      )
+                    '
+                  >
+                    Return to Room
+                  </button>
+
+                </div>
+
+              </div>
+            `;
+
+          }).join("")}
+        `;
+
+      }catch(error){
+
+        console.error(
+          "Could not load saved challenge rooms:",
+          error
+        );
+
+        container.innerHTML = `
+          <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+            YOUR OPEN ROOMS
+          </div>
+
+          <div style="
+            padding:16px;
+            border:1px solid rgba(0,0,0,.08);
+            border-radius:14px;
+            text-align:center;
+            color:#777;
+          ">
+            Could not load saved rooms.
+          </div>
+        `;
+
+      }
+
+    };
+
+
+  window.__floReturnToChallengeRoom =
+    async function(roomCode){
+
+      if(!roomCode){
+        return;
+      }
+
+      if(!supabaseSession?.user){
+
+        toast(
+          "Sign in before returning to a room."
+        );
+
+        return;
+
+      }
+
+      try{
+
+        const room =
+          await loadPersistentChallengeRoom(
+            roomCode
+          );
+
+        if(!room){
+
+          toast(
+            "That room could not be found."
+          );
+
+          return;
+
+        }
+
+        challenge.roomCode =
+          room.room_code;
+
+        challenge.isHost =
+          supabaseSession.user.id ===
+          room.host_user_id;
+
+        challenge.username =
+          currentUsername ||
+          room.guest_username ||
+          room.host_username ||
+          "";
+
+        restorePersistentChallengeRoom(
+          room
+        );
+
+        challenge.questions =
+          allQuestions().filter(q =>
+            challenge.questionIds.includes(
+              q.id
+            )
+          );
+
+        challenge.opponentJoined =
+          !!room.guest_user_id;
+
+        await connectRoom();
+
+        if(challenge.isHost){
+
+          broadcast(
+            "flo-room-state",
+            getRoomState()
+          );
+
+        }else{
+
+          broadcast(
+            "flo-join",
+            {
+              playerId:
+                challenge.playerId,
+
+              username:
+                challenge.username
+            }
+          );
+
+        }
+
+        window.__floCloseChallengeModal();
+
+        if(
+          room.status === "in_progress" &&
+          room.host_user_id &&
+          room.guest_user_id
+        ){
+
+          beginChallenge(
+            challenge.questionIds
+          );
+
+        }else{
+
+          renderLobby();
+
+        }
+
+      }catch(error){
+
+        console.error(
+          "Could not return to challenge room:",
+          error
+        );
+
+        toast(
+          error.message ||
+          "Could not reopen that room."
+        );
+
+      }
+
+    };
+
+
   window.__floOpenChallengeChoice =
     function(){
 
@@ -9937,6 +10916,9 @@ async function ensureUsername() {
         </button>
 
 
+        <div id="floChallengeSavedRooms"></div>
+
+
         <div class="flo-quiz-actions">
 
           <button
@@ -9959,6 +10941,8 @@ async function ensureUsername() {
         "aria-hidden",
         "false"
       );
+
+      renderPersistentChallengeRooms();
 
     };
 
@@ -10278,6 +11262,15 @@ async function ensureUsername() {
 
       }
 
+      if(!supabaseSession?.user){
+
+        toast(
+          "Please sign in before creating a room."
+        );
+
+        return;
+
+      }
 
       challenge.roomCode =
         createRoomCode();
@@ -10301,10 +11294,10 @@ async function ensureUsername() {
         false;
 
       challenge.subjectName =
-        window.pendingQuizSubject;
+        window.pendingQuizSubject || "";
 
       challenge.topic =
-        window.pendingQuizTopic;
+        window.pendingQuizTopic || "";
 
       challenge.questionIds =
         questions.map(
@@ -10314,6 +11307,47 @@ async function ensureUsername() {
       challenge.questions =
         [...questions];
 
+      challenge.index = 0;
+
+      challenge.answers = {};
+
+      challenge.myScore = 0;
+
+      challenge.opponentScore = 0;
+
+      challenge.myCorrect = 0;
+
+      challenge.opponentCorrect = 0;
+
+      challenge.active = false;
+
+      challenge.finished = false;
+
+      challenge.username =
+        currentUsername ||
+        "Player";
+
+      try{
+
+        await createPersistentChallengeRoom();
+
+      }catch(error){
+
+        console.error(
+          "Create challenge room failed:",
+          error
+        );
+
+        toast(
+          error?.message ||
+          "Could not save the room."
+        );
+
+        challenge.roomCode = null;
+
+        return;
+
+      }
 
       const connected =
         await connectRoom();
@@ -10322,6 +11356,9 @@ async function ensureUsername() {
         return;
       }
 
+      await savePersistentChallengeRoom({
+        status:"waiting"
+      });
 
       renderLobby();
 
@@ -10455,15 +11492,22 @@ async function ensureUsername() {
 
       }
 
+      if(!supabaseSession?.user){
+
+        toast(
+          "Please sign in before joining a room."
+        );
+
+        return;
+
+      }
+
 
       challenge.roomCode =
         code;
 
       challenge.isHost =
         false;
-
-      challenge.opponentJoined =
-        true;
 
       challenge.ready =
         false;
@@ -10473,6 +11517,80 @@ async function ensureUsername() {
 
       challenge.opponentUsername =
         "Waiting for host…";
+
+      challenge.username =
+        currentUsername ||
+        "Player";
+
+
+      let room;
+
+      try{
+
+        const result =
+          await joinPersistentChallengeRoom();
+
+        room =
+          result?.room ||
+          await loadPersistentChallengeRoom(code);
+
+      }catch(error){
+
+        console.error(
+          "Join challenge room failed:",
+          error
+        );
+
+        toast(
+          error?.message ||
+          "Could not join this room."
+        );
+
+        challenge.roomCode = null;
+
+        return;
+
+      }
+
+
+      if(!room){
+
+        toast(
+          "That room could not be found."
+        );
+
+        challenge.roomCode = null;
+
+        return;
+
+      }
+
+
+      restorePersistentChallengeRoom(
+        room
+      );
+
+
+      const all =
+        allQuestions();
+
+      challenge.questions =
+        challenge.questionIds
+          .map(
+            id =>
+              all.find(
+                q =>
+                  String(q.id) ===
+                  String(id)
+              )
+          )
+          .filter(Boolean);
+
+
+      challenge.opponentJoined =
+        Boolean(
+          room.host_user_id
+        );
 
 
       const connected =
@@ -10991,19 +12109,31 @@ async function ensureUsername() {
 
 
         ${
-          challenge.isHost &&
-          bothReady
+          challenge.resumeMode &&
+          challenge.opponentJoined
             ? `
               <button
                 class="btn"
                 onclick="
-                  window.__floStartChallenge()
+                  window.__floResumeChallenge()
                 "
               >
-                Start Challenge
+                Resume Challenge
               </button>
             `
-            : ""
+            : challenge.isHost &&
+              bothReady
+                ? `
+                  <button
+                    class="btn"
+                    onclick="
+                      window.__floStartChallenge()
+                    "
+                  >
+                    Start Challenge
+                  </button>
+                `
+                : ""
         }
 
 
@@ -11031,6 +12161,89 @@ async function ensureUsername() {
     );
 
   }
+
+
+  window.__floResumeChallenge =
+    async function(){
+
+      if(!challenge.roomCode){
+        toast("No challenge room is open.");
+        return;
+      }
+
+      try{
+
+        const room =
+          await loadPersistentChallengeRoom(
+            challenge.roomCode
+          );
+
+        if(!room){
+          toast("The saved room could not be found.");
+          return;
+        }
+
+        restorePersistentChallengeRoom(
+          room
+        );
+
+        challenge.resumeMode = true;
+
+        challenge.questions =
+          allQuestions().filter(q =>
+            challenge.questionIds.includes(
+              q.id
+            )
+          );
+
+        if(!challenge.questions.length){
+          toast(
+            "The saved challenge questions could not be loaded."
+          );
+          return;
+        }
+
+        challenge.active = true;
+        challenge.finished = false;
+
+        await savePersistentChallengeRoom({
+          status:"in_progress",
+          currentIndex:challenge.index
+        });
+
+        broadcast(
+          "flo-start",
+          {
+            questionIds:
+              challenge.questionIds,
+
+            subjectName:
+              challenge.subjectName,
+
+            topic:
+              challenge.topic
+          }
+        );
+
+        window.__floCloseChallengeModal();
+
+        renderChallengeQuiz();
+
+      }catch(error){
+
+        console.error(
+          "Could not resume challenge:",
+          error
+        );
+
+        toast(
+          error.message ||
+          "Could not resume the challenge."
+        );
+
+      }
+
+    };
 
 
   window.__floCopyRoomCode =
@@ -11101,42 +12314,61 @@ async function ensureUsername() {
     };
 
 
-  function onStart(payload){
+  async function onStart(payload){
 
     if(!payload){
       return;
     }
 
-
-    if(
-      payload.subjectName
-    ){
-
+    if(payload.subjectName){
       challenge.subjectName =
         payload.subjectName;
-
     }
-
 
     if(payload.topic){
-
       challenge.topic =
         payload.topic;
-
     }
 
-
-    if(
-      Array.isArray(
-        payload.questionIds
-      )
-    ){
-
+    if(Array.isArray(payload.questionIds)){
       challenge.questionIds =
         payload.questionIds;
-
     }
 
+    /*
+     * Reload the persistent room before starting.
+     * This restores the shared question position,
+     * both players' saved answers, scores and
+     * correct-answer counts.
+     */
+
+    try{
+
+      const room =
+        await loadPersistentChallengeRoom(
+          challenge.roomCode
+        );
+
+      if(room){
+
+        restorePersistentChallengeRoom(
+          room
+        );
+
+        challenge.resumeMode =
+          room.status === "in_progress" ||
+          room.status === "paused";
+
+      }
+
+    }catch(error){
+
+      console.error(
+        "Could not restore challenge before start:",
+        error
+      );
+
+    }
 
     beginChallenge(
       challenge.questionIds
@@ -11152,7 +12384,7 @@ async function ensureUsername() {
 
 
     challenge.questions =
-      (ids || [])
+      (ids || challenge.questionIds || [])
         .map(
           id =>
             all.find(
@@ -11177,23 +12409,53 @@ async function ensureUsername() {
     }
 
 
-    challenge.index =
-      0;
+    challenge.questionIds =
+      challenge.questions.map(
+        q => q.id
+      );
 
-    challenge.answers =
-      {};
 
-    challenge.myScore =
-      0;
+    /*
+     * A room that has already been restored
+     * keeps its saved progress.
+     *
+     * A genuinely new challenge starts
+     * from the beginning.
+     */
 
-    challenge.opponentScore =
-      0;
+    const hasSavedProgress =
+      challenge.index > 0 ||
+      Object.keys(
+        challenge.answers || {}
+      ).length > 0 ||
+      challenge.myScore > 0 ||
+      challenge.opponentScore > 0 ||
+      challenge.myCorrect > 0 ||
+      challenge.opponentCorrect > 0;
 
-    challenge.myCorrect =
-      0;
 
-    challenge.opponentCorrect =
-      0;
+    if(!hasSavedProgress){
+
+      challenge.index =
+        0;
+
+      challenge.answers =
+        {};
+
+      challenge.myScore =
+        0;
+
+      challenge.opponentScore =
+        0;
+
+      challenge.myCorrect =
+        0;
+
+      challenge.opponentCorrect =
+        0;
+
+    }
+
 
     challenge.active =
       true;
@@ -11205,6 +12467,19 @@ async function ensureUsername() {
     window.__floCloseChallengeModal();
 
     renderChallengeQuiz();
+
+
+    savePersistentChallengeRoom({
+      status:"in_progress",
+      currentIndex:
+        challenge.index
+    }).catch(
+      error =>
+        console.error(
+          "Could not save challenge start:",
+          error
+        )
+    );
 
   }
 
@@ -11333,6 +12608,19 @@ async function ensureUsername() {
           result
 
         }
+      );
+
+
+      savePersistentChallengeRoom({
+        status:"in_progress",
+        currentIndex:
+          challenge.index
+      }).catch(
+        error =>
+          console.error(
+            "Could not save challenge answer:",
+            error
+          )
       );
 
 
@@ -11542,6 +12830,18 @@ async function ensureUsername() {
 
 
     renderChallengeQuiz();
+
+
+    savePersistentChallengeRoom({
+      status:"in_progress",
+      currentIndex:index
+    }).catch(
+      error =>
+        console.error(
+          "Could not save challenge advance:",
+          error
+        )
+    );
 
   }
 
@@ -11932,6 +13232,16 @@ async function ensureUsername() {
       challenge.finished =
         true;
 
+      savePersistentChallengeRoom({
+        status:"completed",
+        currentIndex:challenge.index
+      }).catch(error => {
+        console.error(
+          "Could not save completed challenge:",
+          error
+        );
+      });
+
 
       if(
         typeof playAppSound ===
@@ -12090,6 +13400,57 @@ async function ensureUsername() {
   window.__floLeaveChallenge =
     async function(){
 
+      /*
+       * IMPORTANT:
+       * Leaving only disconnects this browser from
+       * Realtime. The Supabase room itself remains open.
+       */
+
+      if(challenge.roomCode){
+
+        try{
+
+          await savePersistentChallengeRoom({
+            status:
+              challenge.finished
+                ? "completed"
+                : "paused"
+          });
+
+        }catch(error){
+
+          console.error(
+            "Could not save room before leaving:",
+            error
+          );
+
+        }
+
+        if(!challenge.finished){
+
+          try{
+
+            await floChallengeApi(
+              `/api/challenge-rooms/${encodeURIComponent(challenge.roomCode)}/leave`,
+              {
+                method:"POST"
+              }
+            );
+
+          }catch(error){
+
+            console.error(
+              "Could not update room leave state:",
+              error
+            );
+
+          }
+
+        }
+
+      }
+
+
       if(
         challenge.channel
       ){
@@ -12121,8 +13482,11 @@ async function ensureUsername() {
       challenge.channel =
         null;
 
-      challenge.roomCode =
-        null;
+      /*
+       * DO NOT clear roomCode.
+       * It is needed to identify the room when the
+       * player returns from the Two Player screen.
+       */
 
       challenge.active =
         false;
@@ -12135,6 +13499,9 @@ async function ensureUsername() {
 
       challenge.opponentReady =
         false;
+
+      challenge.opponentId =
+        null;
 
       challenge.opponentUsername =
         "Waiting…";
@@ -12188,6 +13555,26 @@ async function ensureUsername() {
 
 
     if(
+      challenge.roomCode
+    ){
+
+      savePersistentChallengeRoom({
+        status:
+          challenge.active
+            ? "paused"
+            : "waiting"
+      }).catch(
+        error =>
+          console.error(
+            "Could not save paused challenge:",
+            error
+          )
+      );
+
+    }
+
+
+    if(
       challenge.active
     ){
 
@@ -12196,7 +13583,7 @@ async function ensureUsername() {
 
 
       toast(
-        "The other player left the challenge."
+        "The other player left. Your room is saved and can be resumed."
       );
 
 

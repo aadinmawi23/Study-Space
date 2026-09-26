@@ -43,6 +43,27 @@ h2{font:42px Georgia,serif;margin:0 0 30px;letter-spacing:-1px}
 .subject-card{padding:20px;background:var(--card);border:1px solid rgba(220,211,201,.6);border-radius:22px;height:184px;min-height:184px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden}
 .subject-card:before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:var(--card-accent,#d9a27f)}
 .subject-card:hover{transform:translateY(-2px);transition:.15s}
+
+.subject-card{
+  transition:
+    transform .15s ease,
+    opacity .15s ease,
+    box-shadow .15s ease;
+}
+
+.subject-card-dragging{
+  opacity:.45;
+  transform:scale(.97);
+  cursor:grabbing !important;
+}
+
+.subject-card-drag-over{
+  transform:scale(1.025);
+  box-shadow:
+    0 0 0 2px rgba(139,121,104,.18),
+    0 8px 24px rgba(80,65,52,.08);
+}
+
 .subject-card h3{font:20px Georgia,serif;margin:0 38px 20px 2px;line-height:1.18}
 .more{position:absolute;right:25px;top:24px;border:0;background:transparent;font-size:21px;color:#938a81;cursor:pointer}
 .meta{font-size:13px;color:#91887e;margin-bottom:20px}
@@ -5158,7 +5179,32 @@ function renderHome(){
 
   /* SUBJECT CARDS */
 
-  SUBJECT_CATALOG.forEach(subject=>{
+  const savedSubjectOrder =
+    JSON.parse(
+      localStorage.getItem(
+        "floSubjectCardOrder"
+      ) || "[]"
+    );
+
+  const orderedSubjects = [
+    ...savedSubjectOrder
+      .map(key =>
+        SUBJECT_CATALOG.find(
+          subject =>
+            subject.key === key
+        )
+      )
+      .filter(Boolean),
+
+    ...SUBJECT_CATALOG.filter(
+      subject =>
+        !savedSubjectOrder.includes(
+          subject.key
+        )
+    )
+  ];
+
+  orderedSubjects.forEach(subject=>{
 
     const stats =
       subjectStats(subject);
@@ -5169,10 +5215,15 @@ function renderHome(){
     card.className =
       "subject-card";
 
+    card.draggable = true;
+
     card.style.setProperty(
       "--card-accent",
       subject.accent || "#d9a27f"
     );
+
+    card.dataset.subjectKey =
+      subject.key;
 
     card.innerHTML = `
 
@@ -5212,6 +5263,125 @@ function renderHome(){
       "click",
       ()=>{
         openSubject(subject.key);
+      }
+    );
+
+
+    /* DRAG AND DROP */
+
+    card.addEventListener(
+      "dragstart",
+      event=>{
+        card.classList.add(
+          "subject-card-dragging"
+        );
+
+        event.dataTransfer.effectAllowed =
+          "move";
+
+        event.dataTransfer.setData(
+          "text/plain",
+          subject.key
+        );
+      }
+    );
+
+    card.addEventListener(
+      "dragend",
+      ()=>{
+        card.classList.remove(
+          "subject-card-dragging"
+        );
+      }
+    );
+
+    card.addEventListener(
+      "dragover",
+      event=>{
+        event.preventDefault();
+
+        event.dataTransfer.dropEffect =
+          "move";
+
+        card.classList.add(
+          "subject-card-drag-over"
+        );
+      }
+    );
+
+    card.addEventListener(
+      "dragleave",
+      ()=>{
+        card.classList.remove(
+          "subject-card-drag-over"
+        );
+      }
+    );
+
+    card.addEventListener(
+      "drop",
+      event=>{
+        event.preventDefault();
+
+        card.classList.remove(
+          "subject-card-drag-over"
+        );
+
+        const draggedKey =
+          event.dataTransfer.getData(
+            "text/plain"
+          );
+
+        if(
+          !draggedKey ||
+          draggedKey === subject.key
+        ){
+          return;
+        }
+
+        const draggedCard =
+          [...grid.children].find(
+            child =>
+              child.dataset.subjectKey ===
+              draggedKey
+          );
+
+        if(!draggedCard){
+          return;
+        }
+
+        const rect =
+          card.getBoundingClientRect();
+
+        const insertBefore =
+          event.clientY <
+          rect.top +
+          rect.height / 2;
+
+        if(insertBefore){
+          grid.insertBefore(
+            draggedCard,
+            card
+          );
+        }else{
+          grid.insertBefore(
+            draggedCard,
+            card.nextSibling
+          );
+        }
+
+        const newOrder =
+          [...grid.querySelectorAll(
+            ".subject-card:not(.add-subject-card)"
+          )].map(
+            item =>
+              item.dataset.subjectKey
+          );
+
+        localStorage.setItem(
+          "floSubjectCardOrder",
+          JSON.stringify(newOrder)
+        );
       }
     );
 

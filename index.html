@@ -9969,7 +9969,141 @@ async function ensureUsername() {
         `/api/challenge-rooms/${encodeURIComponent(roomCode)}`
       );
 
-    return result?.room || null;
+    return result?.room || result || null;
+  }
+
+
+  let challengeLobbyPollTimer = null;
+
+  function stopChallengeLobbyPolling(){
+
+    if(challengeLobbyPollTimer){
+      clearInterval(
+        challengeLobbyPollTimer
+      );
+
+      challengeLobbyPollTimer = null;
+    }
+
+  }
+
+
+  async function refreshPersistentChallengeLobby(){
+
+    if(
+      !challenge.roomCode ||
+      challenge.active ||
+      challenge.finished
+    ){
+
+      if(
+        challenge.active ||
+        challenge.finished
+      ){
+        stopChallengeLobbyPolling();
+      }
+
+      return;
+    }
+
+
+    try{
+
+      const room =
+        await loadPersistentChallengeRoom(
+          challenge.roomCode
+        );
+
+      if(!room){
+        return;
+      }
+
+
+      const before =
+        JSON.stringify({
+          opponentJoined:
+            challenge.opponentJoined,
+
+          opponentUsername:
+            challenge.opponentUsername,
+
+          ready:
+            challenge.ready,
+
+          opponentReady:
+            challenge.opponentReady,
+
+          active:
+            challenge.active,
+
+          finished:
+            challenge.finished
+        });
+
+
+      restorePersistentChallengeRoom(
+        room
+      );
+
+
+      const after =
+        JSON.stringify({
+          opponentJoined:
+            challenge.opponentJoined,
+
+          opponentUsername:
+            challenge.opponentUsername,
+
+          ready:
+            challenge.ready,
+
+          opponentReady:
+            challenge.opponentReady,
+
+          active:
+            challenge.active,
+
+          finished:
+            challenge.finished
+        });
+
+
+      if(before !== after){
+        renderLobby();
+      }
+
+
+      if(
+        challenge.active ||
+        challenge.finished
+      ){
+        stopChallengeLobbyPolling();
+      }
+
+    }catch(error){
+
+      console.warn(
+        "Challenge lobby polling failed:",
+        error
+      );
+
+    }
+
+  }
+
+
+  function startChallengeLobbyPolling(){
+
+    stopChallengeLobbyPolling();
+
+    refreshPersistentChallengeLobby();
+
+    challengeLobbyPollTimer =
+      setInterval(
+        refreshPersistentChallengeLobby,
+        1500
+      );
+
   }
 
 
@@ -11431,6 +11565,8 @@ async function ensureUsername() {
     challenge.channel =
       channel;
 
+    startChallengeLobbyPolling();
+
 
     return new Promise(
       resolve => {
@@ -11457,8 +11593,6 @@ async function ensureUsername() {
 
               challenge.realtimeStatus =
                 "Connected: " + channelName;
-
-              startChallengeLobbyPolling();
 
               renderLobby();
 

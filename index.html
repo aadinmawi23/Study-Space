@@ -1317,6 +1317,56 @@ async function initializeSupabase() {
     supabaseSession =
       data.session || null;
 
+    if(supabaseSession?.access_token){
+
+      try{
+
+        const response =
+          await fetch("/api/performance",{
+            headers:{
+              "Authorization":
+                `Bearer ${supabaseSession.access_token}`
+            }
+          });
+
+        if(response.ok){
+
+          const serverPerformance =
+            await response.json();
+
+          Object.assign(
+            performance,
+            serverPerformance
+          );
+
+          save();
+
+          console.log(
+            "Performance loaded from server:",
+            Object.keys(serverPerformance).length,
+            "questions"
+          );
+
+        }else{
+
+          console.warn(
+            "Performance load failed:",
+            response.status
+          );
+
+        }
+
+      }catch(error){
+
+        console.warn(
+          "Performance load error:",
+          error
+        );
+
+      }
+
+    }
+
     updateAuthenticationUI();
 
     /*
@@ -1354,6 +1404,52 @@ async function initializeSupabase() {
           );
 
           ensureUsername();
+
+          if(supabaseSession?.access_token){
+
+            fetch("/api/performance",{
+              headers:{
+                "Authorization":
+                  `Bearer ${supabaseSession.access_token}`
+              }
+            })
+            .then(async response => {
+
+              if(!response.ok){
+                throw new Error(
+                  `Performance load failed (${response.status})`
+                );
+              }
+
+              return response.json();
+
+            })
+            .then(serverPerformance => {
+
+              Object.assign(
+                performance,
+                serverPerformance
+              );
+
+              save();
+
+              console.log(
+                "Performance loaded after sign-in:",
+                Object.keys(serverPerformance).length,
+                "questions"
+              );
+
+            })
+            .catch(error => {
+
+              console.warn(
+                "Performance load after sign-in failed:",
+                error
+              );
+
+            });
+
+          }
 
         }
 
@@ -6431,20 +6527,141 @@ function startQuizByIds(ids){
   }
 }
 
+function quizStorageKey(questions){
+
+  return "flo_active_quiz_" +
+    questions
+      .map(q => q.id)
+      .join("|");
+}
+
+function saveCurrentQuiz(){
+
+  if(!currentQuiz || !currentQuiz.questions?.length){
+    return;
+  }
+
+  try{
+    localStorage.setItem(
+      "flo_active_quiz",
+      JSON.stringify(currentQuiz)
+    );
+  }catch(error){
+    console.warn(
+      "Could not save active quiz:",
+      error
+    );
+  }
+}
+
+function clearSavedQuiz(){
+
+  try{
+    localStorage.removeItem(
+      "flo_active_quiz"
+    );
+  }catch(error){
+    console.warn(
+      "Could not clear saved quiz:",
+      error
+    );
+  }
+}
+
+function getSavedQuiz(){
+
+  try{
+    const saved =
+      localStorage.getItem(
+        "flo_active_quiz"
+      );
+
+    if(!saved){
+      return null;
+    }
+
+    const parsed =
+      JSON.parse(saved);
+
+    if(
+      !parsed ||
+      !Array.isArray(parsed.questions) ||
+      !parsed.questions.length
+    ){
+      return null;
+    }
+
+    return parsed;
+
+  }catch(error){
+
+    console.warn(
+      "Could not restore saved quiz:",
+      error
+    );
+
+    return null;
+  }
+}
+
 function startQuiz(questions){
 
-  currentQuiz = {
+  const incomingIds =
+    questions.map(q => q.id);
 
-    questions:[
-      ...questions
-    ],
+  const saved =
+    getSavedQuiz();
 
-    index:0,
+  const savedIds =
+    saved?.questions?.map(q => q.id) || [];
 
-    answered:false,
+  const sameQuiz =
+    saved &&
+    incomingIds.length === savedIds.length &&
+    incomingIds.every(
+      (id,index) =>
+        id === savedIds[index]
+    );
 
-    results:[]
-  };
+  if(sameQuiz){
+
+    currentQuiz = {
+      questions:[
+        ...questions
+      ],
+      index:Math.min(
+        Math.max(
+          Number(saved.index) || 0,
+          0
+        ),
+        questions.length - 1
+      ),
+      answered:
+        saved.answered === true,
+      results:
+        Array.isArray(saved.results)
+          ? saved.results
+          : []
+    };
+
+  }else{
+
+    currentQuiz = {
+
+      questions:[
+        ...questions
+      ],
+
+      index:0,
+
+      answered:false,
+
+      results:[]
+    };
+
+  }
+
+  saveCurrentQuiz();
 
   renderQuiz();
 }
@@ -6470,6 +6687,93 @@ function renderQuiz(){
   const total =
     currentQuiz.questions.length;
 
+
+  const savedResult =
+    currentQuiz.answered &&
+    Array.isArray(currentQuiz.results)
+      ? currentQuiz.results.find(
+          item => item.questionId === q.id
+        )
+      : null;
+
+  const savedChoice =
+    savedResult?.choice || null;
+
+  const savedResultType =
+    savedResult?.result || null;
+
+  const optionClass = letter => {
+
+    if(!currentQuiz.answered){
+      return "option";
+    }
+
+    if(savedResultType === "correct" &&
+       savedChoice === letter){
+      return "option correct";
+    }
+
+    if(savedResultType === "wrong" &&
+       savedChoice === letter){
+      return "option wrong";
+    }
+
+    if(
+      (savedResultType === "wrong" ||
+       savedResultType === "unknown") &&
+      q.answer === letter
+    ){
+      return "option correct";
+    }
+
+    return "option disabled";
+  };
+
+  const restoredFeedback =
+    currentQuiz.answered && savedResultType
+      ? `
+        <div class="explanation">
+          <strong>
+            ${
+              savedResultType === "correct"
+                ? "Correct"
+                : savedResultType === "unknown"
+                  ? "Not learnt"
+                  : "Incorrect"
+            }
+          </strong>
+
+          ${
+            savedResultType !== "correct"
+              ? ` · Correct answer: ${q.answer}`
+              : ""
+          }
+
+          ${
+            q.explanation
+              ? `<br>${escapeHTML(q.explanation)}`
+              : ""
+          }
+        </div>
+      `
+      : "";
+
+  const restoredNext =
+    currentQuiz.answered
+      ? `
+        <button
+          class="btn"
+          onclick="nextQuestion()"
+        >
+          ${
+            currentQuiz.index <
+            currentQuiz.questions.length - 1
+              ? "Next Question →"
+              : "Finish Quiz"
+          }
+        </button>
+      `
+      : "";
 
   main.innerHTML = `
 
@@ -6512,9 +6816,13 @@ function renderQuiz(){
           ${["A","B","C","D"].map(letter=>`
 
             <button
-              class="option"
+              class="${optionClass(letter)}"
               id="opt-${letter}"
-              onclick="answerQuiz('${letter}')"
+              ${
+                currentQuiz.answered
+                  ? ""
+                  : `onclick="answerQuiz('${letter}')"`
+              }
             >
 
               <span class="letter">
@@ -6533,21 +6841,31 @@ function renderQuiz(){
 
         <div class="quiz-actions">
 
-          <button
-            class="unknown"
-            onclick="answerQuiz('UNKNOWN')"
-          >
-            I don't know
-          </button>
+          ${
+            currentQuiz.answered
+              ? ""
+              : `
+                <button
+                  class="unknown"
+                  onclick="answerQuiz('UNKNOWN')"
+                >
+                  I don't know
+                </button>
+              `
+          }
 
           <div
             class="quiz-next"
             id="nextArea"
-          ></div>
+          >
+            ${restoredNext}
+          </div>
 
         </div>
 
-        <div id="feedback"></div>
+        <div id="feedback">
+          ${restoredFeedback}
+        </div>
 
       </div>
 
@@ -6556,6 +6874,12 @@ function renderQuiz(){
 }
 
 function exitQuiz(){
+
+  /*
+   * Keep the current quiz so it can be
+   * resumed from the exact same question.
+   */
+  saveCurrentQuiz();
 
   currentQuiz = null;
 
@@ -6612,6 +6936,29 @@ function answerQuiz(choice){
     choice,
     result
   );
+
+  if(!Array.isArray(currentQuiz.results)){
+    currentQuiz.results = [];
+  }
+
+  const existingResult =
+    currentQuiz.results.findIndex(
+      item => item.questionId === q.id
+    );
+
+  const quizResult = {
+    questionId: q.id,
+    choice,
+    result
+  };
+
+  if(existingResult >= 0){
+    currentQuiz.results[existingResult] = quizResult;
+  }else{
+    currentQuiz.results.push(quizResult);
+  }
+
+  saveCurrentQuiz();
 
 
   ["A","B","C","D"].forEach(
@@ -6732,6 +7079,8 @@ function nextQuestion(){
     currentQuiz.index++;
     currentQuiz.answered = false;
 
+    saveCurrentQuiz();
+
     renderQuiz();
 
   }else{
@@ -6746,6 +7095,8 @@ function nextQuestion(){
    ========================================================= */
 
 function finishQuiz(){
+
+  clearSavedQuiz();
 
   playAppSound("complete");
 

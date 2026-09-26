@@ -10140,9 +10140,11 @@ async function ensureUsername() {
         "/api/challenge-rooms"
       );
 
-    return Array.isArray(result?.rooms)
-      ? result.rooms
-      : [];
+    return Array.isArray(result)
+      ? result
+      : Array.isArray(result?.rooms)
+        ? result.rooms
+        : [];
   }
 
 

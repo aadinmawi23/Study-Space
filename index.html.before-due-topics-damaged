@@ -3179,262 +3179,6 @@ async function signOutFromGoogle() {
 
 </style>
 
-
-
-
-<style id="calendar-text-fit">
-.calendar-grid{
-  align-items:stretch;
-}
-
-.calendar-card .day{
-  box-sizing:border-box;
-  width:100%;
-  min-width:0;
-  overflow:hidden;
-}
-
-.calendar-review-list{
-  width:100%;
-  box-sizing:border-box;
-  overflow:hidden;
-}
-
-.calendar-review-subject{
-  width:100%;
-  min-width:0;
-  overflow:hidden;
-}
-
-.calendar-review-subject-name{
-  display:flex;
-  align-items:center;
-  width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  overflow:hidden;
-  white-space:nowrap;
-  text-overflow:ellipsis;
-  font-size:10px;
-  line-height:1.15;
-  font-weight:700;
-}
-
-.calendar-review-dot{
-  flex:0 0 6px;
-  width:6px;
-  height:6px;
-  margin-right:4px;
-  border-radius:50%;
-}
-
-.calendar-review-topics{
-  width:calc(100% - 10px);
-  margin-left:10px;
-  box-sizing:border-box;
-  overflow:hidden;
-}
-
-.calendar-review-topic{
-  width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  overflow:hidden;
-  white-space:nowrap;
-  text-overflow:ellipsis;
-  font-size:9px;
-  line-height:1.2;
-  color:#555;
-}
-</style>
-
-
-<style id="due-topics-theme">
-
-/* Due Topics — Review tab visual language only */
-#floDueTopicsPage{
-  background:var(--bg,#F7F3EE) !important;
-  padding:32px 42px !important;
-}
-
-#floDueTopicsPage > div{
-  max-width:960px !important;
-  margin:0 auto !important;
-  background:var(--surface,#FFFDF9) !important;
-  border:1px solid var(--border,#D8CEC8) !important;
-  border-radius:20px !important;
-  padding:28px 32px !important;
-  box-shadow:var(--shadow,0 8px 24px rgba(60,45,40,.08)) !important;
-  box-sizing:border-box !important;
-}
-
-#floDueTopicsPage > div > div:first-child{
-  margin-bottom:8px !important;
-}
-
-#floDueTopicsPage > div > div:first-child > div:first-child{
-  font-family:Georgia,serif !important;
-  font-size:28px !important;
-  font-weight:500 !important;
-  color:var(--text,#302D2D) !important;
-  letter-spacing:-.2px !important;
-}
-
-#floDueTopicsPage > div > div:nth-child(2){
-  color:var(--muted,#6F6462) !important;
-  font-size:13px !important;
-  margin-bottom:26px !important;
-}
-
-/* Subject sections */
-#floDueTopicsPage section{
-  margin-bottom:18px !important;
-  padding:16px 18px !important;
-  background:var(--surface,#FFFDF9) !important;
-  border:1px solid var(--border,#D8CEC8) !important;
-  border-radius:15px !important;
-}
-
-#floDueTopicsPage section > div:first-child{
-  margin-bottom:6px !important;
-  font-size:16px !important;
-  color:var(--text,#302D2D) !important;
-}
-
-#floDueTopicsPage section > div:first-child span:last-child{
-  font-family:Georgia,serif !important;
-  font-weight:600 !important;
-}
-
-/* Topic buttons */
-#floDueTopicsPage section button{
-  width:100% !important;
-  box-sizing:border-box !important;
-  border:0 !important;
-  background:transparent !important;
-  color:var(--text,#302D2D) !important;
-  font-size:14px !important;
-  line-height:1.4 !important;
-  padding:8px 10px !important;
-  border-radius:9px !important;
-  text-align:left !important;
-}
-
-#floDueTopicsPage section button:hover{
-  background:#F0EAE4 !important;
-}
-
-/* Keep the existing close button visually consistent */
-#floDueTopicsPage > div > div:first-child > button{
-  color:var(--muted,#6F6462) !important;
-  font-size:27px !important;
-  border-radius:9px !important;
-}
-
-#floDueTopicsPage > div > div:first-child > button:hover{
-  background:#F0EAE4 !important;
-}
-
-/* Empty state */
-#floDueTopicsPage > div > div:last-child{
-  color:var(--muted,#6F6462) !important;
-}
-
-</style>
-
-
-
-<style id="due-topics-sidebar">
-#floDueTopicsPage{
-  left:230px !important;
-  width:calc(100% - 230px) !important;
-  right:0 !important;
-  z-index:90 !important;
-}
-
-.sidebar{
-  z-index:100 !important;
-}
-
-#floDueTopicsPage .due-topics-back{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  border:1px solid #D8CEC8;
-  background:#FFFDF9;
-  color:#6F6462;
-  border-radius:10px;
-  padding:8px 13px;
-  font-size:13px;
-  cursor:pointer;
-  margin-bottom:18px;
-}
-
-#floDueTopicsPage .due-topics-back:hover{
-  background:#F0EAE4;
-  color:#302D2D;
-}
-
-@media(max-width:650px){
-  #floDueTopicsPage{
-    left:0 !important;
-    width:100% !important;
-  }
-}
-</style>
-
-
-
-<style id="due-topics-heading-size">
-#floDueTopicsPage h1,
-#floDueTopicsPage h2,
-#floDueTopicsPage h3,
-#floDueTopicsPage .due-topics-title,
-#floDueTopicsPage .due-topics-subject{
-  font-size:30pt !important;
-}
-</style>
-
-
-<style id="global-main-heading-size">
-#main > h2{
-  font-size:28px !important;
-  line-height:1.2 !important;
-}
-</style>
-
-
-<style id="calendar-position-adjust">
-#main:has(.calendar-card) .calendar-card{
-  transform:translateY(-8px);
-}
-</style>
-
-
-<style id="all-main-headings-size">
-#main > h1,
-#main > h2,
-#main > h3,
-#main > .page-title,
-#main > .section-title {
-  font-size:28px !important;
-  line-height:1.2 !important;
-}
-</style>
-
-
-<style id="dashboard-main-heading-size">
-#main .dashboard-title,
-#main .dashboard-heading,
-#main .home-title,
-#main .home-heading,
-#main h1:first-child,
-#main h2:first-child {
-  font-size:28px !important;
-  line-height:1.2 !important;
-}
-</style>
-
 </head>
 
 <div id="usernameSetupModal" class="username-modal-overlay">
@@ -4491,6 +4235,7 @@ function calculateMastery(p){
 function recordAnswer(q,chosen,result){
 
   const p = perf(q.id);
+
   p.attempts++;
 
   if(result === "correct"){
@@ -4499,12 +4244,11 @@ function recordAnswer(q,chosen,result){
     p.streak++;
 
     const intervals = {
-      0:3,
+      0:1,
+      1:3,
       3:7,
       7:14,
-      14:21,
-      21:28,
-      28:30,
+      14:30,
       30:30
     };
 
@@ -4525,18 +4269,15 @@ function recordAnswer(q,chosen,result){
     }
 
     p.streak = 0;
-
-    /*
-      Wrong / unknown = next-day recovery.
-      The normal interval is reset so that after
-      successful recovery the sequence starts at 3 days.
-    */
     p.interval = 0;
-    p.nextReview = addDays(1);
+    p.nextReview = dateKey();
   }
 
-  p.mastery = calculateMastery(p);
-  p.lastAttempted = new Date().toISOString();
+  p.mastery =
+    calculateMastery(p);
+
+  p.lastAttempted =
+    new Date().toISOString();
 
   answerHistory.push({
     questionId:q.id,
@@ -4548,12 +4289,16 @@ function recordAnswer(q,chosen,result){
 
   save();
 
+  /* Also persist to server.js */
   fetch("/api/performance/answer",{
     method:"POST",
     headers:{
       "Content-Type":"application/json",
       ...(supabaseSession?.access_token
-        ? {"Authorization":`Bearer ${supabaseSession.access_token}`}
+        ? {
+            "Authorization":
+              `Bearer ${supabaseSession.access_token}`
+          }
         : {})
     },
     body:JSON.stringify({
@@ -4562,18 +4307,8 @@ function recordAnswer(q,chosen,result){
       result,
       timestamp:p.lastAttempted
     })
-  })
-  .then(async response => {
-    if(!response.ok){
-      const message = await response.text();
-      throw new Error(
-        `Performance sync failed (${response.status}): ${message}`
-      );
-    }
-    return response.json();
-  })
-  .catch(error=>{
-    console.error(
+  }).catch(error=>{
+    console.warn(
       "Server performance sync failed:",
       error
     );
@@ -7168,15 +6903,22 @@ function startDueReview(){
 
 function openCalendarDueTopicsUI(date, reviews){
 
-  const existing = document.getElementById("floDueTopicsPage");
-  if(existing) existing.remove();
+  const existing =
+    document.getElementById("floDueTopicsPage");
+
+  if(existing){
+    existing.remove();
+  }
 
   const grouped = {};
 
   (reviews || []).forEach(item => {
 
-    const subject = item.subject || "Other";
-    const topic = item.topic || "Untitled Topic";
+    const subject =
+      item.subject || "Other";
+
+    const topic =
+      item.topic || "Untitled Topic";
 
     if(!grouped[subject]){
       grouped[subject] = [];
@@ -7204,57 +6946,45 @@ function openCalendarDueTopicsUI(date, reviews){
       }
     );
 
-  const page = document.createElement("div");
+  const page =
+    document.createElement("div");
 
-  page.id = "floDueTopicsPage";
+  page.id =
+    "floDueTopicsPage";
 
   page.style.cssText = `
     position:fixed;
     inset:0;
     z-index:99999;
-    background:#fff;
+    background:#ffffff;
     overflow-y:auto;
     box-sizing:border-box;
-    padding:40px 48px;
+    padding:42px 48px;
   `;
 
-  const inner = document.createElement("div");
+  const inner =
+    document.createElement("div");
 
   inner.style.cssText = `
     max-width:900px;
     margin:0 auto;
   `;
 
-  const backButton = document.createElement("button");
-
-  backButton.type = "button";
-  backButton.className = "due-topics-back";
-  backButton.innerHTML = "← Back to Dashboard";
-
-  backButton.onclick = () => {
-    page.remove();
-    if(typeof navigate === "function"){
-      navigate("home");
-    }else if(typeof goHome === "function"){
-      goHome();
-    }
-  };
-
-  inner.appendChild(backButton);
-
-
-  const header = document.createElement("div");
+  const header =
+    document.createElement("div");
 
   header.style.cssText = `
     display:flex;
     align-items:center;
     justify-content:space-between;
-    margin-bottom:6px;
+    margin-bottom:8px;
   `;
 
-  const title = document.createElement("div");
+  const title =
+    document.createElement("div");
 
-  title.textContent = "Due Topics";
+  title.textContent =
+    "Due Topics";
 
   title.style.cssText = `
     font-size:30px;
@@ -7262,10 +6992,14 @@ function openCalendarDueTopicsUI(date, reviews){
     color:#222;
   `;
 
-  const close = document.createElement("button");
+  const close =
+    document.createElement("button");
 
-  close.type = "button";
-  close.textContent = "×";
+  close.type =
+    "button";
+
+  close.textContent =
+    "×";
 
   close.style.cssText = `
     border:0;
@@ -7277,69 +7011,81 @@ function openCalendarDueTopicsUI(date, reviews){
     padding:4px 8px;
   `;
 
-  close.onclick = () => page.remove();
+  close.onclick = () =>
+    page.remove();
 
   header.appendChild(title);
   header.appendChild(close);
+
   inner.appendChild(header);
 
-  const dateLabel = document.createElement("div");
+  const dateLabel =
+    document.createElement("div");
 
-  dateLabel.textContent = formattedDate;
+  dateLabel.textContent =
+    formattedDate;
 
   dateLabel.style.cssText = `
     font-size:16px;
     color:#777;
-    margin-bottom:34px;
+    margin-bottom:36px;
   `;
 
   inner.appendChild(dateLabel);
 
   Object.keys(grouped).forEach(subject => {
 
-    const section = document.createElement("section");
+    const section =
+      document.createElement("section");
 
     section.style.cssText = `
-      margin-bottom:28px;
+      margin-bottom:30px;
     `;
 
-    const subjectRow = document.createElement("div");
+    const subjectRow =
+      document.createElement("div");
 
     subjectRow.style.cssText = `
       display:flex;
       align-items:center;
       gap:10px;
-      margin-bottom:8px;
       font-size:18px;
       font-weight:700;
       color:#222;
+      margin-bottom:10px;
     `;
 
-    const dot = document.createElement("span");
+    const dot =
+      document.createElement("span");
 
     dot.style.cssText = `
-      width:9px;
-      height:9px;
-      min-width:9px;
+      width:10px;
+      height:10px;
+      min-width:10px;
       border-radius:50%;
       background:#6f8f72;
       display:block;
     `;
 
-    const subjectName = document.createElement("span");
+    const subjectName =
+      document.createElement("span");
 
-    subjectName.textContent = subject;
+    subjectName.textContent =
+      subject;
 
     subjectRow.appendChild(dot);
     subjectRow.appendChild(subjectName);
+
     section.appendChild(subjectRow);
 
-    const topicsContainer = document.createElement("div");
+    const topicsContainer =
+      document.createElement("div");
 
     topicsContainer.style.cssText = `
-      padding-left:19px;
+      padding-left:20px;
       display:flex;
       flex-direction:column;
+      gap:2px;
     `;
 
     grouped[subject].forEach(topic => {
@@ -7355,10 +7101,14 @@ function openCalendarDueTopicsUI(date, reviews){
           .map(item => item.questionId)
           .filter(Boolean);
 
-      const button = document.createElement("button");
+      const button =
+        document.createElement("button");
 
-      button.type = "button";
-      button.textContent = topic;
+      button.type =
+        "button";
+
+      button.textContent =
+        topic;
 
       button.style.cssText = `
         border:0;
@@ -7367,60 +7117,37 @@ function openCalendarDueTopicsUI(date, reviews){
         width:100%;
         color:#333;
         font-size:16px;
-        padding:7px 10px;
-        border-radius:7px;
+        padding:8px 10px;
+        border-radius:8px;
         cursor:pointer;
       `;
 
-      button.onmouseenter = () => {
-        button.style.background = "#f5f5f5";
-      };
+      button.addEventListener(
+        "mouseenter",
+        () => {
+          button.style.background =
+            "#f5f5f5";
+        }
+      );
 
-      button.onmouseleave = () => {
-        button.style.background = "transparent";
-      };
+      button.addEventListener(
+        "mouseleave",
+        () => {
+          button.style.background =
+            "transparent";
+        }
+      );
 
       button.onclick = () => {
 
-        /*
-          Use the same question/topic mapping as the normal
-          quiz system, then apply the exact Review-tab rule:
-          nextReview exists and is today or earlier.
-        */
-
-        const catalogSubject =
-          typeof SUBJECT_CATALOG !== "undefined"
-            ? SUBJECT_CATALOG.find(subjectItem =>
-                normalize(
-                  subjectItem.questionSubject ||
-                  subjectItem.name
-                ) === normalize(subject)
-              )
-            : null;
-
-        let topicQuestions =
-          catalogSubject
-            ? getQuestionsForTopic(
-                catalogSubject,
-                topic
-              )
-            : allQuestions().filter(q =>
-                normalize(q.subject) === normalize(subject) &&
-                normalize(q.topic) === normalize(topic)
-              );
-
-        const reviewQuestions =
-          topicQuestions.filter(q =>
-            perf(q.id).nextReview &&
-            perf(q.id).nextReview <= dateKey()
-          );
-
         page.remove();
 
-        if(reviewQuestions.length){
-          startQuiz(reviewQuestions);
+        if(ids.length){
+          startQuizByIds(ids);
         }else{
-          toast("No questions from this topic are currently due for review.");
+          toast(
+            "No review questions found for this topic."
+          );
         }
 
       };
@@ -7436,7 +7163,8 @@ function openCalendarDueTopicsUI(date, reviews){
 
   if(!Object.keys(grouped).length){
 
-    const empty = document.createElement("div");
+    const empty =
+      document.createElement("div");
 
     empty.textContent =
       "No topics are due for review on this date.";
@@ -7458,7 +7186,8 @@ function openCalendarDueTopicsUI(date, reviews){
 
 async function renderCalendar(){
 
-  const now = calendarViewDate;
+  const now =
+    calendarViewDate;
 
   const year =
     now.getFullYear();
@@ -7483,125 +7212,52 @@ async function renderCalendar(){
   const start =
     first.getDay();
 
-  /*
-    Build the calendar from the same local question/performance
-    data used by Review. This keeps the calendar mapped to the
-    actual subject + topic of every question.
-  */
-  const calendar = {};
+  let reviewData = {
+    calendar: {}
+  };
 
-  const questions =
-    allQuestions();
+  try {
 
-  const normalIntervals = [3,7,14,21,28,30,30];
-
-  function addDaysFromDate(dateString,daysToAdd){
-
-    const parts =
-      String(dateString).split("-");
-
-    const d =
-      new Date(
-        Number(parts[0]),
-        Number(parts[1]) - 1,
-        Number(parts[2])
+    const response =
+      await fetch(
+        "/api/review-calendar",
+        {
+          headers:
+            supabaseSession?.access_token
+              ? {
+                  "Authorization":
+                    `Bearer ${supabaseSession.access_token}`
+                }
+              : {}
+        }
       );
 
-    d.setDate(
-      d.getDate() + daysToAdd
+    if(response.ok){
+      reviewData =
+        await response.json();
+    }
+
+  } catch(error){
+
+    console.error(
+      "Failed to load review calendar:",
+      error
     );
 
-    return [
-      d.getFullYear(),
-      String(d.getMonth()+1).padStart(2,"0"),
-      String(d.getDate()).padStart(2,"0")
-    ].join("-");
   }
 
-  function addReview(date,subject,topic){
+  const calendar =
+    reviewData.calendar || {};
 
-    if(!date) return;
+  const dueBy = {};
 
-    if(!calendar[date]){
-      calendar[date] = [];
-    }
+  Object.keys(calendar).forEach(date => {
 
-    const exists =
-      calendar[date].some(item =>
-        item.subject === subject &&
-        item.topic === topic
-      );
+    dueBy[date] =
+      calendar[date] || [];
 
-    if(!exists){
-      calendar[date].push({
-        subject,
-        topic
-      });
-    }
-  }
-
-  questions.forEach(q => {
-
-    const p =
-      perf(q.id);
-
-    if(!p.nextReview){
-      return;
-    }
-
-    const subject =
-      q.subject || "Other";
-
-    const topic =
-      q.topic || "Untitled Topic";
-
-    /*
-      Always show the currently scheduled review.
-    */
-    addReview(
-      p.nextReview,
-      subject,
-      topic
-    );
-
-    /*
-      Only project the normal future sequence when the question
-      is already on a normal-review interval. A recovery review
-      therefore remains a single next-day review until it is
-      successfully completed.
-    */
-    if(p.interval > 0){
-
-      let currentDate =
-        p.nextReview;
-
-      let currentInterval =
-        p.interval;
-
-      for(let i=0;i<36;i++){
-
-        const nextInterval =
-          normalIntervals.find(
-            interval => interval > currentInterval
-          ) ?? 30;
-
-        currentDate =
-          addDaysFromDate(
-            currentDate,
-            nextInterval
-          );
-
-        addReview(
-          currentDate,
-          subject,
-          topic
-        );
-
-        currentInterval =
-          nextInterval;
-      }
-    }
   });
+
 
   let cells = "";
 
@@ -7623,17 +7279,17 @@ async function renderCalendar(){
 
   });
 
+
   for(
     let i=0;
     i<start;
     i++
   ){
 
-    cells += `
-      <div class="day empty"></div>
-    `;
+    cells += "<div></div>";
 
   }
+
 
   for(
     let day=1;
@@ -7642,71 +7298,22 @@ async function renderCalendar(){
   ){
 
     const key =
-      [
-        year,
-        String(month+1).padStart(2,"0"),
-        String(day).padStart(2,"0")
-      ].join("-");
+      `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
 
     const reviews =
-      calendar[key] || [];
+      dueBy[key] || [];
 
-    const grouped = {};
-
-    reviews.forEach(item => {
-
-      if(!grouped[item.subject]){
-        grouped[item.subject] = [];
-      }
-
-      if(!grouped[item.subject].includes(item.topic)){
-        grouped[item.subject].push(item.topic);
-      }
-
-    });
-
-    const subjectMarkup =
-      Object.keys(grouped).map(subject => {
-
-        const catalogItem =
-          typeof SUBJECT_CATALOG !== "undefined"
-            ? SUBJECT_CATALOG.find(
-                item => item.name === subject
-              )
-            : null;
-
-        const accent =
-          catalogItem?.accent || "#9aa0a6";
-
-        return `
-          <div
-            class="calendar-review-subject"
-            style="--review-accent:${accent}"
-          >
-            <div
-              class="calendar-review-subject-name"
-              style="color:${accent}"
-            >
-              <span
-                class="calendar-review-dot"
-                style="background:${accent}"
-              ></span>
-              ${subject}
-            </div>
-
-            <div class="calendar-review-topics">
-              ${grouped[subject].map(topic => `
-                <div class="calendar-review-topic">
-                  ${topic}
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `;
-
-      }).join("");
+    const topics = [
+      ...new Map(
+        reviews.map(item => [
+          `${item.subject}|||${item.topic}`,
+          item
+        ])
+      ).values()
+    ];
 
     cells += `
+
       <div
         class="day ${
           key === dateKey()
@@ -7716,8 +7323,9 @@ async function renderCalendar(){
         ${
           reviews.length
             ? `onclick='openCalendarDueTopicsUI(
-                ${JSON.stringify(key)},
-                ${JSON.stringify(reviews)}
+                ${JSON.stringify(
+                  reviews.map(item=>item.questionId)
+                )}
               )'`
             : ""
         }
@@ -7728,10 +7336,11 @@ async function renderCalendar(){
         </div>
 
         ${
-          reviews.length
+          topics.length
             ? `
-              <div class="calendar-review-list">
-                ${subjectMarkup}
+              <div class="due">
+                ${topics.length}
+                ${topics.length === 1 ? "topic" : "topics"}
               </div>
             `
             : ""
@@ -7741,6 +7350,7 @@ async function renderCalendar(){
     `;
 
   }
+
 
   document.getElementById("main")
     .innerHTML = `
@@ -7752,7 +7362,7 @@ async function renderCalendar(){
         title="Back to Dashboard"
       ></button>
 
-      <h2>
+<h2>
         Spaced Repetition
       </h2>
 

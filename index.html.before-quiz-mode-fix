@@ -7307,6 +7307,2611 @@ async function ensureUsername() {
 }
 </script>
 
+
+<!-- QUIZ-MODE-SOLO-FIX -->
+<script>
+function selectQuizMode(mode){
+
+  if(typeof closeQuizModeModal === "function"){
+    closeQuizModeModal();
+  }else{
+    const modal =
+      document.getElementById("quizModeModal");
+
+    if(modal){
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  const subjectName =
+    window.pendingQuizSubject;
+
+  const topic =
+    window.pendingQuizTopic;
+
+  if(!subjectName || !topic){
+    toast("Quiz topic could not be loaded.");
+    return;
+  }
+
+  if(mode === "solo"){
+
+    const subject =
+      SUBJECT_CATALOG.find(
+        s =>
+          normalize(
+            s.questionSubject ||
+            s.name
+          ) ===
+          normalize(subjectName)
+      );
+
+    const qs =
+      subject
+        ? getQuestionsForTopic(
+            subject,
+            topic
+          )
+        : allQuestions().filter(
+            q =>
+              normalize(q.subject) ===
+              normalize(subjectName) &&
+              normalize(q.topic) ===
+              normalize(topic)
+          );
+
+    if(!qs.length){
+      toast(
+        "No JSON questions loaded for this topic."
+      );
+      return;
+    }
+
+    selectedSubject =
+      subject ||
+      selectedSubject;
+
+    startQuiz(qs);
+    return;
+  }
+
+  if(mode === "challenge"){
+    toast("Challenge Mode selected.");
+    return;
+  }
+}
+</script>
+
+
+<!-- FLO-CHALLENGE-MODE -->
+
+<style>
+.challenge-modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:rgba(35,30,26,.42);
+  backdrop-filter:blur(4px);
+}
+
+.challenge-modal-overlay.open{
+  display:flex;
+}
+
+.challenge-modal-card{
+  width:min(560px,100%);
+  max-height:90vh;
+  overflow:auto;
+  background:#fffdf9;
+  border:1px solid #e6ddd1;
+  border-radius:24px;
+  padding:30px;
+  box-shadow:0 25px 70px rgba(40,30,20,.22);
+}
+
+.challenge-modal-eyebrow{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.16em;
+  color:#93897e;
+  margin-bottom:8px;
+}
+
+.challenge-modal-title{
+  margin:0;
+  font:30px Georgia,serif;
+  color:#332d28;
+}
+
+.challenge-modal-subtitle{
+  margin:8px 0 24px;
+  color:#756d65;
+  line-height:1.55;
+  font-size:14px;
+}
+
+.challenge-choice-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.challenge-choice-btn{
+  border:1px solid #e4dbd0;
+  background:#fff;
+  border-radius:18px;
+  padding:22px 18px;
+  text-align:left;
+  cursor:pointer;
+  transition:.18s ease;
+}
+
+.challenge-choice-btn:hover{
+  transform:translateY(-2px);
+  border-color:#cfc2b5;
+  box-shadow:0 10px 25px rgba(40,30,20,.08);
+}
+
+.challenge-choice-btn strong{
+  display:block;
+  font-size:16px;
+  color:#342e29;
+  margin-bottom:6px;
+}
+
+.challenge-choice-btn span{
+  display:block;
+  font-size:13px;
+  line-height:1.45;
+  color:#817870;
+}
+
+.challenge-room-code{
+  margin:20px 0;
+  padding:18px;
+  text-align:center;
+  border:1px dashed #d4c8ba;
+  border-radius:16px;
+  background:#faf6f0;
+}
+
+.challenge-room-code-label{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.15em;
+  color:#8d8278;
+  margin-bottom:7px;
+}
+
+.challenge-room-code-value{
+  display:block;
+  font:700 32px Arial,sans-serif;
+  letter-spacing:.16em;
+  color:#302a25;
+}
+
+.challenge-player-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin:18px 0;
+}
+
+.challenge-player{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  border:1px solid #e9e0d5;
+  border-radius:14px;
+  background:#fff;
+}
+
+.challenge-player-left{
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+
+.challenge-player-dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#b9ada2;
+  flex:none;
+}
+
+.challenge-player-dot.ready{
+  background:#6d8d68;
+}
+
+.challenge-player-name{
+  font-weight:700;
+  color:#39322c;
+}
+
+.challenge-player-status{
+  font-size:12px;
+  color:#867b72;
+}
+
+.challenge-room-status{
+  text-align:center;
+  margin:18px 0;
+  font-size:13px;
+  color:#7e746c;
+}
+
+.challenge-room-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:20px;
+}
+
+.challenge-field{
+  width:100%;
+  padding:14px 15px;
+  border:1px solid #ddd3c8;
+  border-radius:13px;
+  background:#fff;
+  outline:none;
+  font:inherit;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  box-sizing:border-box;
+}
+
+.challenge-field:focus{
+  border-color:#b8aa9c;
+}
+
+.challenge-shell{
+  max-width:1000px;
+  margin:0 auto;
+  padding:30px 0 50px;
+}
+
+.challenge-topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.challenge-topbar-left{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.challenge-label{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.16em;
+  color:#8c8178;
+}
+
+.challenge-topic{
+  font:24px Georgia,serif;
+  color:#332d28;
+}
+
+.challenge-count{
+  font-size:13px;
+  color:#7f756c;
+}
+
+.challenge-scoreboard{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:14px;
+  margin:20px 0;
+}
+
+.challenge-score-card{
+  border:1px solid #e5dcd2;
+  border-radius:18px;
+  padding:17px 18px;
+  background:#fffdf9;
+}
+
+.challenge-score-card.you{
+  box-shadow:inset 3px 0 0 #a68b74;
+}
+
+.challenge-score-card.opponent{
+  box-shadow:inset -3px 0 0 #a68b74;
+  text-align:right;
+}
+
+.challenge-score-name{
+  font-size:13px;
+  color:#756c64;
+  margin-bottom:5px;
+}
+
+.challenge-score-value{
+  font:700 27px Arial,sans-serif;
+  color:#312b27;
+}
+
+.challenge-score-divider{
+  width:1px;
+  height:48px;
+  background:#e3dad0;
+}
+
+.challenge-question-card{
+  border:1px solid #e5dcd2;
+  border-radius:22px;
+  background:#fffdf9;
+  padding:30px;
+}
+
+.challenge-question-number{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.12em;
+  color:#8c8178;
+  margin-bottom:13px;
+}
+
+.challenge-question{
+  margin:0 0 25px;
+  font:24px Georgia,serif;
+  line-height:1.45;
+  color:#302a25;
+}
+
+.challenge-options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.challenge-option{
+  border:1px solid #ded5cb;
+  background:#fff;
+  border-radius:15px;
+  padding:16px;
+  text-align:left;
+  cursor:pointer;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  transition:.16s ease;
+}
+
+.challenge-option:hover:not(.disabled){
+  border-color:#baa999;
+  transform:translateY(-1px);
+}
+
+.challenge-option.disabled{
+  cursor:default;
+  opacity:.9;
+}
+
+.challenge-option.correct{
+  border-color:#789772;
+  background:#eef5ed;
+}
+
+.challenge-option.wrong{
+  border-color:#b57e78;
+  background:#f8eeee;
+}
+
+.challenge-option .letter{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  border:1px solid #d6cdc3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:800;
+  flex:none;
+}
+
+.challenge-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-top:20px;
+  flex-wrap:wrap;
+}
+
+.challenge-feedback{
+  font-size:13px;
+  color:#756c64;
+  line-height:1.5;
+}
+
+.challenge-feedback strong{
+  color:#332d28;
+}
+
+.challenge-answer-summary{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:14px;
+  background:#faf6f0;
+  border:1px solid #e7ded4;
+  font-size:13px;
+  color:#665e57;
+}
+
+.challenge-results{
+  text-align:center;
+}
+
+.challenge-results-title{
+  font:31px Georgia,serif;
+  color:#332d28;
+  margin:0 0 7px;
+}
+
+.challenge-results-subtitle{
+  margin:0 0 24px;
+  color:#7c7269;
+  font-size:14px;
+}
+
+.challenge-final-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:13px;
+  margin:20px 0;
+}
+
+.challenge-final-card{
+  border:1px solid #e5dcd2;
+  border-radius:18px;
+  padding:20px;
+  background:#fff;
+}
+
+.challenge-final-name{
+  font-size:13px;
+  color:#756d65;
+  margin-bottom:5px;
+}
+
+.challenge-final-score{
+  font:700 30px Arial,sans-serif;
+  color:#302a25;
+}
+
+.challenge-final-stat{
+  margin-top:5px;
+  font-size:12px;
+  color:#8a8077;
+}
+
+@media(max-width:700px){
+  .challenge-choice-grid,
+  .challenge-options,
+  .challenge-final-grid{
+    grid-template-columns:1fr;
+  }
+
+  .challenge-scoreboard{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .challenge-score-divider{
+    display:none;
+  }
+
+  .challenge-score-card.opponent{
+    text-align:left;
+  }
+
+  .challenge-modal-card{
+    padding:22px;
+  }
+}
+</style>
+
+<div
+  id="challengeRoomModal"
+  class="challenge-modal-overlay"
+  aria-hidden="true"
+  onclick="challengeModalBackdrop(event)"
+>
+  <div
+    class="challenge-modal-card"
+    onclick="event.stopPropagation()"
+  >
+    <div id="challengeRoomContent"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  window.floChallenge = {
+
+    channel:null,
+    roomCode:null,
+    playerId:
+      (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : "player-" + Date.now() + "-" + Math.random(),
+
+    isHost:false,
+
+    subject:null,
+    topic:null,
+
+    questionIds:[],
+    questions:[],
+
+    host:null,
+    guest:null,
+
+    myReady:false,
+    opponentReady:false,
+
+    myUsername:"",
+    opponentUsername:"Waiting…",
+
+    started:false,
+    index:0,
+
+    answers:{},
+
+    myScore:0,
+    opponentScore:0,
+
+    myCorrect:0,
+    opponentCorrect:0,
+
+    advanceSent:false
+  };
+
+})();
+
+
+function getChallengeQuestions(){
+
+  const subjectName =
+    window.pendingQuizSubject;
+
+  const topic =
+    window.pendingQuizTopic;
+
+  if(!subjectName || !topic){
+    return [];
+  }
+
+  const subject =
+    SUBJECT_CATALOG.find(
+      s =>
+        normalize(
+          s.questionSubject ||
+          s.name
+        ) ===
+        normalize(subjectName)
+    );
+
+  const questions =
+    subject
+      ? getQuestionsForTopic(
+          subject,
+          topic
+        )
+      : allQuestions().filter(
+          q =>
+            normalize(q.subject) ===
+            normalize(subjectName) &&
+            normalize(q.topic) ===
+            normalize(topic)
+        );
+
+  return questions || [];
+}
+
+
+async function ensureChallengeUsername(){
+
+  if(currentUsername){
+    floChallenge.myUsername =
+      currentUsername;
+
+    return currentUsername;
+  }
+
+  if(
+    typeof ensureUsername ===
+    "function"
+  ){
+    await ensureUsername();
+  }
+
+  if(!currentUsername){
+    toast("Choose a username before starting a challenge.");
+    return null;
+  }
+
+  floChallenge.myUsername =
+    currentUsername;
+
+  return currentUsername;
+}
+
+
+function openChallengeRoomModal(){
+
+  const modal =
+    document.getElementById(
+      "challengeRoomModal"
+    );
+
+  if(!modal){
+    return;
+  }
+
+  modal.classList.add("open");
+  modal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  renderChallengeRoomChoice();
+}
+
+
+function closeChallengeRoomModal(){
+
+  const modal =
+    document.getElementById(
+      "challengeRoomModal"
+    );
+
+  if(!modal){
+    return;
+  }
+
+  modal.classList.remove("open");
+  modal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+
+function challengeModalBackdrop(event){
+
+  if(
+    event &&
+    event.target &&
+    event.target.id ===
+      "challengeRoomModal"
+  ){
+    closeChallengeRoomModal();
+  }
+}
+
+
+function renderChallengeRoomChoice(){
+
+  const content =
+    document.getElementById(
+      "challengeRoomContent"
+    );
+
+  if(!content){
+    return;
+  }
+
+  content.innerHTML = `
+
+    <div class="challenge-modal-eyebrow">
+      CHALLENGE MODE
+    </div>
+
+    <h2 class="challenge-modal-title">
+      How would you like to play?
+    </h2>
+
+    <p class="challenge-modal-subtitle">
+      Create a room and invite another player,
+      or join a room using their code.
+    </p>
+
+    <div class="challenge-choice-grid">
+
+      <button
+        class="challenge-choice-btn"
+        onclick="openChallengeCreateRoom()"
+      >
+        <strong>
+          Create Room
+        </strong>
+        <span>
+          Start a room and share the code with
+          another player.
+        </span>
+      </button>
+
+      <button
+        class="challenge-choice-btn"
+        onclick="openChallengeJoinRoom()"
+      >
+        <strong>
+          Join Room
+        </strong>
+        <span>
+          Enter a room code to join another
+          player.
+        </span>
+      </button>
+
+    </div>
+
+    <div class="challenge-room-actions">
+
+      <button
+        class="btn light"
+        onclick="closeChallengeRoomModal()"
+      >
+        Cancel
+      </button>
+
+    </div>
+  `;
+}
+
+
+async function openChallengeCreateRoom(){
+
+  const username =
+    await ensureChallengeUsername();
+
+  if(!username){
+    return;
+  }
+
+  const questions =
+    getChallengeQuestions();
+
+  if(!questions.length){
+    toast(
+      "No JSON questions loaded for this topic."
+    );
+    return;
+  }
+
+  const code =
+    createChallengeRoomCode();
+
+  floChallenge.roomCode =
+    code;
+
+  floChallenge.isHost =
+    true;
+
+  floChallenge.subject =
+    window.pendingQuizSubject;
+
+  floChallenge.topic =
+    window.pendingQuizTopic;
+
+  floChallenge.questionIds =
+    questions.map(q => q.id);
+
+  floChallenge.questions =
+    questions;
+
+  floChallenge.host = {
+    playerId:
+      floChallenge.playerId,
+    username,
+    ready:false
+  };
+
+  floChallenge.guest = null;
+  floChallenge.myReady = false;
+  floChallenge.opponentReady = false;
+  floChallenge.opponentUsername =
+    "Waiting…";
+
+  await subscribeToChallengeRoom();
+
+  renderChallengeLobby();
+}
+
+
+function createChallengeRoomCode(){
+
+  const chars =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let code = "";
+
+  for(let i=0;i<6;i++){
+    code +=
+      chars[
+        Math.floor(
+          Math.random() * chars.length
+        )
+      ];
+  }
+
+  return code;
+}
+
+
+async function subscribeToChallengeRoom(){
+
+  if(!supabaseClient){
+    toast("Supabase is not connected.");
+    return false;
+  }
+
+  if(floChallenge.channel){
+
+    try{
+      await supabaseClient.removeChannel(
+        floChallenge.channel
+      );
+    }catch(_){}
+  }
+
+  const channel =
+    supabaseClient.channel(
+      "flo-challenge-" +
+      floChallenge.roomCode
+    );
+
+  channel.on(
+    "broadcast",
+    {event:"join-request"},
+    ({payload})=>{
+      handleChallengeJoinRequest(payload);
+    }
+  );
+
+  channel.on(
+    "broadcast",
+    {event:"room-state"},
+    ({payload})=>{
+      handleChallengeRoomState(payload);
+    }
+  );
+
+  channel.on(
+    "broadcast",
+    {event:"player-ready"},
+    ({payload})=>{
+      handleChallengeReady(payload);
+    }
+  );
+
+  channel.on(
+    "broadcast",
+    {event:"start-game"},
+    ({payload})=>{
+      handleChallengeStart(payload);
+    }
+  );
+
+  channel.on(
+    "broadcast",
+    {event:"answer"},
+    ({payload})=>{
+      handleChallengeAnswer(payload);
+    }
+  );
+
+  channel.on(
+    "broadcast",
+    {event:"next-question"},
+    ({payload})=>{
+      handleChallengeNext(payload);
+    }
+  );
+
+  channel.on(
+    "broadcast",
+    {event:"player-left"},
+    ({payload})=>{
+      handleChallengePlayerLeft(payload);
+    }
+  );
+
+  floChallenge.channel =
+    channel;
+
+  return new Promise(resolve => {
+
+    channel.subscribe(
+      status => {
+
+        if(
+          status ===
+          "SUBSCRIBED"
+        ){
+
+          resolve(true);
+
+        }else if(
+          status ===
+          "CHANNEL_ERROR" ||
+          status ===
+          "TIMED_OUT"
+        ){
+
+          toast(
+            "Could not connect to the challenge room."
+          );
+
+          resolve(false);
+        }
+
+      }
+    );
+
+  });
+}
+
+
+async function challengeBroadcast(
+  event,
+  payload
+){
+
+  if(!floChallenge.channel){
+    return;
+  }
+
+  await floChallenge.channel.send({
+    type:"broadcast",
+    event,
+    payload
+  });
+}
+
+
+function handleChallengeJoinRequest(payload){
+
+  if(!floChallenge.isHost){
+    return;
+  }
+
+  if(!payload){
+    return;
+  }
+
+  if(
+    payload.playerId ===
+    floChallenge.playerId
+  ){
+    return;
+  }
+
+  if(
+    floChallenge.guest &&
+    floChallenge.guest.playerId !==
+      payload.playerId
+  ){
+    return;
+  }
+
+  floChallenge.guest = {
+    playerId:
+      payload.playerId,
+    username:
+      payload.username,
+    ready:false
+  };
+
+  floChallenge.opponentUsername =
+    payload.username;
+
+  challengeBroadcast(
+    "room-state",
+    getChallengeRoomState()
+  );
+
+  renderChallengeLobby();
+}
+
+
+function getChallengeRoomState(){
+
+  return {
+    host:
+      floChallenge.host,
+    guest:
+      floChallenge.guest,
+
+    subject:
+      floChallenge.subject,
+
+    topic:
+      floChallenge.topic,
+
+    questionIds:
+      floChallenge.questionIds
+  };
+}
+
+
+function handleChallengeRoomState(payload){
+
+  if(!payload){
+    return;
+  }
+
+  floChallenge.host =
+    payload.host || null;
+
+  floChallenge.guest =
+    payload.guest || null;
+
+  if(
+    payload.subject
+  ){
+    floChallenge.subject =
+      payload.subject;
+  }
+
+  if(
+    payload.topic
+  ){
+    floChallenge.topic =
+      payload.topic;
+  }
+
+  if(
+    Array.isArray(
+      payload.questionIds
+    )
+  ){
+    floChallenge.questionIds =
+      payload.questionIds;
+  }
+
+  const me =
+    floChallenge.playerId;
+
+  if(
+    floChallenge.host &&
+    floChallenge.host.playerId === me
+  ){
+
+    floChallenge.isHost =
+      true;
+
+    floChallenge.myReady =
+      !!floChallenge.host.ready;
+
+    if(floChallenge.guest){
+
+      floChallenge.opponentUsername =
+        floChallenge.guest.username;
+
+      floChallenge.opponentReady =
+        !!floChallenge.guest.ready;
+
+    }
+
+  }else if(
+    floChallenge.guest &&
+    floChallenge.guest.playerId === me
+  ){
+
+    floChallenge.isHost =
+      false;
+
+    floChallenge.myReady =
+      !!floChallenge.guest.ready;
+
+    if(floChallenge.host){
+
+      floChallenge.opponentUsername =
+        floChallenge.host.username;
+
+      floChallenge.opponentReady =
+        !!floChallenge.host.ready;
+
+    }
+  }
+
+  renderChallengeLobby();
+}
+
+
+function renderChallengeLobby(){
+
+  const content =
+    document.getElementById(
+      "challengeRoomContent"
+    );
+
+  if(!content){
+    return;
+  }
+
+  const hasOpponent =
+    !!floChallenge.guest ||
+    (
+      floChallenge.host &&
+      floChallenge.host.playerId !==
+        floChallenge.playerId
+    );
+
+  const opponentReady =
+    floChallenge.opponentReady;
+
+  const bothReady =
+    hasOpponent &&
+    floChallenge.myReady &&
+    opponentReady;
+
+  content.innerHTML = `
+
+    <div class="challenge-modal-eyebrow">
+      ${floChallenge.isHost
+        ? "CREATE ROOM"
+        : "JOIN ROOM"}
+    </div>
+
+    <h2 class="challenge-modal-title">
+      ${escapeHTML(
+        floChallenge.topic || "Challenge Room"
+      )}
+    </h2>
+
+    <p class="challenge-modal-subtitle">
+      ${floChallenge.isHost
+        ? "Share this room code with the other player."
+        : "You are joining the challenge room."}
+    </p>
+
+    ${
+      floChallenge.isHost
+        ? `
+          <div class="challenge-room-code">
+
+            <span class="challenge-room-code-label">
+              ROOM CODE
+            </span>
+
+            <span class="challenge-room-code-value">
+              ${floChallenge.roomCode}
+            </span>
+
+          </div>
+        `
+        : `
+          <div class="challenge-room-code">
+
+            <span class="challenge-room-code-label">
+              ROOM CODE
+            </span>
+
+            <span class="challenge-room-code-value">
+              ${floChallenge.roomCode}
+            </span>
+
+          </div>
+        `
+    }
+
+    <div class="challenge-player-list">
+
+      <div class="challenge-player">
+
+        <div class="challenge-player-left">
+
+          <span
+            class="challenge-player-dot ${
+              floChallenge.myReady
+                ? "ready"
+                : ""
+            }"
+          ></span>
+
+          <div>
+
+            <div class="challenge-player-name">
+              ${escapeHTML(
+                floChallenge.myUsername
+              )}
+            </div>
+
+            <div class="challenge-player-status">
+              You · ${
+                floChallenge.myReady
+                  ? "Ready"
+                  : "Not ready"
+              }
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="challenge-player">
+
+        <div class="challenge-player-left">
+
+          <span
+            class="challenge-player-dot ${
+              opponentReady
+                ? "ready"
+                : ""
+            }"
+          ></span>
+
+          <div>
+
+            <div class="challenge-player-name">
+              ${escapeHTML(
+                floChallenge.opponentUsername
+              )}
+            </div>
+
+            <div class="challenge-player-status">
+              ${
+                hasOpponent
+                  ? (
+                      opponentReady
+                        ? "Ready"
+                        : "Not ready"
+                    )
+                  : "Waiting for opponent…"
+              }
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="challenge-room-status">
+
+      ${
+        !hasOpponent
+          ? "Waiting for another player to join…"
+          : !floChallenge.myReady
+            ? "Click Ready when you are ready to begin."
+            : !opponentReady
+              ? "Waiting for the other player to ready up…"
+              : "Both players are ready."
+      }
+
+    </div>
+
+    <div class="challenge-room-actions">
+
+      ${
+        !hasOpponent
+          ? `
+            <button
+              class="btn light"
+              onclick="copyChallengeRoomCode()"
+            >
+              Copy Code
+            </button>
+          `
+          : ""
+      }
+
+      ${
+        hasOpponent && !floChallenge.myReady
+          ? `
+            <button
+              class="btn"
+              onclick="setChallengeReady(true)"
+            >
+              Ready
+            </button>
+          `
+          : hasOpponent && floChallenge.myReady
+            ? `
+              <button
+                class="btn light"
+                onclick="setChallengeReady(false)"
+              >
+                Not Ready
+              </button>
+            `
+            : ""
+      }
+
+      ${
+        floChallenge.isHost && bothReady
+          ? `
+            <button
+              class="btn"
+              onclick="startChallengeGame()"
+            >
+              Start Challenge
+            </button>
+          `
+          : ""
+      }
+
+      <button
+        class="btn light"
+        onclick="leaveChallengeRoom()"
+      >
+        Leave Room
+      </button>
+
+    </div>
+  `;
+}
+
+
+async function setChallengeReady(ready){
+
+  floChallenge.myReady =
+    !!ready;
+
+  await challengeBroadcast(
+    "player-ready",
+    {
+      playerId:
+        floChallenge.playerId,
+
+      username:
+        floChallenge.myUsername,
+
+      ready:
+        floChallenge.myReady
+    }
+  );
+
+  if(
+    floChallenge.isHost &&
+    floChallenge.host
+  ){
+
+    floChallenge.host.ready =
+      floChallenge.myReady;
+
+    await challengeBroadcast(
+      "room-state",
+      getChallengeRoomState()
+    );
+
+  }
+
+  if(
+    !floChallenge.isHost &&
+    floChallenge.guest
+  ){
+
+    floChallenge.guest.ready =
+      floChallenge.myReady;
+  }
+
+  renderChallengeLobby();
+}
+
+
+function handleChallengeReady(payload){
+
+  if(!payload){
+    return;
+  }
+
+  if(
+    floChallenge.isHost &&
+    floChallenge.guest &&
+    payload.playerId ===
+      floChallenge.guest.playerId
+  ){
+
+    floChallenge.guest.ready =
+      !!payload.ready;
+
+    floChallenge.opponentReady =
+      !!payload.ready;
+
+    challengeBroadcast(
+      "room-state",
+      getChallengeRoomState()
+    );
+
+    renderChallengeLobby();
+
+    return;
+  }
+
+  if(
+    !floChallenge.isHost &&
+    floChallenge.host &&
+    payload.playerId ===
+      floChallenge.host.playerId
+  ){
+
+    floChallenge.host.ready =
+      !!payload.ready;
+
+    floChallenge.opponentReady =
+      !!payload.ready;
+
+    renderChallengeLobby();
+  }
+}
+
+
+async function startChallengeGame(){
+
+  if(!floChallenge.isHost){
+    return;
+  }
+
+  if(
+    !floChallenge.guest ||
+    !floChallenge.myReady ||
+    !floChallenge.opponentReady
+  ){
+    return;
+  }
+
+  const payload = {
+    subject:
+      floChallenge.subject,
+
+    topic:
+      floChallenge.topic,
+
+    questionIds:
+      floChallenge.questionIds
+  };
+
+  await challengeBroadcast(
+    "start-game",
+    payload
+  );
+
+  beginChallengeGame(
+    payload.questionIds
+  );
+}
+
+
+function handleChallengeStart(payload){
+
+  if(!payload){
+    return;
+  }
+
+  beginChallengeGame(
+    payload.questionIds
+  );
+}
+
+
+function beginChallengeGame(questionIds){
+
+  if(
+    !Array.isArray(questionIds) ||
+    !questionIds.length
+  ){
+    toast("The challenge question set is empty.");
+    return;
+  }
+
+  floChallenge.questionIds =
+    questionIds;
+
+  floChallenge.questions =
+    questionIds
+      .map(id => {
+
+        return allQuestions().find(
+          q =>
+            String(q.id) ===
+            String(id)
+        );
+
+      })
+      .filter(Boolean);
+
+  if(
+    !floChallenge.questions.length
+  ){
+    toast(
+      "The challenge questions could not be loaded on this device."
+    );
+    return;
+  }
+
+  floChallenge.started =
+    true;
+
+  floChallenge.index =
+    0;
+
+  floChallenge.answers =
+    {};
+
+  floChallenge.myScore =
+    0;
+
+  floChallenge.opponentScore =
+    0;
+
+  floChallenge.myCorrect =
+    0;
+
+  floChallenge.opponentCorrect =
+    0;
+
+  floChallenge.advanceSent =
+    false;
+
+  closeChallengeRoomModal();
+
+  renderChallengeQuiz();
+}
+
+
+function getChallengeCurrentQuestion(){
+
+  return floChallenge.questions[
+    floChallenge.index
+  ];
+}
+
+
+function getChallengeAnswers(){
+
+  const index =
+    floChallenge.index;
+
+  if(!floChallenge.answers[index]){
+
+    floChallenge.answers[index] = {
+      me:null,
+      opponent:null
+    };
+
+  }
+
+  return floChallenge.answers[index];
+}
+
+
+function answerChallenge(choice){
+
+  if(
+    !floChallenge.started
+  ){
+    return;
+  }
+
+  const answers =
+    getChallengeAnswers();
+
+  if(answers.me){
+    return;
+  }
+
+  const q =
+    getChallengeCurrentQuestion();
+
+  if(!q){
+    return;
+  }
+
+  const result =
+    choice === "UNKNOWN"
+      ? "unknown"
+      : choice === q.answer
+        ? "correct"
+        : "wrong";
+
+  answers.me = {
+    choice,
+    result
+  };
+
+  if(result === "correct"){
+
+    floChallenge.myScore++;
+    floChallenge.myCorrect++;
+
+    playAppSound("correct");
+
+  }else{
+
+    playAppSound("wrong");
+
+  }
+
+  challengeBroadcast(
+    "answer",
+    {
+      playerId:
+        floChallenge.playerId,
+
+      username:
+        floChallenge.myUsername,
+
+      index:
+        floChallenge.index,
+
+      result
+    }
+  );
+
+  renderChallengeQuiz();
+}
+
+
+function handleChallengeAnswer(payload){
+
+  if(
+    !payload ||
+    !floChallenge.started
+  ){
+    return;
+  }
+
+  if(
+    payload.index !==
+    floChallenge.index
+  ){
+    return;
+  }
+
+  if(
+    payload.playerId ===
+    floChallenge.playerId
+  ){
+    return;
+  }
+
+  const answers =
+    getChallengeAnswers();
+
+  if(answers.opponent){
+    return;
+  }
+
+  answers.opponent = {
+    result:
+      payload.result
+  };
+
+  floChallenge.opponentUsername =
+    payload.username ||
+    floChallenge.opponentUsername;
+
+  if(
+    payload.result ===
+    "correct"
+  ){
+
+    floChallenge.opponentScore++;
+    floChallenge.opponentCorrect++;
+
+  }
+
+  renderChallengeQuiz();
+}
+
+
+function renderChallengeQuiz(){
+
+  const main =
+    document.getElementById(
+      "main"
+    );
+
+  const q =
+    getChallengeCurrentQuestion();
+
+  if(!main || !q){
+    return;
+  }
+
+  const number =
+    floChallenge.index + 1;
+
+  const total =
+    floChallenge.questions.length;
+
+  const answers =
+    getChallengeAnswers();
+
+  const bothAnswered =
+    !!answers.me &&
+    !!answers.opponent;
+
+  const myAnswered =
+    !!answers.me;
+
+  const disabled =
+    myAnswered
+      ? "disabled"
+      : "";
+
+  main.innerHTML = `
+
+    <div class="challenge-shell">
+
+      <div class="challenge-topbar">
+
+        <div class="challenge-topbar-left">
+
+          <div class="challenge-label">
+            CHALLENGE MODE
+          </div>
+
+          <div class="challenge-topic">
+            ${escapeHTML(
+              floChallenge.topic || ""
+            )}
+          </div>
+
+        </div>
+
+        <button
+          class="btn light"
+          onclick="exitChallengeQuiz()"
+        >
+          ← Exit Challenge
+        </button>
+
+      </div>
+
+
+      <div class="challenge-scoreboard">
+
+        <div class="challenge-score-card you">
+
+          <div class="challenge-score-name">
+            ${escapeHTML(
+              floChallenge.myUsername
+            )}
+          </div>
+
+          <div class="challenge-score-value">
+            ${floChallenge.myScore}
+          </div>
+
+        </div>
+
+
+        <div class="challenge-score-divider"></div>
+
+
+        <div class="challenge-score-card opponent">
+
+          <div class="challenge-score-name">
+            ${escapeHTML(
+              floChallenge.opponentUsername
+            )}
+          </div>
+
+          <div class="challenge-score-value">
+            ${floChallenge.opponentScore}
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="challenge-question-card">
+
+        <div class="challenge-question-number">
+          QUESTION ${number} / ${total}
+        </div>
+
+        <h2 class="challenge-question">
+          ${escapeHTML(q.question)}
+        </h2>
+
+
+        <div class="challenge-options">
+
+          ${["A","B","C","D"].map(
+            letter=>{
+
+              let extra = "";
+
+              if(
+                bothAnswered
+              ){
+
+                if(
+                  letter ===
+                  q.answer
+                ){
+                  extra += " correct";
+                }
+
+                if(
+                  answers.me &&
+                  answers.me.result ===
+                    "wrong" &&
+                  letter ===
+                    answers.me.choice
+                ){
+                  extra += " wrong";
+                }
+
+              }
+
+              return `
+
+                <button
+                  class="
+                    challenge-option
+                    ${extra}
+                    ${disabled}
+                  "
+                  onclick="
+                    answerChallenge('${letter}')
+                  "
+                >
+
+                  <span class="letter">
+                    ${letter}
+                  </span>
+
+                  <span>
+                    ${escapeHTML(
+                      q.options[letter]
+                    )}
+                  </span>
+
+                </button>
+              `;
+
+            }
+          ).join("")}
+
+        </div>
+
+
+        <div class="challenge-bottom">
+
+          <button
+            class="unknown"
+            ${
+              myAnswered
+                ? "disabled"
+                : ""
+            }
+            onclick="answerChallenge('UNKNOWN')"
+          >
+            I don't know
+          </button>
+
+
+          <div class="challenge-feedback">
+
+            ${
+              !myAnswered
+                ? "Choose your answer."
+                : !bothAnswered
+                  ? "<strong>Answer locked.</strong> Waiting for the other player…"
+                  : answers.me.result === "correct"
+                    ? "<strong>Correct!</strong> Both players have answered."
+                    : `<strong>Answer revealed.</strong> Correct answer: ${escapeHTML(q.answer)}`
+            }
+
+          </div>
+
+
+          ${
+            bothAnswered
+              ? `
+                ${
+                  floChallenge.index <
+                  floChallenge.questions.length - 1
+                    ? `
+                      <button
+                        class="btn"
+                        onclick="nextChallengeQuestion()"
+                      >
+                        Next Question →
+                      </button>
+                    `
+                    : `
+                      <button
+                        class="btn"
+                        onclick="finishChallenge()"
+                      >
+                        Challenge Complete
+                      </button>
+                    `
+                }
+              `
+              : ""
+          }
+
+        </div>
+
+
+        ${
+          bothAnswered
+            ? `
+              <div class="challenge-answer-summary">
+
+                <strong>
+                  ${escapeHTML(
+                    floChallenge.myUsername
+                  )}
+                </strong>
+
+               :
+                ${
+                  answers.me.result ===
+                    "correct"
+                    ? "Correct"
+                    : answers.me.result ===
+                        "unknown"
+                      ? "Not learnt"
+                      : "Incorrect"
+                }
+
+                &nbsp; · &nbsp;
+
+                <strong>
+                  ${escapeHTML(
+                    floChallenge.opponentUsername
+                  )}
+                </strong>
+
+               :
+                ${
+                  answers.opponent.result ===
+                    "correct"
+                    ? "Correct"
+                    : answers.opponent.result ===
+                        "unknown"
+                      ? "Not learnt"
+                      : "Incorrect"
+                }
+
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+async function nextChallengeQuestion(){
+
+  if(
+    !floChallenge.started
+  ){
+    return;
+  }
+
+  const answers =
+    getChallengeAnswers();
+
+  if(
+    !answers.me ||
+    !answers.opponent
+  ){
+    return;
+  }
+
+  const nextIndex =
+    floChallenge.index + 1;
+
+  await challengeBroadcast(
+    "next-question",
+    {
+      index:nextIndex
+    }
+  );
+
+  advanceChallengeQuestion(
+    nextIndex
+  );
+}
+
+
+function handleChallengeNext(payload){
+
+  if(
+    !payload ||
+    !floChallenge.started
+  ){
+    return;
+  }
+
+  advanceChallengeQuestion(
+    payload.index
+  );
+}
+
+
+function advanceChallengeQuestion(index){
+
+  if(
+    typeof index !==
+      "number"
+  ){
+    return;
+  }
+
+  if(
+    index !==
+      floChallenge.index + 1
+  ){
+    return;
+  }
+
+  floChallenge.index =
+    index;
+
+  renderChallengeQuiz();
+}
+
+
+function finishChallenge(){
+
+  if(
+    !floChallenge.started
+  ){
+    return;
+  }
+
+  playAppSound("complete");
+
+  const total =
+    floChallenge.questions.length;
+
+  const myAccuracy =
+    Math.round(
+      floChallenge.myCorrect /
+      Math.max(1,total) *
+      100
+    );
+
+  const opponentAccuracy =
+    Math.round(
+      floChallenge.opponentCorrect /
+      Math.max(1,total) *
+      100
+    );
+
+  floChallenge.started =
+    false;
+
+  const main =
+    document.getElementById(
+      "main"
+    );
+
+  if(!main){
+    return;
+  }
+
+  main.innerHTML = `
+
+    <div class="challenge-shell">
+
+      <div class="challenge-question-card challenge-results">
+
+        <div class="challenge-label">
+          CHALLENGE COMPLETE
+        </div>
+
+        <h2 class="challenge-results-title">
+          Challenge Complete
+        </h2>
+
+        <p class="challenge-results-subtitle">
+          ${escapeHTML(
+            floChallenge.topic || ""
+          )}
+        </p>
+
+
+        <div class="challenge-final-grid">
+
+          <div class="challenge-final-card">
+
+            <div class="challenge-final-name">
+              ${escapeHTML(
+                floChallenge.myUsername
+              )}
+            </div>
+
+            <div class="challenge-final-score">
+              ${floChallenge.myScore}
+            </div>
+
+            <div class="challenge-final-stat">
+              ${myAccuracy}% accuracy
+            </div>
+
+          </div>
+
+
+          <div class="challenge-final-card">
+
+            <div class="challenge-final-name">
+              ${escapeHTML(
+                floChallenge.opponentUsername
+              )}
+            </div>
+
+            <div class="challenge-final-score">
+              ${floChallenge.opponentScore}
+            </div>
+
+            <div class="challenge-final-stat">
+              ${opponentAccuracy}% accuracy
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="challenge-room-actions">
+
+          <button
+            class="btn light"
+            onclick="exitChallengeQuiz()"
+          >
+            Back to Topic
+          </button>
+
+          <button
+            class="btn"
+            onclick="reopenChallengeMode()"
+          >
+            Play Again
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+async function copyChallengeRoomCode(){
+
+  const code =
+    floChallenge.roomCode;
+
+  if(!code){
+    return;
+  }
+
+  try{
+
+    await navigator.clipboard.writeText(
+      code
+    );
+
+    toast("Room code copied.");
+
+  }catch(_){
+
+    toast(
+      "Room code: " + code
+    );
+
+  }
+}
+
+
+async function openChallengeJoinRoom(){
+
+  const username =
+    await ensureChallengeUsername();
+
+  if(!username){
+    return;
+  }
+
+  const content =
+    document.getElementById(
+      "challengeRoomContent"
+    );
+
+  if(!content){
+    return;
+  }
+
+  content.innerHTML = `
+
+    <div class="challenge-modal-eyebrow">
+      JOIN ROOM
+    </div>
+
+    <h2 class="challenge-modal-title">
+      Join a Challenge
+    </h2>
+
+    <p class="challenge-modal-subtitle">
+      Enter the 6-character room code shared
+      by the other player.
+    </p>
+
+    <input
+      id="challengeJoinCode"
+      class="challenge-field"
+      maxlength="6"
+      placeholder="ABC123"
+      autocomplete="off"
+      oninput="
+        this.value =
+          this.value
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g,'')
+      "
+    >
+
+    <div class="challenge-room-actions">
+
+      <button
+        class="btn light"
+        onclick="renderChallengeRoomChoice()"
+      >
+        Back
+      </button>
+
+      <button
+        class="btn"
+        onclick="joinChallengeRoom()"
+      >
+        Join Room
+      </button>
+
+    </div>
+  `;
+
+  setTimeout(()=>{
+    document
+      .getElementById(
+        "challengeJoinCode"
+      )
+      ?.focus();
+  },50);
+}
+
+
+async function joinChallengeRoom(){
+
+  const input =
+    document.getElementById(
+      "challengeJoinCode"
+    );
+
+  const code =
+    input?.value
+      .trim()
+      .toUpperCase();
+
+  if(
+    !code ||
+    code.length !== 6
+  ){
+    toast("Enter a valid 6-character room code.");
+    return;
+  }
+
+  const username =
+    await ensureChallengeUsername();
+
+  if(!username){
+    return;
+  }
+
+  floChallenge.roomCode =
+    code;
+
+  floChallenge.isHost =
+    false;
+
+  floChallenge.myUsername =
+    username;
+
+  floChallenge.host =
+    null;
+
+  floChallenge.guest =
+    {
+      playerId:
+        floChallenge.playerId,
+      username,
+      ready:false
+    };
+
+  floChallenge.myReady =
+    false;
+
+  floChallenge.opponentReady =
+    false;
+
+  floChallenge.subject =
+    null;
+
+  floChallenge.topic =
+    null;
+
+  floChallenge.questionIds =
+    [];
+
+  const connected =
+    await subscribeToChallengeRoom();
+
+  if(!connected){
+    return;
+  }
+
+  await challengeBroadcast(
+    "join-request",
+    {
+      playerId:
+        floChallenge.playerId,
+
+      username
+    }
+  );
+
+  renderChallengeLobby();
+}
+
+
+function handleChallengePlayerLeft(payload){
+
+  if(
+    payload &&
+    payload.playerId
+  ){
+
+    if(
+      floChallenge.guest &&
+      payload.playerId ===
+        floChallenge.guest.playerId
+    ){
+      floChallenge.guest = null;
+    }
+
+    if(
+      floChallenge.host &&
+      payload.playerId ===
+        floChallenge.host.playerId
+    ){
+      floChallenge.host = null;
+    }
+  }
+
+  floChallenge.opponentUsername =
+    "Waiting…";
+
+  floChallenge.opponentReady =
+    false;
+
+  renderChallengeLobby();
+}
+
+
+async function leaveChallengeRoom(){
+
+  if(floChallenge.channel){
+
+    try{
+
+      await challengeBroadcast(
+        "player-left",
+        {
+          playerId:
+            floChallenge.playerId
+        }
+      );
+
+    }catch(_){}
+
+    try{
+
+      await supabaseClient.removeChannel(
+        floChallenge.channel
+      );
+
+    }catch(_){}
+
+  }
+
+  floChallenge.channel = null;
+  floChallenge.roomCode = null;
+  floChallenge.host = null;
+  floChallenge.guest = null;
+  floChallenge.started = false;
+
+  closeChallengeRoomModal();
+
+  if(selectedSubject){
+
+    renderSubject(
+      selectedSubject,
+      "topics"
+    );
+
+  }else{
+
+    navigate("home");
+
+  }
+}
+
+
+async function exitChallengeQuiz(){
+
+  if(floChallenge.channel){
+
+    try{
+
+      await challengeBroadcast(
+        "player-left",
+        {
+          playerId:
+            floChallenge.playerId
+        }
+      );
+
+    }catch(_){}
+
+    try{
+
+      await supabaseClient.removeChannel(
+        floChallenge.channel
+      );
+
+    }catch(_){}
+
+  }
+
+  floChallenge.channel = null;
+  floChallenge.started = false;
+
+  if(selectedSubject){
+
+    renderSubject(
+      selectedSubject,
+      "topics"
+    );
+
+  }else{
+
+    navigate("home");
+
+  }
+}
+
+
+function reopenChallengeMode(){
+
+  if(selectedSubject){
+
+    openChallengeRoomModal();
+
+  }else{
+
+    navigate("home");
+
+  }
+}
+
+
+/*
+ * Keep Solo Study exactly as the existing quiz.
+ * Only Challenge Mode is redirected into the
+ * Create Room / Join Room flow.
+ */
+window.selectQuizMode = function(mode){
+
+  closeQuizModeModal();
+
+  const subjectName =
+    window.pendingQuizSubject;
+
+  const topic =
+    window.pendingQuizTopic;
+
+  if(
+    !subjectName ||
+    !topic
+  ){
+    toast("Quiz topic could not be loaded.");
+    return;
+  }
+
+  if(mode === "solo"){
+
+    const subject =
+      SUBJECT_CATALOG.find(
+        s =>
+          normalize(
+            s.questionSubject ||
+            s.name
+          ) ===
+          normalize(subjectName)
+      );
+
+    const qs =
+      subject
+        ? getQuestionsForTopic(
+            subject,
+            topic
+          )
+        : allQuestions().filter(
+            q =>
+              normalize(q.subject) ===
+              normalize(subjectName) &&
+              normalize(q.topic) ===
+              normalize(topic)
+          );
+
+    if(!qs.length){
+
+      toast(
+        "No JSON questions loaded for this topic."
+      );
+
+      return;
+    }
+
+    selectedSubject =
+      subject ||
+      selectedSubject;
+
+    startQuiz(qs);
+
+    return;
+  }
+
+  if(mode === "challenge"){
+
+    openChallengeRoomModal();
+
+    return;
+  }
+};
+
+</script>
+
 </body>
 </html>
 

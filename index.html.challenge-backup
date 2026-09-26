@@ -7307,6 +7307,82 @@ async function ensureUsername() {
 }
 </script>
 
+
+<!-- QUIZ-MODE-SOLO-FIX -->
+<script>
+function selectQuizMode(mode){
+
+  if(typeof closeQuizModeModal === "function"){
+    closeQuizModeModal();
+  }else{
+    const modal =
+      document.getElementById("quizModeModal");
+
+    if(modal){
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  const subjectName =
+    window.pendingQuizSubject;
+
+  const topic =
+    window.pendingQuizTopic;
+
+  if(!subjectName || !topic){
+    toast("Quiz topic could not be loaded.");
+    return;
+  }
+
+  if(mode === "solo"){
+
+    const subject =
+      SUBJECT_CATALOG.find(
+        s =>
+          normalize(
+            s.questionSubject ||
+            s.name
+          ) ===
+          normalize(subjectName)
+      );
+
+    const qs =
+      subject
+        ? getQuestionsForTopic(
+            subject,
+            topic
+          )
+        : allQuestions().filter(
+            q =>
+              normalize(q.subject) ===
+              normalize(subjectName) &&
+              normalize(q.topic) ===
+              normalize(topic)
+          );
+
+    if(!qs.length){
+      toast(
+        "No JSON questions loaded for this topic."
+      );
+      return;
+    }
+
+    selectedSubject =
+      subject ||
+      selectedSubject;
+
+    startQuiz(qs);
+    return;
+  }
+
+  if(mode === "challenge"){
+    toast("Challenge Mode selected.");
+    return;
+  }
+}
+</script>
+
 </body>
 </html>
 

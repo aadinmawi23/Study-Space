@@ -1220,32 +1220,6 @@ body.authenticated #loginScreen {
     }
 }
 
-
-<style id="sidebar-username-brand-css">
-#sidebarStudySpaceBrand{
-  font-size:17px !important;
-  line-height:1.18 !important;
-  font-weight:600 !important;
-  letter-spacing:-0.2px !important;
-}
-
-#sidebarStudySpaceBrand .sidebar-brand-username,
-#sidebarStudySpaceBrand .sidebar-brand-space{
-  display:block !important;
-}
-
-#sidebarStudySpaceBrand .sidebar-brand-username{
-  font-size:17px !important;
-  font-weight:600 !important;
-}
-
-#sidebarStudySpaceBrand .sidebar-brand-space{
-  font-size:17px !important;
-  font-weight:600 !important;
-  margin-top:0.55em !important;
-}
-</style>
-
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1319,18 +1293,8 @@ async function initializeSupabase() {
 
     updateAuthenticationUI();
 
-    /*
-     * Do NOT block page initialization while loading
-     * the user's username. The dashboard is already
-     * rendered and should remain immediately usable.
-     */
     if(supabaseSession?.user){
-      ensureUsername().catch(error => {
-        console.warn(
-          "Username initialization failed:",
-          error
-        );
-      });
+      await ensureUsername();
     }
 
     console.log(
@@ -2912,529 +2876,6 @@ async function signOutFromGoogle() {
 
 </style>
 
-
-<style id="collapse-arrow-clean-final">
-
-/* =========================================================
-   CLEAN SIDEBAR COLLAPSE ARROW
-========================================================= */
-
-.sidebar-toggle{
-    width:32px !important;
-    height:32px !important;
-    min-width:32px !important;
-    min-height:32px !important;
-
-    padding:0 !important;
-    margin:0 !important;
-
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-
-    font-size:0 !important;
-    line-height:0 !important;
-
-    position:fixed !important;
-}
-
-/* Remove every previous arrow implementation */
-.sidebar-toggle::before,
-.sidebar-toggle::after{
-    content:"" !important;
-    position:absolute !important;
-    pointer-events:none !important;
-}
-
-/* LEFT arrow when sidebar is open */
-.sidebar-toggle::before{
-    width:9px !important;
-    height:9px !important;
-
-    left:50% !important;
-    top:50% !important;
-
-    border-left:2px solid #302d2d !important;
-    border-bottom:2px solid #302d2d !important;
-    border-right:0 !important;
-    border-top:0 !important;
-
-    transform:translate(-38%,-50%) rotate(45deg) !important;
-}
-
-/* No second arrow */
-.sidebar-toggle::after{
-    display:none !important;
-}
-
-/* RIGHT arrow when sidebar is collapsed */
-.app.sidebar-collapsed .sidebar-toggle::before{
-    border-left:0 !important;
-    border-bottom:0 !important;
-    border-right:2px solid #302d2d !important;
-    border-top:2px solid #302d2d !important;
-
-    transform:translate(-62%,-50%) rotate(45deg) !important;
-}
-
-/* Preserve the nice hover effect */
-.sidebar-toggle:hover{
-    transform:translateY(-50%) scale(1.08) !important;
-}
-
-.sidebar-toggle:hover::before{
-    border-color:#302d2d !important;
-}
-
-.sidebar-toggle:active{
-    transform:translateY(-50%) scale(.96) !important;
-}
-
-@media(max-width:768px){
-
-    .sidebar-toggle{
-        width:32px !important;
-        height:32px !important;
-        min-width:32px !important;
-        min-height:32px !important;
-    }
-
-    .sidebar-toggle::before{
-        width:9px !important;
-        height:9px !important;
-        left:50% !important;
-        top:50% !important;
-        transform:translate(-38%,-50%) rotate(45deg) !important;
-    }
-
-    .app.sidebar-collapsed .sidebar-toggle::before{
-        transform:translate(-62%,-50%) rotate(45deg) !important;
-    }
-
-    .sidebar-toggle:hover{
-        transform:translateY(-50%) scale(1.08) !important;
-    }
-
-    .sidebar-toggle:active{
-        transform:translateY(-50%) scale(.96) !important;
-    }
-}
-
-</style>
-
-<style id="universal-back-button-style">
-
-.dashboard-back-button{
-    width:38px !important;
-    height:38px !important;
-
-    padding:0 !important;
-    margin:0 0 20px 0 !important;
-
-    border:1px solid #d8cec3 !important;
-    border-radius:10px !important;
-
-    background:#fffdf9 !important;
-    color:#403a35 !important;
-
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-
-    position:relative !important;
-
-    cursor:pointer !important;
-
-    box-shadow:
-        0 4px 12px rgba(60,50,40,.10) !important;
-
-    transition:
-        background .18s ease,
-        border-color .18s ease,
-        box-shadow .18s ease,
-        transform .18s ease !important;
-}
-
-.dashboard-back-button::before{
-    content:"" !important;
-
-    position:absolute !important;
-
-    left:50% !important;
-    top:50% !important;
-
-    width:8px !important;
-    height:8px !important;
-
-    border-left:2px solid #403a35 !important;
-    border-bottom:2px solid #403a35 !important;
-
-    transform:
-        translate(-38%,-50%)
-        rotate(45deg) !important;
-
-    pointer-events:none !important;
-}
-
-.dashboard-back-button:hover{
-    background:#f7f1e8 !important;
-    border-color:#cbbeb1 !important;
-
-    box-shadow:
-        0 7px 16px rgba(60,50,40,.16) !important;
-
-    transform:translateY(-1px) !important;
-}
-
-.dashboard-back-button:active{
-    transform:
-        translateY(0)
-        scale(.96) !important;
-
-    box-shadow:
-        0 3px 8px rgba(60,50,40,.12) !important;
-}
-
-.dashboard-back-button:focus,
-.dashboard-back-button:focus-visible{
-    outline:none !important;
-}
-
-</style>
-
-
-<style id="back-button-title-row-style">
-
-/* =========================================================
-   BACK BUTTON + PAGE TITLE — SAME ROW
-   ========================================================= */
-
-.main > .dashboard-back-button{
-    display:inline-flex !important;
-    vertical-align:middle !important;
-
-    margin:0 16px 28px 0 !important;
-
-    flex-shrink:0 !important;
-}
-
-/* Pages where the title is directly after the back button */
-.main > .dashboard-back-button + h2{
-    display:inline-block !important;
-    vertical-align:middle !important;
-
-    margin:0 0 28px 0 !important;
-}
-
-/* Subject / Settings layouts where the title is inside page-head */
-.main > .dashboard-back-button + .page-head{
-    display:inline-flex !important;
-    align-items:center !important;
-    justify-content:flex-start !important;
-    vertical-align:middle !important;
-
-    width:auto !important;
-
-    margin:0 0 28px 0 !important;
-}
-
-.main > .dashboard-back-button + .page-head h2{
-    margin:0 !important;
-}
-
-/* Keep the content below the new title row */
-.main > .dashboard-back-button + h2 + *,
-.main > .dashboard-back-button + .page-head + *{
-    clear:both;
-}
-
-/* Subject tabs should remain directly below the title row */
-.main > .dashboard-back-button + .page-head + .tabs{
-    margin-top:0 !important;
-}
-
-/* Keep the title and button vertically centered */
-.main > .dashboard-back-button,
-.main > .dashboard-back-button + h2,
-.main > .dashboard-back-button + .page-head{
-    position:relative !important;
-    top:0 !important;
-}
-
-/* On narrow screens, allow the title row to wrap naturally */
-@media (max-width:700px){
-    .main > .dashboard-back-button{
-        margin-right:10px !important;
-        margin-bottom:20px !important;
-    }
-
-    .main > .dashboard-back-button + h2{
-        margin-bottom:20px !important;
-    }
-
-    .main > .dashboard-back-button + .page-head{
-        margin-bottom:20px !important;
-    }
-}
-
-</style>
-
-
-
-
-<style id="calendar-text-fit">
-.calendar-grid{
-  align-items:stretch;
-}
-
-.calendar-card .day{
-  box-sizing:border-box;
-  width:100%;
-  min-width:0;
-  overflow:hidden;
-}
-
-.calendar-review-list{
-  width:100%;
-  box-sizing:border-box;
-  overflow:hidden;
-}
-
-.calendar-review-subject{
-  width:100%;
-  min-width:0;
-  overflow:hidden;
-}
-
-.calendar-review-subject-name{
-  display:flex;
-  align-items:center;
-  width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  overflow:hidden;
-  white-space:nowrap;
-  text-overflow:ellipsis;
-  font-size:10px;
-  line-height:1.15;
-  font-weight:700;
-}
-
-.calendar-review-dot{
-  flex:0 0 6px;
-  width:6px;
-  height:6px;
-  margin-right:4px;
-  border-radius:50%;
-}
-
-.calendar-review-topics{
-  width:calc(100% - 10px);
-  margin-left:10px;
-  box-sizing:border-box;
-  overflow:hidden;
-}
-
-.calendar-review-topic{
-  width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  overflow:hidden;
-  white-space:nowrap;
-  text-overflow:ellipsis;
-  font-size:9px;
-  line-height:1.2;
-  color:#555;
-}
-</style>
-
-
-<style id="due-topics-theme">
-
-/* Due Topics — Review tab visual language only */
-#floDueTopicsPage{
-  background:var(--bg,#F7F3EE) !important;
-  padding:32px 42px !important;
-}
-
-#floDueTopicsPage > div{
-  max-width:960px !important;
-  margin:0 auto !important;
-  background:var(--surface,#FFFDF9) !important;
-  border:1px solid var(--border,#D8CEC8) !important;
-  border-radius:20px !important;
-  padding:28px 32px !important;
-  box-shadow:var(--shadow,0 8px 24px rgba(60,45,40,.08)) !important;
-  box-sizing:border-box !important;
-}
-
-#floDueTopicsPage > div > div:first-child{
-  margin-bottom:8px !important;
-}
-
-#floDueTopicsPage > div > div:first-child > div:first-child{
-  font-family:Georgia,serif !important;
-  font-size:28px !important;
-  font-weight:500 !important;
-  color:var(--text,#302D2D) !important;
-  letter-spacing:-.2px !important;
-}
-
-#floDueTopicsPage > div > div:nth-child(2){
-  color:var(--muted,#6F6462) !important;
-  font-size:13px !important;
-  margin-bottom:26px !important;
-}
-
-/* Subject sections */
-#floDueTopicsPage section{
-  margin-bottom:18px !important;
-  padding:16px 18px !important;
-  background:var(--surface,#FFFDF9) !important;
-  border:1px solid var(--border,#D8CEC8) !important;
-  border-radius:15px !important;
-}
-
-#floDueTopicsPage section > div:first-child{
-  margin-bottom:6px !important;
-  font-size:16px !important;
-  color:var(--text,#302D2D) !important;
-}
-
-#floDueTopicsPage section > div:first-child span:last-child{
-  font-family:Georgia,serif !important;
-  font-weight:600 !important;
-}
-
-/* Topic buttons */
-#floDueTopicsPage section button{
-  width:100% !important;
-  box-sizing:border-box !important;
-  border:0 !important;
-  background:transparent !important;
-  color:var(--text,#302D2D) !important;
-  font-size:14px !important;
-  line-height:1.4 !important;
-  padding:8px 10px !important;
-  border-radius:9px !important;
-  text-align:left !important;
-}
-
-#floDueTopicsPage section button:hover{
-  background:#F0EAE4 !important;
-}
-
-/* Keep the existing close button visually consistent */
-#floDueTopicsPage > div > div:first-child > button{
-  color:var(--muted,#6F6462) !important;
-  font-size:27px !important;
-  border-radius:9px !important;
-}
-
-#floDueTopicsPage > div > div:first-child > button:hover{
-  background:#F0EAE4 !important;
-}
-
-/* Empty state */
-#floDueTopicsPage > div > div:last-child{
-  color:var(--muted,#6F6462) !important;
-}
-
-</style>
-
-
-
-<style id="due-topics-sidebar">
-#floDueTopicsPage{
-  left:230px !important;
-  width:calc(100% - 230px) !important;
-  right:0 !important;
-  z-index:90 !important;
-}
-
-.sidebar{
-  z-index:100 !important;
-}
-
-#floDueTopicsPage .due-topics-back{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  border:1px solid #D8CEC8;
-  background:#FFFDF9;
-  color:#6F6462;
-  border-radius:10px;
-  padding:8px 13px;
-  font-size:13px;
-  cursor:pointer;
-  margin-bottom:18px;
-}
-
-#floDueTopicsPage .due-topics-back:hover{
-  background:#F0EAE4;
-  color:#302D2D;
-}
-
-@media(max-width:650px){
-  #floDueTopicsPage{
-    left:0 !important;
-    width:100% !important;
-  }
-}
-</style>
-
-
-
-<style id="due-topics-heading-size">
-#floDueTopicsPage h1,
-#floDueTopicsPage h2,
-#floDueTopicsPage h3,
-#floDueTopicsPage .due-topics-title,
-#floDueTopicsPage .due-topics-subject{
-  font-size:30pt !important;
-}
-</style>
-
-
-<style id="global-main-heading-size">
-#main > h2{
-  font-size:28px !important;
-  line-height:1.2 !important;
-}
-</style>
-
-
-<style id="calendar-position-adjust">
-#main:has(.calendar-card) .calendar-card{
-  transform:translateY(-8px);
-}
-</style>
-
-
-<style id="all-main-headings-size">
-#main > h1,
-#main > h2,
-#main > h3,
-#main > .page-title,
-#main > .section-title {
-  font-size:28px !important;
-  line-height:1.2 !important;
-}
-</style>
-
-
-<style id="dashboard-main-heading-size">
-#main .dashboard-title,
-#main .dashboard-heading,
-#main .home-title,
-#main .home-heading,
-#main h1:first-child,
-#main h2:first-child {
-  font-size:28px !important;
-  line-height:1.2 !important;
-}
-</style>
-
 </head>
 
 <div id="usernameSetupModal" class="username-modal-overlay">
@@ -3773,10 +3214,7 @@ async function signOutFromGoogle() {
 <aside class="sidebar">
 
 <div class="brand">
-    <h1 id="sidebarStudySpaceBrand">
-      <span class="sidebar-brand-username">Flo's</span>
-      <span class="sidebar-brand-space">Study Space</span>
-    </h1>
+    <h1>Flo's Study<br>Space</h1>
   </div>
   <div class="nav-title">WORKSPACE</div>
   <nav class="nav">
@@ -4491,6 +3929,7 @@ function calculateMastery(p){
 function recordAnswer(q,chosen,result){
 
   const p = perf(q.id);
+
   p.attempts++;
 
   if(result === "correct"){
@@ -4499,12 +3938,11 @@ function recordAnswer(q,chosen,result){
     p.streak++;
 
     const intervals = {
-      0:3,
+      0:1,
+      1:3,
       3:7,
       7:14,
-      14:21,
-      21:28,
-      28:30,
+      14:30,
       30:30
     };
 
@@ -4525,18 +3963,15 @@ function recordAnswer(q,chosen,result){
     }
 
     p.streak = 0;
-
-    /*
-      Wrong / unknown = next-day recovery.
-      The normal interval is reset so that after
-      successful recovery the sequence starts at 3 days.
-    */
     p.interval = 0;
-    p.nextReview = addDays(1);
+    p.nextReview = dateKey();
   }
 
-  p.mastery = calculateMastery(p);
-  p.lastAttempted = new Date().toISOString();
+  p.mastery =
+    calculateMastery(p);
+
+  p.lastAttempted =
+    new Date().toISOString();
 
   answerHistory.push({
     questionId:q.id,
@@ -4548,12 +3983,16 @@ function recordAnswer(q,chosen,result){
 
   save();
 
+  /* Also persist to server.js */
   fetch("/api/performance/answer",{
     method:"POST",
     headers:{
       "Content-Type":"application/json",
       ...(supabaseSession?.access_token
-        ? {"Authorization":`Bearer ${supabaseSession.access_token}`}
+        ? {
+            "Authorization":
+              `Bearer ${supabaseSession.access_token}`
+          }
         : {})
     },
     body:JSON.stringify({
@@ -4562,18 +4001,8 @@ function recordAnswer(q,chosen,result){
       result,
       timestamp:p.lastAttempted
     })
-  })
-  .then(async response => {
-    if(!response.ok){
-      const message = await response.text();
-      throw new Error(
-        `Performance sync failed (${response.status}): ${message}`
-      );
-    }
-    return response.json();
-  })
-  .catch(error=>{
-    console.error(
+  }).catch(error=>{
+    console.warn(
       "Server performance sync failed:",
       error
     );
@@ -4743,24 +4172,7 @@ async function loadBanks(){
    NAVIGATION
    ========================================================= */
 
-let floPageHistory = [];
-
-function floCurrentPage(){
-
-  return location.hash.slice(1) || "home";
-}
-
-
 function navigate(page){
-
-  const current =
-    floCurrentPage();
-
-  if(current !== page){
-
-    floPageHistory.push(current);
-
-  }
 
   selectedSubject = null;
   currentQuiz = null;
@@ -4773,64 +4185,6 @@ function navigate(page){
 
   render(page);
 }
-
-
-function goToPreviousPage(){
-
-  const previous =
-    floPageHistory.length
-      ? floPageHistory.pop()
-      : "home";
-
-  selectedSubject = null;
-  currentQuiz = null;
-
-  history.replaceState(
-    {},
-    "",
-    `#${previous}`
-  );
-
-  render(previous);
-}
-
-function installUniversalBackButton(){
-
-  const main =
-    document.getElementById("main");
-
-  if(!main){
-    return;
-  }
-
-  const existing =
-    main.querySelector(".dashboard-back-button");
-
-  if(existing){
-    existing.remove();
-  }
-
-  const page =
-    floCurrentPage();
-
-  if(page === "home"){
-    return;
-  }
-
-  main.insertAdjacentHTML(
-    "afterbegin",
-    `
-      <button
-        class="dashboard-back-button"
-        type="button"
-        onclick="goToPreviousPage()"
-        aria-label="Go back"
-        title="Go back"
-      ></button>
-    `
-  );
-}
-
 
 function render(page){
 
@@ -4869,8 +4223,6 @@ function render(page){
   else{
     renderHome();
   }
-
-  installUniversalBackButton();
 }
 
 
@@ -4887,7 +4239,12 @@ function renderHome(){
     <div class="dashboard-header-row">
 
       <div class="dashboard-title">
-<h2>
+
+        <div class="eyebrow">
+          STUDY SPACE
+        </div>
+
+        <h2>
           Dashboard
         </h2>
 
@@ -4964,14 +4321,6 @@ function renderHome(){
           </div>
 
           <div class="account-panel-divider"></div>
-
-          <button
-            type="button"
-            class="account-panel-button"
-            onclick="showUsernameSetup()"
-          >
-            Edit username
-          </button>
 
           <button
             type="button"
@@ -5788,24 +5137,6 @@ function deleteSubject(key){
 
 function openSubject(key){
 
-  const current =
-    floCurrentPage();
-
-  if(current !== "home"){
-
-    floPageHistory.push(
-      current
-    );
-
-  }
-  else{
-
-    floPageHistory.push(
-      "home"
-    );
-
-  }
-
   selectedSubject =
     getSubject(key);
 
@@ -5845,14 +5176,6 @@ function renderSubject(
 
   document.getElementById("main")
     .innerHTML = `
-      <button
-        class="dashboard-back-button subject-dashboard-back"
-        type="button"
-        onclick="navigate('home')"
-        aria-label="Back to Dashboard"
-        title="Back to Dashboard"
-      ></button>
-
 
       <button
             class="dashboard-back-button"
@@ -5932,8 +5255,6 @@ function renderSubject(
       subject
     );
   }
-
-  installUniversalBackButton();
 }
 
 
@@ -6932,7 +6253,12 @@ function renderReview(){
 
   document.getElementById("main")
     .innerHTML = `
-<h2>
+
+      <div class="eyebrow">
+        REVIEW
+      </div>
+
+      <h2>
         Review
       </h2>
 
@@ -7166,299 +6492,10 @@ function startDueReview(){
    CALENDAR
    ========================================================= */
 
-function openCalendarDueTopicsUI(date, reviews){
-
-  const existing = document.getElementById("floDueTopicsPage");
-  if(existing) existing.remove();
-
-  const grouped = {};
-
-  (reviews || []).forEach(item => {
-
-    const subject = item.subject || "Other";
-    const topic = item.topic || "Untitled Topic";
-
-    if(!grouped[subject]){
-      grouped[subject] = [];
-    }
-
-    if(!grouped[subject].includes(topic)){
-      grouped[subject].push(topic);
-    }
-
-  });
-
-  const parts = String(date).split("-");
-
-  const formattedDate =
-    new Date(
-      Number(parts[0]),
-      Number(parts[1]) - 1,
-      Number(parts[2])
-    ).toLocaleDateString(
-      "en-US",
-      {
-        month:"long",
-        day:"numeric",
-        year:"numeric"
-      }
-    );
-
-  const page = document.createElement("div");
-
-  page.id = "floDueTopicsPage";
-
-  page.style.cssText = `
-    position:fixed;
-    inset:0;
-    z-index:99999;
-    background:#fff;
-    overflow-y:auto;
-    box-sizing:border-box;
-    padding:40px 48px;
-  `;
-
-  const inner = document.createElement("div");
-
-  inner.style.cssText = `
-    max-width:900px;
-    margin:0 auto;
-  `;
-
-  const backButton = document.createElement("button");
-
-  backButton.type = "button";
-  backButton.className = "due-topics-back";
-  backButton.innerHTML = "← Back to Dashboard";
-
-  backButton.onclick = () => {
-    page.remove();
-    if(typeof navigate === "function"){
-      navigate("home");
-    }else if(typeof goHome === "function"){
-      goHome();
-    }
-  };
-
-  inner.appendChild(backButton);
-
-
-  const header = document.createElement("div");
-
-  header.style.cssText = `
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:6px;
-  `;
-
-  const title = document.createElement("div");
-
-  title.textContent = "Due Topics";
-
-  title.style.cssText = `
-    font-size:30px;
-    font-weight:700;
-    color:#222;
-  `;
-
-  const close = document.createElement("button");
-
-  close.type = "button";
-  close.textContent = "×";
-
-  close.style.cssText = `
-    border:0;
-    background:transparent;
-    color:#555;
-    font-size:30px;
-    line-height:1;
-    cursor:pointer;
-    padding:4px 8px;
-  `;
-
-  close.onclick = () => page.remove();
-
-  header.appendChild(title);
-  header.appendChild(close);
-  inner.appendChild(header);
-
-  const dateLabel = document.createElement("div");
-
-  dateLabel.textContent = formattedDate;
-
-  dateLabel.style.cssText = `
-    font-size:16px;
-    color:#777;
-    margin-bottom:34px;
-  `;
-
-  inner.appendChild(dateLabel);
-
-  Object.keys(grouped).forEach(subject => {
-
-    const section = document.createElement("section");
-
-    section.style.cssText = `
-      margin-bottom:28px;
-    `;
-
-    const subjectRow = document.createElement("div");
-
-    subjectRow.style.cssText = `
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-bottom:8px;
-      font-size:18px;
-      font-weight:700;
-      color:#222;
-    `;
-
-    const dot = document.createElement("span");
-
-    dot.style.cssText = `
-      width:9px;
-      height:9px;
-      min-width:9px;
-      border-radius:50%;
-      background:#6f8f72;
-      display:block;
-    `;
-
-    const subjectName = document.createElement("span");
-
-    subjectName.textContent = subject;
-
-    subjectRow.appendChild(dot);
-    subjectRow.appendChild(subjectName);
-    section.appendChild(subjectRow);
-
-    const topicsContainer = document.createElement("div");
-
-    topicsContainer.style.cssText = `
-      padding-left:19px;
-      display:flex;
-      flex-direction:column;
-    `;
-
-    grouped[subject].forEach(topic => {
-
-      const topicReviews =
-        (reviews || []).filter(item =>
-          String(item.subject || "Other") === String(subject) &&
-          String(item.topic || "Untitled Topic") === String(topic)
-        );
-
-      const ids =
-        topicReviews
-          .map(item => item.questionId)
-          .filter(Boolean);
-
-      const button = document.createElement("button");
-
-      button.type = "button";
-      button.textContent = topic;
-
-      button.style.cssText = `
-        border:0;
-        background:transparent;
-        text-align:left;
-        width:100%;
-        color:#333;
-        font-size:16px;
-        padding:7px 10px;
-        border-radius:7px;
-        cursor:pointer;
-      `;
-
-      button.onmouseenter = () => {
-        button.style.background = "#f5f5f5";
-      };
-
-      button.onmouseleave = () => {
-        button.style.background = "transparent";
-      };
-
-      button.onclick = () => {
-
-        /*
-          Use the same question/topic mapping as the normal
-          quiz system, then apply the exact Review-tab rule:
-          nextReview exists and is today or earlier.
-        */
-
-        const catalogSubject =
-          typeof SUBJECT_CATALOG !== "undefined"
-            ? SUBJECT_CATALOG.find(subjectItem =>
-                normalize(
-                  subjectItem.questionSubject ||
-                  subjectItem.name
-                ) === normalize(subject)
-              )
-            : null;
-
-        let topicQuestions =
-          catalogSubject
-            ? getQuestionsForTopic(
-                catalogSubject,
-                topic
-              )
-            : allQuestions().filter(q =>
-                normalize(q.subject) === normalize(subject) &&
-                normalize(q.topic) === normalize(topic)
-              );
-
-        const reviewQuestions =
-          topicQuestions.filter(q =>
-            perf(q.id).nextReview &&
-            perf(q.id).nextReview <= dateKey()
-          );
-
-        page.remove();
-
-        if(reviewQuestions.length){
-          startQuiz(reviewQuestions);
-        }else{
-          toast("No questions from this topic are currently due for review.");
-        }
-
-      };
-
-      topicsContainer.appendChild(button);
-
-    });
-
-    section.appendChild(topicsContainer);
-    inner.appendChild(section);
-
-  });
-
-  if(!Object.keys(grouped).length){
-
-    const empty = document.createElement("div");
-
-    empty.textContent =
-      "No topics are due for review on this date.";
-
-    empty.style.cssText = `
-      color:#777;
-      font-size:16px;
-      padding:20px 0;
-    `;
-
-    inner.appendChild(empty);
-
-  }
-
-  page.appendChild(inner);
-  document.body.appendChild(page);
-
-}
-
 async function renderCalendar(){
 
-  const now = calendarViewDate;
+  const now =
+    calendarViewDate;
 
   const year =
     now.getFullYear();
@@ -7483,125 +6520,52 @@ async function renderCalendar(){
   const start =
     first.getDay();
 
-  /*
-    Build the calendar from the same local question/performance
-    data used by Review. This keeps the calendar mapped to the
-    actual subject + topic of every question.
-  */
-  const calendar = {};
+  let reviewData = {
+    calendar: {}
+  };
 
-  const questions =
-    allQuestions();
+  try {
 
-  const normalIntervals = [3,7,14,21,28,30,30];
-
-  function addDaysFromDate(dateString,daysToAdd){
-
-    const parts =
-      String(dateString).split("-");
-
-    const d =
-      new Date(
-        Number(parts[0]),
-        Number(parts[1]) - 1,
-        Number(parts[2])
+    const response =
+      await fetch(
+        "/api/review-calendar",
+        {
+          headers:
+            supabaseSession?.access_token
+              ? {
+                  "Authorization":
+                    `Bearer ${supabaseSession.access_token}`
+                }
+              : {}
+        }
       );
 
-    d.setDate(
-      d.getDate() + daysToAdd
+    if(response.ok){
+      reviewData =
+        await response.json();
+    }
+
+  } catch(error){
+
+    console.error(
+      "Failed to load review calendar:",
+      error
     );
 
-    return [
-      d.getFullYear(),
-      String(d.getMonth()+1).padStart(2,"0"),
-      String(d.getDate()).padStart(2,"0")
-    ].join("-");
   }
 
-  function addReview(date,subject,topic){
+  const calendar =
+    reviewData.calendar || {};
 
-    if(!date) return;
+  const dueBy = {};
 
-    if(!calendar[date]){
-      calendar[date] = [];
-    }
+  Object.keys(calendar).forEach(date => {
 
-    const exists =
-      calendar[date].some(item =>
-        item.subject === subject &&
-        item.topic === topic
-      );
+    dueBy[date] =
+      calendar[date] || [];
 
-    if(!exists){
-      calendar[date].push({
-        subject,
-        topic
-      });
-    }
-  }
-
-  questions.forEach(q => {
-
-    const p =
-      perf(q.id);
-
-    if(!p.nextReview){
-      return;
-    }
-
-    const subject =
-      q.subject || "Other";
-
-    const topic =
-      q.topic || "Untitled Topic";
-
-    /*
-      Always show the currently scheduled review.
-    */
-    addReview(
-      p.nextReview,
-      subject,
-      topic
-    );
-
-    /*
-      Only project the normal future sequence when the question
-      is already on a normal-review interval. A recovery review
-      therefore remains a single next-day review until it is
-      successfully completed.
-    */
-    if(p.interval > 0){
-
-      let currentDate =
-        p.nextReview;
-
-      let currentInterval =
-        p.interval;
-
-      for(let i=0;i<36;i++){
-
-        const nextInterval =
-          normalIntervals.find(
-            interval => interval > currentInterval
-          ) ?? 30;
-
-        currentDate =
-          addDaysFromDate(
-            currentDate,
-            nextInterval
-          );
-
-        addReview(
-          currentDate,
-          subject,
-          topic
-        );
-
-        currentInterval =
-          nextInterval;
-      }
-    }
   });
+
 
   let cells = "";
 
@@ -7623,17 +6587,17 @@ async function renderCalendar(){
 
   });
 
+
   for(
     let i=0;
     i<start;
     i++
   ){
 
-    cells += `
-      <div class="day empty"></div>
-    `;
+    cells += "<div></div>";
 
   }
+
 
   for(
     let day=1;
@@ -7642,71 +6606,22 @@ async function renderCalendar(){
   ){
 
     const key =
-      [
-        year,
-        String(month+1).padStart(2,"0"),
-        String(day).padStart(2,"0")
-      ].join("-");
+      `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
 
     const reviews =
-      calendar[key] || [];
+      dueBy[key] || [];
 
-    const grouped = {};
-
-    reviews.forEach(item => {
-
-      if(!grouped[item.subject]){
-        grouped[item.subject] = [];
-      }
-
-      if(!grouped[item.subject].includes(item.topic)){
-        grouped[item.subject].push(item.topic);
-      }
-
-    });
-
-    const subjectMarkup =
-      Object.keys(grouped).map(subject => {
-
-        const catalogItem =
-          typeof SUBJECT_CATALOG !== "undefined"
-            ? SUBJECT_CATALOG.find(
-                item => item.name === subject
-              )
-            : null;
-
-        const accent =
-          catalogItem?.accent || "#9aa0a6";
-
-        return `
-          <div
-            class="calendar-review-subject"
-            style="--review-accent:${accent}"
-          >
-            <div
-              class="calendar-review-subject-name"
-              style="color:${accent}"
-            >
-              <span
-                class="calendar-review-dot"
-                style="background:${accent}"
-              ></span>
-              ${subject}
-            </div>
-
-            <div class="calendar-review-topics">
-              ${grouped[subject].map(topic => `
-                <div class="calendar-review-topic">
-                  ${topic}
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `;
-
-      }).join("");
+    const topics = [
+      ...new Map(
+        reviews.map(item => [
+          `${item.subject}|||${item.topic}`,
+          item
+        ])
+      ).values()
+    ];
 
     cells += `
+
       <div
         class="day ${
           key === dateKey()
@@ -7715,9 +6630,10 @@ async function renderCalendar(){
         }"
         ${
           reviews.length
-            ? `onclick='openCalendarDueTopicsUI(
-                ${JSON.stringify(key)},
-                ${JSON.stringify(reviews)}
+            ? `onclick='startQuizByIds(
+                ${JSON.stringify(
+                  reviews.map(item=>item.questionId)
+                )}
               )'`
             : ""
         }
@@ -7728,10 +6644,11 @@ async function renderCalendar(){
         </div>
 
         ${
-          reviews.length
+          topics.length
             ? `
-              <div class="calendar-review-list">
-                ${subjectMarkup}
+              <div class="due">
+                ${topics.length}
+                ${topics.length === 1 ? "topic" : "topics"}
               </div>
             `
             : ""
@@ -7742,15 +6659,13 @@ async function renderCalendar(){
 
   }
 
+
   document.getElementById("main")
     .innerHTML = `
-      <button
-        class="dashboard-back-button spaced-repetition-dashboard-back"
-        type="button"
-        onclick="navigate('home')"
-        aria-label="Back to Dashboard"
-        title="Back to Dashboard"
-      ></button>
+
+      <div class="eyebrow">
+        REVIEW SYSTEM
+      </div>
 
       <h2>
         Spaced Repetition
@@ -7827,7 +6742,12 @@ function renderTrophies(){
 
   document.getElementById("main")
     .innerHTML = `
-<h2>
+
+      <div class="eyebrow">
+        COLLECTION
+      </div>
+
+      <h2>
         Trophy Room
       </h2>
 
@@ -7923,7 +6843,12 @@ function renderProgress(){
 
   document.getElementById("main")
     .innerHTML = `
-<h2>
+
+      <div class="eyebrow">
+        STATISTICS
+      </div>
+
+      <h2>
         Progress
       </h2>
 
@@ -8047,7 +6972,12 @@ function renderSettings(){
 
   document.getElementById("main")
     .innerHTML = `
-<h2>
+
+      <div class="eyebrow">
+        PREFERENCES
+      </div>
+
+      <h2>
         Settings
       </h2>
 
@@ -8503,9 +7433,6 @@ function updateTopUserProfile(username) {
   const accountName =
     document.getElementById("accountName");
 
-  const sidebarBrand =
-    document.getElementById("sidebarStudySpaceBrand");
-
   if (!username) {
     if (usernameLabel) {
       usernameLabel.textContent = "";
@@ -8514,15 +7441,6 @@ function updateTopUserProfile(username) {
 
     if (accountName) {
       accountName.textContent = "Account";
-    }
-
-    if (sidebarBrand) {
-      const sidebarUsername =
-        sidebarBrand.querySelector(".sidebar-brand-username");
-
-      if (sidebarUsername) {
-        sidebarUsername.textContent = "Flo's";
-      }
     }
 
     return;
@@ -8542,15 +7460,6 @@ function updateTopUserProfile(username) {
 
   if (panelName) {
     panelName.textContent = username;
-  }
-
-  if (sidebarBrand) {
-    const sidebarUsername =
-      sidebarBrand.querySelector(".sidebar-brand-username");
-
-    if (sidebarUsername) {
-      sidebarUsername.textContent = username + "'s";
-    }
   }
 }
 

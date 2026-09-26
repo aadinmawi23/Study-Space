@@ -2991,7 +2991,6 @@ async function signOutFromGoogle() {
 
 <script>
 /* =========================================================
-   FLO'S STUDY SPACE
    Dashboard + Subjects + Topics + Quiz
    ========================================================= */
 
@@ -7305,6 +7304,2747 @@ async function ensureUsername() {
     showUsernameSetup();
   }
 }
+</script>
+
+
+
+
+
+
+
+
+<!-- FINAL-QUIZ-ROUTER -->
+
+<style>
+#finalQuizModal,
+#finalChallengeModal{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  box-sizing:border-box;
+  background:rgba(35,30,26,.46);
+  backdrop-filter:blur(5px);
+}
+
+#finalQuizModal.open,
+#finalChallengeModal.open{
+  display:flex;
+}
+
+.final-quiz-card,
+.final-challenge-card{
+  width:min(560px,100%);
+  max-height:90vh;
+  overflow:auto;
+  box-sizing:border-box;
+  background:#fffdf9;
+  border:1px solid #e5dcd2;
+  border-radius:24px;
+  padding:30px;
+  box-shadow:0 25px 70px rgba(40,30,20,.24);
+}
+
+.final-quiz-eyebrow{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.16em;
+  color:#8d8278;
+  margin-bottom:8px;
+}
+
+.final-quiz-title{
+  margin:0;
+  font:30px Georgia,serif;
+  color:#332d28;
+}
+
+.final-quiz-subtitle{
+  margin:9px 0 23px;
+  color:#786e66;
+  line-height:1.55;
+  font-size:14px;
+}
+
+.final-quiz-choice{
+  width:100%;
+  border:1px solid #e2d9cf;
+  background:#fff;
+  border-radius:17px;
+  padding:18px;
+  margin-top:11px;
+  text-align:left;
+  cursor:pointer;
+  transition:.15s ease;
+}
+
+.final-quiz-choice:hover{
+  transform:translateY(-1px);
+  border-color:#bcae9f;
+  box-shadow:0 8px 20px rgba(40,30,20,.07);
+}
+
+.final-quiz-choice strong{
+  display:block;
+  color:#342e29;
+  font-size:16px;
+  margin-bottom:5px;
+}
+
+.final-quiz-choice span{
+  display:block;
+  color:#817870;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.final-quiz-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:20px;
+  flex-wrap:wrap;
+}
+
+.final-room-code{
+  text-align:center;
+  margin:20px 0;
+  padding:18px;
+  border:1px dashed #d2c4b5;
+  border-radius:16px;
+  background:#faf6f0;
+}
+
+.final-room-code-label{
+  display:block;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
+  color:#8c8076;
+  margin-bottom:7px;
+}
+
+.final-room-code-value{
+  display:block;
+  font:700 31px Arial,sans-serif;
+  letter-spacing:.16em;
+  color:#2f2924;
+}
+
+.final-player{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  margin-top:9px;
+  border:1px solid #e7ded4;
+  border-radius:14px;
+  background:#fff;
+}
+
+.final-player-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.final-player-dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#b9ada2;
+}
+
+.final-player-dot.ready{
+  background:#718d6e;
+}
+
+.final-player-name{
+  font-weight:700;
+  color:#3a332d;
+}
+
+.final-player-status{
+  font-size:12px;
+  color:#877c73;
+  margin-top:2px;
+}
+
+.final-room-status{
+  text-align:center;
+  margin:18px 0 4px;
+  color:#7d736a;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.final-room-input{
+  width:100%;
+  box-sizing:border-box;
+  padding:14px 15px;
+  border:1px solid #ddd3c9;
+  border-radius:13px;
+  outline:none;
+  background:#fff;
+  font:inherit;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+
+.final-room-input:focus{
+  border-color:#ae9e8f;
+}
+
+.final-challenge-shell{
+  max-width:1000px;
+  margin:0 auto;
+  padding:30px 0 60px;
+}
+
+.final-challenge-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:18px;
+}
+
+.final-challenge-label{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.16em;
+  color:#8b8077;
+}
+
+.final-challenge-topic{
+  margin-top:4px;
+  font:25px Georgia,serif;
+  color:#322c27;
+}
+
+.final-challenge-question-count{
+  font-size:13px;
+  color:#81776e;
+  margin-top:4px;
+}
+
+.final-challenge-scores{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:13px;
+  margin-bottom:18px;
+}
+
+.final-score-card{
+  border:1px solid #e5dcd2;
+  border-radius:18px;
+  background:#fffdf9;
+  padding:17px;
+}
+
+.final-score-card.right{
+  text-align:right;
+}
+
+.final-score-name{
+  color:#776d64;
+  font-size:13px;
+  margin-bottom:5px;
+}
+
+.final-score{
+  font:700 29px Arial,sans-serif;
+  color:#2f2924;
+}
+
+.final-score-divider{
+  width:1px;
+  height:48px;
+  background:#e1d8cf;
+}
+
+.final-question-card{
+  border:1px solid #e5dcd2;
+  border-radius:22px;
+  background:#fffdf9;
+  padding:30px;
+}
+
+.final-question-number{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.13em;
+  color:#8d8177;
+  margin-bottom:13px;
+}
+
+.final-question-text{
+  margin:0 0 24px;
+  font:24px Georgia,serif;
+  line-height:1.45;
+  color:#312b26;
+}
+
+.final-options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.final-option{
+  border:1px solid #ddd4ca;
+  background:#fff;
+  border-radius:15px;
+  padding:16px;
+  text-align:left;
+  cursor:pointer;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  transition:.15s ease;
+}
+
+.final-option:hover:not(.locked){
+  border-color:#b6a696;
+  transform:translateY(-1px);
+}
+
+.final-option.locked{
+  cursor:default;
+}
+
+.final-option.correct{
+  border-color:#789572;
+  background:#eef5ed;
+}
+
+.final-option.wrong{
+  border-color:#b57d77;
+  background:#f8eeee;
+}
+
+.final-option-letter{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  border:1px solid #d5ccc3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:800;
+  flex:none;
+}
+
+.final-challenge-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:20px;
+  flex-wrap:wrap;
+}
+
+.final-challenge-message{
+  color:#776d64;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.final-answer-summary{
+  margin-top:15px;
+  padding:14px 16px;
+  border:1px solid #e7ded4;
+  background:#faf6f0;
+  border-radius:14px;
+  color:#665d55;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.final-result-box{
+  text-align:center;
+}
+
+.final-result-title{
+  margin:0 0 7px;
+  font:31px Georgia,serif;
+  color:#332d28;
+}
+
+.final-result-subtitle{
+  color:#7c7269;
+  font-size:14px;
+  margin-bottom:22px;
+}
+
+.final-result-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:13px;
+}
+
+.final-result-card{
+  border:1px solid #e5dcd2;
+  border-radius:18px;
+  padding:20px;
+  background:#fff;
+}
+
+.final-result-name{
+  font-size:13px;
+  color:#766c63;
+}
+
+.final-result-score{
+  margin-top:5px;
+  font:700 31px Arial,sans-serif;
+  color:#302a25;
+}
+
+.final-result-accuracy{
+  margin-top:6px;
+  font-size:12px;
+  color:#8b8077;
+}
+
+@media(max-width:700px){
+  .final-options,
+  .final-result-grid{
+    grid-template-columns:1fr;
+  }
+
+  .final-challenge-scores{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .final-score-divider{
+    display:none;
+  }
+
+  .final-score-card.right{
+    text-align:left;
+  }
+}
+</style>
+
+<div id="finalQuizModal" aria-hidden="true">
+  <div class="final-quiz-card">
+    <div id="finalQuizModalContent"></div>
+  </div>
+</div>
+
+<div id="finalChallengeModal" aria-hidden="true">
+  <div class="final-challenge-card">
+    <div id="finalChallengeModalContent"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const state = {
+    roomCode:null,
+    channel:null,
+    playerId:
+      (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : "player-" + Date.now() + "-" + Math.random(),
+
+    username:"",
+    opponentUsername:"Waiting…",
+
+    isHost:false,
+    opponentJoined:false,
+
+    topic:"",
+    subjectName:"",
+    questionIds:[],
+    questions:[],
+
+    ready:false,
+    opponentReady:false,
+
+    index:0,
+    answers:{},
+
+    myScore:0,
+    opponentScore:0,
+
+    myCorrect:0,
+    opponentCorrect:0,
+
+    active:false,
+    finished:false
+  };
+
+  window.__finalChallengeState = state;
+
+
+  function say(message){
+
+    if(typeof toast === "function"){
+      toast(message);
+    }else{
+      alert(message);
+    }
+
+  }
+
+
+  function closeQuizModal(){
+
+    const modal =
+      document.getElementById(
+        "finalQuizModal"
+      );
+
+    if(modal){
+      modal.classList.remove("open");
+      modal.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+    }
+
+  }
+
+
+  function closeChallengeModal(){
+
+    const modal =
+      document.getElementById(
+        "finalChallengeModal"
+      );
+
+    if(modal){
+      modal.classList.remove("open");
+      modal.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+    }
+
+  }
+
+
+  function showQuizModal(){
+
+    const modal =
+      document.getElementById(
+        "finalQuizModal"
+      );
+
+    if(!modal){
+      return;
+    }
+
+    modal.classList.add("open");
+    modal.setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+  }
+
+
+  function showChallengeModal(){
+
+    const modal =
+      document.getElementById(
+        "finalChallengeModal"
+      );
+
+    if(!modal){
+      return;
+    }
+
+    modal.classList.add("open");
+    modal.setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+  }
+
+
+  function currentQuestions(){
+
+    const subjectName =
+      window.pendingQuizSubject;
+
+    const topic =
+      window.pendingQuizTopic;
+
+    if(!subjectName || !topic){
+      return [];
+    }
+
+    const subject =
+      SUBJECT_CATALOG.find(
+        s =>
+          normalize(
+            s.questionSubject ||
+            s.name
+          ) ===
+          normalize(subjectName)
+      );
+
+    if(subject){
+
+      return (
+        getQuestionsForTopic(
+          subject,
+          topic
+        ) || []
+      );
+
+    }
+
+    return allQuestions().filter(
+      q =>
+        normalize(q.subject) ===
+        normalize(subjectName) &&
+        normalize(q.topic) ===
+        normalize(topic)
+    );
+
+  }
+
+
+  async function requireUsername(){
+
+    if(currentUsername){
+
+      return currentUsername;
+
+    }
+
+    if(
+      typeof ensureUsername ===
+      "function"
+    ){
+
+      await ensureUsername();
+
+    }
+
+    if(!currentUsername){
+
+      say(
+        "Choose a username before starting a challenge."
+      );
+
+      return null;
+
+    }
+
+    return currentUsername;
+
+  }
+
+
+  /*
+   * THIS is the function used by every
+   * Start Quiz button on the subject/topic page.
+   */
+  window.startQuizFor = function(
+    subjectName,
+    topic
+  ){
+
+    window.pendingQuizSubject =
+      subjectName;
+
+    window.pendingQuizTopic =
+      topic;
+
+    const questions =
+      currentQuestions();
+
+    if(!questions.length){
+
+      say(
+        "No JSON questions loaded for this topic."
+      );
+
+      return;
+
+    }
+
+    window.__finalQuizQuestions =
+      questions;
+
+    const content =
+      document.getElementById(
+        "finalQuizModalContent"
+      );
+
+    if(!content){
+      return;
+    }
+
+    content.innerHTML = `
+
+      <div class="final-quiz-eyebrow">
+        START QUIZ
+      </div>
+
+      <h2 class="final-quiz-title">
+        How would you like to play?
+      </h2>
+
+      <p class="final-quiz-subtitle">
+        Choose Solo Study for your normal quiz,
+        or Challenge Mode to play against another
+        player.
+      </p>
+
+      <button
+        class="final-quiz-choice"
+        onclick="window.__finalSelectQuizMode('solo')"
+      >
+        <strong>
+          Solo Study
+        </strong>
+
+        <span>
+          Practice at your own pace using the
+          existing quiz.
+        </span>
+      </button>
+
+      <button
+        class="final-quiz-choice"
+        onclick="window.__finalSelectQuizMode('challenge')"
+      >
+        <strong>
+          Challenge Mode
+        </strong>
+
+        <span>
+          Create or join a room and compete with
+          another player.
+        </span>
+      </button>
+
+      <div class="final-quiz-actions">
+
+        <button
+          class="btn light"
+          onclick="window.__finalCloseQuizModal()"
+        >
+          Cancel
+        </button>
+
+      </div>
+    `;
+
+    showQuizModal();
+
+  };
+
+
+  window.__finalCloseQuizModal =
+    closeQuizModal;
+
+
+  window.__finalSelectQuizMode =
+    async function(mode){
+
+      closeQuizModal();
+
+      const questions =
+        window.__finalQuizQuestions ||
+        currentQuestions();
+
+      if(!questions.length){
+
+        say(
+          "No JSON questions loaded for this topic."
+        );
+
+        return;
+
+      }
+
+      if(mode === "solo"){
+
+        const subjectName =
+          window.pendingQuizSubject;
+
+        const subject =
+          SUBJECT_CATALOG.find(
+            s =>
+              normalize(
+                s.questionSubject ||
+                s.name
+              ) ===
+              normalize(subjectName)
+          );
+
+        selectedSubject =
+          subject ||
+          selectedSubject;
+
+        /*
+         * Directly use the existing quiz engine.
+         * No challenge code touches it.
+         */
+        startQuiz(
+          questions
+        );
+
+        return;
+
+      }
+
+
+      if(mode === "challenge"){
+
+        const username =
+          await requireUsername();
+
+        if(!username){
+          return;
+        }
+
+        state.username =
+          username;
+
+        state.subjectName =
+          window.pendingQuizSubject;
+
+        state.topic =
+          window.pendingQuizTopic;
+
+        showChallengeChoice();
+
+      }
+
+    };
+
+
+  function showChallengeChoice(){
+
+    const content =
+      document.getElementById(
+        "finalChallengeModalContent"
+      );
+
+    content.innerHTML = `
+
+      <div class="final-quiz-eyebrow">
+        CHALLENGE MODE
+      </div>
+
+      <h2 class="final-quiz-title">
+        Play with another student
+      </h2>
+
+      <p class="final-quiz-subtitle">
+        Create a room and share the code, or
+        enter a room code someone has given you.
+      </p>
+
+      <button
+        class="final-quiz-choice"
+        onclick="window.__finalCreateRoom()"
+      >
+        <strong>
+          Create Room
+        </strong>
+
+        <span>
+          Start the room and wait for another
+          player to join.
+        </span>
+      </button>
+
+      <button
+        class="final-quiz-choice"
+        onclick="window.__finalShowJoinRoom()"
+      >
+        <strong>
+          Join Room
+        </strong>
+
+        <span>
+          Enter a six-character room code.
+        </span>
+      </button>
+
+      <div class="final-quiz-actions">
+
+        <button
+          class="btn light"
+          onclick="window.__finalCloseChallengeModal()"
+        >
+          Cancel
+        </button>
+
+      </div>
+    `;
+
+    showChallengeModal();
+
+  }
+
+
+  window.__finalCloseChallengeModal =
+    closeChallengeModal;
+
+
+  function createCode(){
+
+    const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    let code = "";
+
+    for(let i=0;i<6;i++){
+
+      code +=
+        chars[
+          Math.floor(
+            Math.random() *
+            chars.length
+          )
+        ];
+
+    }
+
+    return code;
+
+  }
+
+
+  async function connectChannel(){
+
+    if(!supabaseClient){
+
+      say(
+        "Supabase is not connected."
+      );
+
+      return false;
+
+    }
+
+    if(state.channel){
+
+      try{
+        await supabaseClient.removeChannel(
+          state.channel
+        );
+      }catch(_){}
+
+      state.channel = null;
+
+    }
+
+    const channel =
+      supabaseClient.channel(
+        "flo-final-challenge-" +
+        state.roomCode
+      );
+
+    channel.on(
+      "broadcast",
+      {event:"join"},
+      ({payload}) => {
+        onJoin(payload);
+      }
+    );
+
+    channel.on(
+      "broadcast",
+      {event:"state"},
+      ({payload}) => {
+        onState(payload);
+      }
+    );
+
+    channel.on(
+      "broadcast",
+      {event:"ready"},
+      ({payload}) => {
+        onReady(payload);
+      }
+    );
+
+    channel.on(
+      "broadcast",
+      {event:"start"},
+      ({payload}) => {
+        onStart(payload);
+      }
+    );
+
+    channel.on(
+      "broadcast",
+      {event:"answer"},
+      ({payload}) => {
+        onAnswer(payload);
+      }
+    );
+
+    channel.on(
+      "broadcast",
+      {event:"advance"},
+      ({payload}) => {
+        onAdvance(payload);
+      }
+    );
+
+    channel.on(
+      "broadcast",
+      {event:"leave"},
+      ({payload}) => {
+        onLeave(payload);
+      }
+    );
+
+    state.channel =
+      channel;
+
+    return new Promise(
+      resolve => {
+
+        let finished = false;
+
+        channel.subscribe(
+          status => {
+
+            if(
+              status === "SUBSCRIBED" &&
+              !finished
+            ){
+
+              finished = true;
+              resolve(true);
+
+            }
+
+            if(
+              (
+                status === "CHANNEL_ERROR" ||
+                status === "TIMED_OUT"
+              ) &&
+              !finished
+            ){
+
+              finished = true;
+
+              say(
+                "Could not connect to the challenge room."
+              );
+
+              resolve(false);
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+  }
+
+
+  async function send(
+    event,
+    payload
+  ){
+
+    if(!state.channel){
+      return;
+    }
+
+    await state.channel.send({
+      type:"broadcast",
+      event,
+      payload
+    });
+
+  }
+
+
+  function roomState(){
+
+    return {
+      host:
+        state.isHost
+          ? {
+              playerId:
+                state.playerId,
+              username:
+                state.username,
+              ready:
+                state.ready
+            }
+          : state.host,
+
+      guest:
+        state.isHost
+          ? (
+              state.opponentJoined
+                ? {
+                    playerId:
+                      state.opponentId,
+                    username:
+                      state.opponentUsername,
+                    ready:
+                      state.opponentReady
+                  }
+                : null
+            )
+          : state.guest,
+
+      topic:
+        state.topic,
+
+      subjectName:
+        state.subjectName,
+
+      questionIds:
+        state.questionIds
+    };
+
+  }
+
+
+  /*
+   * CREATE ROOM
+   */
+  window.__finalCreateRoom =
+    async function(){
+
+      const username =
+        await requireUsername();
+
+      if(!username){
+        return;
+      }
+
+      const questions =
+        currentQuestions();
+
+      if(!questions.length){
+
+        say(
+          "No questions are available for this topic."
+        );
+
+        return;
+
+      }
+
+      state.roomCode =
+        createCode();
+
+      state.username =
+        username;
+
+      state.isHost =
+        true;
+
+      state.opponentJoined =
+        false;
+
+      state.opponentUsername =
+        "Waiting…";
+
+      state.opponentId =
+        null;
+
+      state.ready =
+        false;
+
+      state.opponentReady =
+        false;
+
+      state.topic =
+        window.pendingQuizTopic;
+
+      state.subjectName =
+        window.pendingQuizSubject;
+
+      state.questionIds =
+        questions.map(
+          q => q.id
+        );
+
+      state.questions =
+        questions;
+
+      const connected =
+        await connectChannel();
+
+      if(!connected){
+        return;
+      }
+
+      renderLobby();
+
+    };
+
+
+  /*
+   * JOIN ROOM SCREEN
+   */
+  window.__finalShowJoinRoom =
+    function(){
+
+      const content =
+        document.getElementById(
+          "finalChallengeModalContent"
+        );
+
+      content.innerHTML = `
+
+        <div class="final-quiz-eyebrow">
+          JOIN ROOM
+        </div>
+
+        <h2 class="final-quiz-title">
+          Join a Challenge
+        </h2>
+
+        <p class="final-quiz-subtitle">
+          Enter the six-character code from the
+          player who created the room.
+        </p>
+
+        <input
+          id="finalJoinRoomCode"
+          class="final-room-input"
+          maxlength="6"
+          placeholder="ABC123"
+          autocomplete="off"
+          oninput="
+            this.value =
+              this.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g,'')
+          "
+        >
+
+        <div class="final-quiz-actions">
+
+          <button
+            class="btn light"
+            onclick="window.__finalShowChallengeChoice()"
+          >
+            Back
+          </button>
+
+          <button
+            class="btn"
+            onclick="window.__finalJoinRoom()"
+          >
+            Join Room
+          </button>
+
+        </div>
+      `;
+
+      showChallengeModal();
+
+      setTimeout(
+        () => {
+          document
+            .getElementById(
+              "finalJoinRoomCode"
+            )
+            ?.focus();
+        },
+        50
+      );
+
+    };
+
+
+  window.__finalShowChallengeChoice =
+    showChallengeChoice;
+
+
+  /*
+   * JOIN ROOM
+   */
+  window.__finalJoinRoom =
+    async function(){
+
+      const input =
+        document.getElementById(
+          "finalJoinRoomCode"
+        );
+
+      const code =
+        input?.value
+          .trim()
+          .toUpperCase();
+
+      if(
+        !code ||
+        code.length !== 6
+      ){
+
+        say(
+          "Enter a valid six-character room code."
+        );
+
+        return;
+
+      }
+
+      const username =
+        await requireUsername();
+
+      if(!username){
+        return;
+      }
+
+      state.roomCode =
+        code;
+
+      state.username =
+        username;
+
+      state.isHost =
+        false;
+
+      state.opponentJoined =
+        true;
+
+      state.opponentReady =
+        false;
+
+      state.ready =
+        false;
+
+      state.opponentUsername =
+        "Waiting for host…";
+
+      const connected =
+        await connectChannel();
+
+      if(!connected){
+        return;
+      }
+
+      await send(
+        "join",
+        {
+          playerId:
+            state.playerId,
+          username:
+            state.username
+        }
+      );
+
+      renderLobby();
+
+    };
+
+
+  function onJoin(payload){
+
+    if(!state.isHost){
+      return;
+    }
+
+    if(
+      !payload ||
+      !payload.playerId ||
+      payload.playerId ===
+        state.playerId
+    ){
+      return;
+    }
+
+    state.opponentJoined =
+      true;
+
+    state.opponentId =
+      payload.playerId;
+
+    state.opponentUsername =
+      payload.username ||
+      "Opponent";
+
+    state.opponentReady =
+      false;
+
+    send(
+      "state",
+      roomState()
+    );
+
+    renderLobby();
+
+  }
+
+
+  function onState(payload){
+
+    if(!payload){
+      return;
+    }
+
+    if(
+      payload.host
+    ){
+      state.host =
+        payload.host;
+    }
+
+    if(
+      payload.guest
+    ){
+      state.guest =
+        payload.guest;
+    }
+
+    if(
+      payload.topic
+    ){
+      state.topic =
+        payload.topic;
+    }
+
+    if(
+      payload.subjectName
+    ){
+      state.subjectName =
+        payload.subjectName;
+    }
+
+    if(
+      Array.isArray(
+        payload.questionIds
+      )
+    ){
+
+      state.questionIds =
+        payload.questionIds;
+
+    }
+
+    const host =
+      payload.host ||
+      state.host;
+
+    const guest =
+      payload.guest ||
+      state.guest;
+
+    if(host){
+
+      if(
+        host.playerId ===
+          state.playerId
+      ){
+
+        state.isHost = true;
+
+      }else{
+
+        state.opponentJoined =
+          true;
+
+        state.opponentUsername =
+          host.username ||
+          state.opponentUsername;
+
+        state.opponentId =
+          host.playerId;
+
+        state.opponentReady =
+          !!host.ready;
+
+      }
+
+    }
+
+    if(guest){
+
+      if(
+        guest.playerId ===
+          state.playerId
+      ){
+
+        state.isHost =
+          false;
+
+        state.ready =
+          !!guest.ready;
+
+      }else{
+
+        state.opponentJoined =
+          true;
+
+        state.opponentUsername =
+          guest.username ||
+          state.opponentUsername;
+
+        state.opponentId =
+          guest.playerId;
+
+        state.opponentReady =
+          !!guest.ready;
+
+      }
+
+    }
+
+    renderLobby();
+
+  }
+
+
+  function onReady(payload){
+
+    if(
+      !payload ||
+      payload.playerId ===
+        state.playerId
+    ){
+      return;
+    }
+
+    state.opponentReady =
+      !!payload.ready;
+
+    renderLobby();
+
+    if(state.isHost){
+
+      send(
+        "state",
+        roomState()
+      );
+
+    }
+
+  }
+
+
+  window.__finalToggleReady =
+    async function(){
+
+      if(!state.opponentJoined){
+
+        say(
+          "Waiting for another player to join."
+        );
+
+        return;
+
+      }
+
+      state.ready =
+        !state.ready;
+
+      await send(
+        "ready",
+        {
+          playerId:
+            state.playerId,
+          username:
+            state.username,
+          ready:
+            state.ready
+        }
+      );
+
+      if(state.isHost){
+
+        renderLobby();
+
+        await send(
+          "state",
+          roomState()
+        );
+
+      }else{
+
+        renderLobby();
+
+      }
+
+    };
+
+
+  function startGame(){
+
+    if(
+      !state.isHost ||
+      !state.opponentJoined ||
+      !state.ready ||
+      !state.opponentReady
+    ){
+      return;
+    }
+
+    send(
+      "start",
+      {
+        topic:
+          state.topic,
+
+        subjectName:
+          state.subjectName,
+
+        questionIds:
+          state.questionIds
+      }
+    );
+
+    beginGame(
+      state.questionIds
+    );
+
+  }
+
+
+  window.__finalStartGame =
+    startGame;
+
+
+  function onStart(payload){
+
+    if(!payload){
+      return;
+    }
+
+    if(
+      Array.isArray(
+        payload.questionIds
+      )
+    ){
+
+      state.questionIds =
+        payload.questionIds;
+
+    }
+
+    if(payload.topic){
+
+      state.topic =
+        payload.topic;
+
+    }
+
+    beginGame(
+      state.questionIds
+    );
+
+  }
+
+
+  function beginGame(ids){
+
+    const lookup =
+      allQuestions();
+
+    state.questions =
+      (ids || [])
+        .map(
+          id =>
+            lookup.find(
+              q =>
+                String(q.id) ===
+                String(id)
+            )
+        )
+        .filter(Boolean);
+
+    if(!state.questions.length){
+
+      say(
+        "The challenge questions could not be loaded."
+      );
+
+      return;
+
+    }
+
+    state.index =
+      0;
+
+    state.answers =
+      {};
+
+    state.myScore =
+      0;
+
+    state.opponentScore =
+      0;
+
+    state.myCorrect =
+      0;
+
+    state.opponentCorrect =
+      0;
+
+    state.active =
+      true;
+
+    state.finished =
+      false;
+
+    closeChallengeModal();
+
+    renderChallengeQuiz();
+
+  }
+
+
+  function answerCurrent(
+    choice
+  ){
+
+    if(!state.active){
+      return;
+    }
+
+    const q =
+      state.questions[
+        state.index
+      ];
+
+    if(!q){
+      return;
+    }
+
+    if(!state.answers[state.index]){
+
+      state.answers[state.index] = {
+        me:null,
+        opponent:null
+      };
+
+    }
+
+    const slot =
+      state.answers[
+        state.index
+      ];
+
+    if(slot.me){
+      return;
+    }
+
+    const result =
+      choice === "UNKNOWN"
+        ? "unknown"
+        : choice === q.answer
+          ? "correct"
+          : "wrong";
+
+    slot.me = {
+      choice,
+      result
+    };
+
+    if(result === "correct"){
+
+      state.myScore++;
+      state.myCorrect++;
+
+      if(typeof playAppSound === "function"){
+        playAppSound("correct");
+      }
+
+    }else{
+
+      if(typeof playAppSound === "function"){
+        playAppSound("wrong");
+      }
+
+    }
+
+    send(
+      "answer",
+      {
+        playerId:
+          state.playerId,
+
+        username:
+          state.username,
+
+        index:
+          state.index,
+
+        choice,
+        result
+      }
+    );
+
+    renderChallengeQuiz();
+
+  }
+
+
+  window.__finalAnswer =
+    answerCurrent;
+
+
+  function onAnswer(payload){
+
+    if(
+      !payload ||
+      payload.playerId ===
+        state.playerId
+    ){
+      return;
+    }
+
+    if(
+      payload.index !==
+        state.index
+    ){
+      return;
+    }
+
+    if(!state.answers[state.index]){
+
+      state.answers[state.index] = {
+        me:null,
+        opponent:null
+      };
+
+    }
+
+    const slot =
+      state.answers[
+        state.index
+      ];
+
+    if(slot.opponent){
+      return;
+    }
+
+    state.opponentUsername =
+      payload.username ||
+      state.opponentUsername;
+
+    slot.opponent = {
+      choice:
+        payload.choice,
+      result:
+        payload.result
+    };
+
+    if(
+      payload.result ===
+      "correct"
+    ){
+
+      state.opponentScore++;
+      state.opponentCorrect++;
+
+    }
+
+    renderChallengeQuiz();
+
+  }
+
+
+  function nextQuestion(){
+
+    if(!state.active){
+      return;
+    }
+
+    const slot =
+      state.answers[
+        state.index
+      ];
+
+    if(
+      !slot ||
+      !slot.me ||
+      !slot.opponent
+    ){
+      return;
+    }
+
+    if(
+      state.index >=
+      state.questions.length - 1
+    ){
+
+      finishChallenge();
+      return;
+
+    }
+
+    /*
+     * Host controls advancing the shared question.
+     * This prevents the two players from desynchronising.
+     */
+    if(!state.isHost){
+
+      renderChallengeQuiz();
+      return;
+
+    }
+
+    const next =
+      state.index + 1;
+
+    send(
+      "advance",
+      {
+        index:next
+      }
+    );
+
+    advanceTo(
+      next
+    );
+
+  }
+
+
+  window.__finalNextQuestion =
+    nextQuestion;
+
+
+  function onAdvance(payload){
+
+    if(
+      !payload ||
+      typeof payload.index !==
+        "number"
+    ){
+      return;
+    }
+
+    advanceTo(
+      payload.index
+    );
+
+  }
+
+
+  function advanceTo(index){
+
+    if(
+      index !==
+        state.index + 1
+    ){
+      return;
+    }
+
+    state.index =
+      index;
+
+    renderChallengeQuiz();
+
+  }
+
+
+  function finishChallenge(){
+
+    if(state.finished){
+      return;
+    }
+
+    state.active =
+      false;
+
+    state.finished =
+      true;
+
+    if(typeof playAppSound === "function"){
+      playAppSound("complete");
+    }
+
+    const total =
+      state.questions.length;
+
+    const myAccuracy =
+      Math.round(
+        state.myCorrect /
+        Math.max(1,total) *
+        100
+      );
+
+    const opponentAccuracy =
+      Math.round(
+        state.opponentCorrect /
+        Math.max(1,total) *
+        100
+      );
+
+    const main =
+      document.getElementById(
+        "main"
+      );
+
+    main.innerHTML = `
+
+      <div class="final-challenge-shell">
+
+        <div class="final-question-card final-result-box">
+
+          <div class="final-challenge-label">
+            CHALLENGE COMPLETE
+          </div>
+
+          <h2 class="final-result-title">
+            Challenge Complete
+          </h2>
+
+          <p class="final-result-subtitle">
+            ${escapeHTML(
+              state.topic || ""
+            )}
+          </p>
+
+          <div class="final-result-grid">
+
+            <div class="final-result-card">
+
+              <div class="final-result-name">
+                ${escapeHTML(
+                  state.username
+                )}
+              </div>
+
+              <div class="final-result-score">
+                ${state.myScore}
+              </div>
+
+              <div class="final-result-accuracy">
+                ${myAccuracy}% accuracy
+              </div>
+
+            </div>
+
+            <div class="final-result-card">
+
+              <div class="final-result-name">
+                ${escapeHTML(
+                  state.opponentUsername
+                )}
+              </div>
+
+              <div class="final-result-score">
+                ${state.opponentScore}
+              </div>
+
+              <div class="final-result-accuracy">
+                ${opponentAccuracy}% accuracy
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="final-quiz-actions">
+
+            <button
+              class="btn light"
+              onclick="window.__finalLeaveChallenge()"
+            >
+              Back to Topic
+            </button>
+
+            <button
+              class="btn"
+              onclick="window.startQuizFor(
+                ${JSON.stringify(state.subjectName)},
+                ${JSON.stringify(state.topic)}
+              )"
+            >
+              Play Again
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  window.__finalFinishChallenge =
+    finishChallenge;
+
+
+  function renderLobby(){
+
+    const content =
+      document.getElementById(
+        "finalChallengeModalContent"
+      );
+
+    const opponentReady =
+      !!state.opponentReady;
+
+    const bothReady =
+      state.opponentJoined &&
+      state.ready &&
+      opponentReady;
+
+    content.innerHTML = `
+
+      <div class="final-quiz-eyebrow">
+        ${state.isHost
+          ? "CREATE ROOM"
+          : "JOIN ROOM"}
+      </div>
+
+      <h2 class="final-quiz-title">
+        ${escapeHTML(
+          state.topic ||
+          "Challenge Room"
+        )}
+      </h2>
+
+      <p class="final-quiz-subtitle">
+        ${
+          state.isHost
+            ? "Share the room code with another player."
+            : "You have joined the challenge room."
+        }
+      </p>
+
+      <div class="final-room-code">
+
+        <span class="final-room-code-label">
+          ROOM CODE
+        </span>
+
+        <span class="final-room-code-value">
+          ${escapeHTML(
+            state.roomCode || ""
+          )}
+        </span>
+
+      </div>
+
+      <div class="final-player">
+
+        <div class="final-player-left">
+
+          <span
+            class="final-player-dot ${
+              state.ready
+                ? "ready"
+                : ""
+            }"
+          ></span>
+
+          <div>
+
+            <div class="final-player-name">
+              ${escapeHTML(
+                state.username
+              )}
+            </div>
+
+            <div class="final-player-status">
+              You · ${
+                state.ready
+                  ? "Ready"
+                  : "Not ready"
+              }
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="final-player">
+
+        <div class="final-player-left">
+
+          <span
+            class="final-player-dot ${
+              opponentReady
+                ? "ready"
+                : ""
+            }"
+          ></span>
+
+          <div>
+
+            <div class="final-player-name">
+              ${escapeHTML(
+                state.opponentUsername
+              )}
+            </div>
+
+            <div class="final-player-status">
+              ${
+                state.opponentJoined
+                  ? (
+                      opponentReady
+                        ? "Ready"
+                        : "Not ready"
+                    )
+                  : "Waiting for opponent…"
+              }
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="final-room-status">
+
+        ${
+          !state.opponentJoined
+            ? "Waiting for another player to join…"
+            : !state.ready
+              ? "Click Ready when you are ready."
+              : !opponentReady
+                ? "Waiting for the other player to ready up…"
+                : "Both players are ready."
+        }
+
+      </div>
+
+      <div class="final-quiz-actions">
+
+        ${
+          state.isHost &&
+          !state.opponentJoined
+            ? `
+              <button
+                class="btn light"
+                onclick="window.__finalCopyRoomCode()"
+              >
+                Copy Code
+              </button>
+            `
+            : ""
+        }
+
+        ${
+          state.opponentJoined
+            ? `
+              <button
+                class="btn"
+                onclick="window.__finalToggleReady()"
+              >
+                ${
+                  state.ready
+                    ? "Not Ready"
+                    : "Ready"
+                }
+              </button>
+            `
+            : ""
+        }
+
+        ${
+          state.isHost &&
+          bothReady
+            ? `
+              <button
+                class="btn"
+                onclick="window.__finalStartGame()"
+              >
+                Start Challenge
+              </button>
+            `
+            : ""
+        }
+
+        <button
+          class="btn light"
+          onclick="window.__finalLeaveChallenge()"
+        >
+          Leave Room
+        </button>
+
+      </div>
+    `;
+
+    showChallengeModal();
+
+  }
+
+
+  window.__finalCopyRoomCode =
+    async function(){
+
+      try{
+
+        await navigator.clipboard.writeText(
+          state.roomCode
+        );
+
+        say(
+          "Room code copied."
+        );
+
+      }catch(_){
+
+        say(
+          "Room code: " +
+          state.roomCode
+        );
+
+      }
+
+    };
+
+
+  function renderChallengeQuiz(){
+
+    const main =
+      document.getElementById(
+        "main"
+      );
+
+    const q =
+      state.questions[
+        state.index
+      ];
+
+    if(!main || !q){
+      return;
+    }
+
+    const number =
+      state.index + 1;
+
+    const total =
+      state.questions.length;
+
+    if(!state.answers[state.index]){
+
+      state.answers[state.index] = {
+        me:null,
+        opponent:null
+      };
+
+    }
+
+    const slot =
+      state.answers[
+        state.index
+      ];
+
+    const both =
+      !!slot.me &&
+      !!slot.opponent;
+
+    const mine =
+      !!slot.me;
+
+    main.innerHTML = `
+
+      <div class="final-challenge-shell">
+
+        <div class="final-challenge-header">
+
+          <div>
+
+            <div class="final-challenge-label">
+              CHALLENGE MODE
+            </div>
+
+            <div class="final-challenge-topic">
+              ${escapeHTML(
+                state.topic || ""
+              )}
+            </div>
+
+            <div class="final-challenge-question-count">
+              Question ${number} / ${total}
+            </div>
+
+          </div>
+
+          <button
+            class="btn light"
+            onclick="window.__finalLeaveChallenge()"
+          >
+            ← Exit Challenge
+          </button>
+
+        </div>
+
+
+        <div class="final-challenge-scores">
+
+          <div class="final-score-card">
+
+            <div class="final-score-name">
+              ${escapeHTML(
+                state.username
+              )}
+            </div>
+
+            <div class="final-score">
+              ${state.myScore}
+            </div>
+
+          </div>
+
+
+          <div class="final-score-divider"></div>
+
+
+          <div class="final-score-card right">
+
+            <div class="final-score-name">
+              ${escapeHTML(
+                state.opponentUsername
+              )}
+            </div>
+
+            <div class="final-score">
+              ${state.opponentScore}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="final-question-card">
+
+          <div class="final-question-number">
+            QUESTION ${number} / ${total}
+          </div>
+
+          <h2 class="final-question-text">
+            ${escapeHTML(
+              q.question
+            )}
+          </h2>
+
+
+          <div class="final-options">
+
+            ${["A","B","C","D"].map(
+              letter => {
+
+                let extra = "";
+
+                if(both){
+
+                  if(
+                    letter ===
+                    q.answer
+                  ){
+                    extra += " correct";
+                  }
+
+                  if(
+                    slot.me &&
+                    slot.me.result === "wrong" &&
+                    slot.me.choice === letter
+                  ){
+                    extra += " wrong";
+                  }
+
+                }
+
+                return `
+
+                  <button
+                    class="
+                      final-option
+                      ${extra}
+                      ${mine ? "locked" : ""}
+                    "
+                    ${
+                      mine
+                        ? "disabled"
+                        : ""
+                    }
+                    onclick="
+                      window.__finalAnswer('${letter}')
+                    "
+                  >
+
+                    <span class="final-option-letter">
+                      ${letter}
+                    </span>
+
+                    <span>
+                      ${escapeHTML(
+                        q.options[letter]
+                      )}
+                    </span>
+
+                  </button>
+
+                `;
+
+              }
+            ).join("")}
+
+          </div>
+
+
+          <div class="final-challenge-bottom">
+
+            <button
+              class="unknown"
+              ${
+                mine
+                  ? "disabled"
+                  : ""
+              }
+              onclick="
+                window.__finalAnswer('UNKNOWN')
+              "
+            >
+              I don't know
+            </button>
+
+            <div class="final-challenge-message">
+
+              ${
+                !mine
+                  ? "Choose your answer."
+                  : !both
+                    ? "<strong>Answer locked.</strong> Waiting for the other player…"
+                    : "Both players have answered. Answer revealed."
+              }
+
+            </div>
+
+            ${
+              both
+                ? (
+                    state.index <
+                    state.questions.length - 1
+                      ? state.isHost
+                        ? `
+                          <button
+                            class="btn"
+                            onclick="
+                              window.__finalNextQuestion()
+                            "
+                          >
+                            Next Question →
+                          </button>
+                        `
+                        : `
+                          <span
+                            class="small"
+                          >
+                            Waiting for host…
+                          </span>
+                        `
+                      : `
+                        <button
+                          class="btn"
+                          onclick="
+                            window.__finalFinishChallenge()
+                          "
+                        >
+                          Challenge Complete
+                        </button>
+                  )
+                : ""
+            }
+
+          </div>
+
+
+          ${
+            both
+              ? `
+                <div class="final-answer-summary">
+
+                  <strong>
+                    ${escapeHTML(
+                      state.username
+                    )}
+                  </strong>
+
+                  :
+                  ${
+                    slot.me.result === "correct"
+                      ? "Correct"
+                      : slot.me.result === "unknown"
+                        ? "Not learnt"
+                        : "Incorrect"
+                  }
+
+                  &nbsp; · &nbsp;
+
+                  <strong>
+                    ${escapeHTML(
+                      state.opponentUsername
+                    )}
+                  </strong>
+
+                  :
+                  ${
+                    slot.opponent.result === "correct"
+                      ? "Correct"
+                      : slot.opponent.result === "unknown"
+                        ? "Not learnt"
+                        : "Incorrect"
+                  }
+
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  function onLeave(payload){
+
+    if(
+      payload &&
+      payload.playerId ===
+        state.playerId
+    ){
+      return;
+    }
+
+    state.opponentJoined =
+      false;
+
+    state.opponentUsername =
+      "Waiting…";
+
+    state.opponentReady =
+      false;
+
+    state.opponentId =
+      null;
+
+    if(state.active){
+
+      state.active =
+        false;
+
+      say(
+        "The other player left the challenge."
+      );
+
+      if(state.channel){
+
+        try{
+          supabaseClient.removeChannel(
+            state.channel
+          );
+        }catch(_){}
+
+        state.channel = null;
+
+      }
+
+      if(selectedSubject){
+
+        renderSubject(
+          selectedSubject,
+          "topics"
+        );
+
+      }else{
+
+        navigate("home");
+
+      }
+
+      return;
+
+    }
+
+    renderLobby();
+
+  }
+
+
+  window.__finalLeaveChallenge =
+    async function(){
+
+      if(state.channel){
+
+        try{
+
+          await send(
+            "leave",
+            {
+              playerId:
+                state.playerId
+            }
+          );
+
+        }catch(_){}
+
+        try{
+
+          await supabaseClient.removeChannel(
+            state.channel
+          );
+
+        }catch(_){}
+
+      }
+
+      state.channel = null;
+      state.active = false;
+      state.finished = false;
+      state.roomCode = null;
+
+      closeChallengeModal();
+
+      if(selectedSubject){
+
+        renderSubject(
+          selectedSubject,
+          "topics"
+        );
+
+      }else{
+
+        navigate("home");
+
+      }
+
+    };
+
+})();
+
+/*
+ * Final global aliases.
+ * These deliberately override any earlier
+ * duplicate quiz-mode handlers.
+ */
+window.openQuizModeModal =
+  window.startQuizFor;
+
+window.selectQuizMode =
+  window.__finalSelectQuizMode;
+
 </script>
 
 </body>

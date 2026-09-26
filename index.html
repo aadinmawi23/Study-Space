@@ -11431,6 +11431,8 @@ async function ensureUsername() {
     challenge.channel =
       channel;
 
+    startChallengeLobbyPolling();
+
 
     return new Promise(
       resolve => {

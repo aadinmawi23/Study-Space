@@ -1656,6 +1656,103 @@ app.get(
 );
 
 /* =======================================================
+   DELETE IMPORTED QUESTION BANK
+======================================================= */
+
+app.delete(
+  "/api/question-banks/:filename",
+  async (req, res) => {
+
+    try {
+
+      await ensureDirectories();
+
+      const filename =
+        safeFilename(
+          req.params?.filename
+        );
+
+      if (
+        !filename ||
+        !filename.toLowerCase().endsWith(".json")
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            error:
+              "A valid JSON filename is required."
+          });
+
+      }
+
+      const destination =
+        path.join(
+          QUESTION_BANK_DIR,
+          filename
+        );
+
+      try {
+
+        await fs.access(
+          destination
+        );
+
+      }
+      catch {
+
+        return res
+          .status(404)
+          .json({
+            error:
+              "Question bank file not found."
+          });
+
+      }
+
+      await fs.unlink(
+        destination
+      );
+
+      const database =
+        await loadQuestionBanks();
+
+      res.json({
+
+        ok: true,
+
+        filename,
+
+        totalQuestions:
+          database.totalQuestions
+
+      });
+
+    }
+    catch (error) {
+
+      console.error(
+        "Question bank delete error:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+
+          error:
+            error.message ||
+            "Could not delete question bank."
+
+        });
+
+    }
+
+  }
+);
+
+
+/* =======================================================
    ALL QUESTIONS
 ======================================================= */
 

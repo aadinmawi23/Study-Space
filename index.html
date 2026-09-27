@@ -12014,6 +12014,78 @@ async function ensureUsername() {
           card.dataset.roomCode ||
           "";
 
+        const returnButton =
+          card.querySelector(
+            'button[onclick*="__floReturnToChallengeRoom"]'
+          );
+
+        if(returnButton){
+
+          returnButton.style.padding =
+            "9px 14px";
+
+          returnButton.style.fontSize =
+            "13px";
+
+          returnButton.style.minWidth =
+            "0";
+
+          returnButton.style.whiteSpace =
+            "nowrap";
+
+          const deleteButton =
+            document.createElement(
+              "button"
+            );
+
+          deleteButton.type =
+            "button";
+
+          deleteButton.innerHTML =
+            "🗑";
+
+          deleteButton.setAttribute(
+            "aria-label",
+            "Delete saved room"
+          );
+
+          deleteButton.style.cssText = `
+            flex:0 0 auto;
+            width:34px;
+            height:34px;
+            border:0;
+            border-radius:10px;
+            background:#d9534f;
+            color:#fff;
+            font-size:22px;
+            line-height:1;
+            font-weight:600;
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          `;
+
+          deleteButton.addEventListener(
+            "click",
+            function(event){
+
+              event.preventDefault();
+              event.stopPropagation();
+
+              window.__floDeleteChallengeRoom(
+                roomCode
+              );
+
+            }
+          );
+
+          returnButton.parentElement.appendChild(
+            deleteButton
+          );
+
+        }
+
         if(!roomCode){
           return;
         }

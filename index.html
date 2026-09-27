@@ -10768,60 +10768,106 @@ async function ensureUsername() {
               String(room.room_code || "");
 
             return `
-              <div style="
-                margin-top:10px;
-                padding:15px;
-                border:1px solid rgba(0,0,0,.08);
-                border-radius:14px;
-                background:rgba(255,255,255,.7);
-              ">
+              <div
+                class="flo-saved-room-wrap"
+                data-room-code="${code}"
+                style="
+                  margin-top:10px;
+                  position:relative;
+                  overflow:hidden;
+                  border-radius:14px;
+                "
+              >
 
-                <div style="
-                  display:flex;
-                  justify-content:space-between;
-                  align-items:center;
-                  gap:12px;
-                ">
+                <button
+                  type="button"
+                  onclick='
+                    window.__floDeleteChallengeRoom(
+                      ${JSON.stringify(code)}
+                    )
+                  '
+                  style="
+                    position:absolute;
+                    right:0;
+                    top:0;
+                    bottom:0;
+                    width:92px;
+                    border:0;
+                    background:#d9534f;
+                    color:#fff;
+                    font-weight:700;
+                    cursor:pointer;
+                    z-index:0;
+                  "
+                >
+                  Delete
+                </button>
 
-                  <div style="min-width:0;">
+                <div
+                  class="flo-saved-room-card"
+                  ontouchstart="window.__floSavedRoomTouchStart(event)"
+                  ontouchmove="window.__floSavedRoomTouchMove(event)"
+                  ontouchend="window.__floSavedRoomTouchEnd(event)"
+                  style="
+                    position:relative;
+                    z-index:1;
+                    padding:15px;
+                    border:1px solid rgba(0,0,0,.08);
+                    border-radius:14px;
+                    background:rgba(255,255,255,.96);
+                    transition:transform .2s ease;
+                    touch-action:pan-y;
+                  "
+                >
 
-                    <div style="
-                      font-weight:700;
-                      font-size:15px;
-                    ">
-                      ${room.topic || "Challenge"}
+                  <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:12px;
+                  ">
+
+                    <div style="min-width:0;">
+
+                      <div style="
+                        font-weight:700;
+                        font-size:15px;
+                      ">
+                        ${room.topic || "Challenge"}
+                      </div>
+
+                      <div style="
+                        margin-top:4px;
+                        font-size:12px;
+                        color:#777;
+                      ">
+                        Room ${code}
+                        · ${statusLabel}
+                      </div>
+
+                      <div style="
+                        margin-top:4px;
+                        font-size:12px;
+                        color:#777;
+                      ">
+                        ${opponent}
+                        · Question ${progress}
+                      </div>
+
                     </div>
 
-                    <div style="
-                      margin-top:4px;
-                      font-size:12px;
-                      color:#777;
-                    ">
-                      Room ${code}
-                      · ${statusLabel}
-                    </div>
-
-                    <div style="
-                      margin-top:4px;
-                      font-size:12px;
-                      color:#777;
-                    ">
-                      ${opponent}
-                      · Question ${progress}
-                    </div>
+                    <button
+                      class="btn"
+                      onclick='
+                        window.__floReturnToChallengeRoom(
+                          ${JSON.stringify(code)}
+                        )
+                      '
+                    >
+                      Return to Room
+                    </button>
 
                   </div>
-
-                  <button
-                    class="btn"
-                    onclick='
-                      window.__floReturnToChallengeRoom(
-                        ${JSON.stringify(code)}
-                      )
-                    '
-                  >
-                    Return to Room
-                  </button>
 
                 </div>
 
@@ -10853,6 +10899,142 @@ async function ensureUsername() {
             Could not load saved rooms.
           </div>
         `;
+
+      }
+
+    };
+
+
+  let floSavedRoomSwipe = {
+    startX: 0,
+    currentX: 0,
+    card: null
+  };
+
+  window.__floSavedRoomTouchStart =
+    function(event){
+
+      const touch =
+        event.touches &&
+        event.touches[0];
+
+      if(!touch){
+        return;
+      }
+
+      floSavedRoomSwipe.startX =
+        touch.clientX;
+
+      floSavedRoomSwipe.currentX =
+        touch.clientX;
+
+      floSavedRoomSwipe.card =
+        event.currentTarget;
+
+    };
+
+  window.__floSavedRoomTouchMove =
+    function(event){
+
+      const touch =
+        event.touches &&
+        event.touches[0];
+
+      const card =
+        floSavedRoomSwipe.card;
+
+      if(!touch || !card){
+        return;
+      }
+
+      floSavedRoomSwipe.currentX =
+        touch.clientX;
+
+      const delta =
+        touch.clientX -
+        floSavedRoomSwipe.startX;
+
+      if(delta < 0){
+
+        const offset =
+          Math.max(
+            -92,
+            delta
+          );
+
+        card.style.transform =
+          `translateX(${offset}px)`;
+
+      }
+
+    };
+
+  window.__floSavedRoomTouchEnd =
+    function(){
+
+      const card =
+        floSavedRoomSwipe.card;
+
+      if(!card){
+        return;
+      }
+
+      const delta =
+        floSavedRoomSwipe.currentX -
+        floSavedRoomSwipe.startX;
+
+      card.style.transform =
+        delta <= -45
+          ? "translateX(-92px)"
+          : "translateX(0)";
+
+      floSavedRoomSwipe.card =
+        null;
+
+    };
+
+  window.__floDeleteChallengeRoom =
+    async function(roomCode){
+
+      if(!roomCode){
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          "Delete this saved room? This will permanently remove the room and its saved progress."
+        );
+
+      if(!confirmed){
+        return;
+      }
+
+      try{
+
+        await floChallengeApi(
+          `/api/challenge-rooms/${encodeURIComponent(roomCode)}`,
+          {
+            method:"DELETE"
+          }
+        );
+
+        toast(
+          "Saved room deleted."
+        );
+
+        await renderPersistentChallengeRooms();
+
+      }catch(error){
+
+        console.error(
+          "Could not delete challenge room:",
+          error
+        );
+
+        toast(
+          error?.message ||
+          "Could not delete saved room."
+        );
 
       }
 

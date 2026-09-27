@@ -1528,6 +1528,105 @@ app.post(
 
 
 /* =======================================================
+   DELETE TWO-PLAYER CHALLENGE ROOM
+======================================================= */
+
+app.delete(
+  "/api/challenge-rooms/:roomCode",
+  async (req, res) => {
+
+    try {
+
+      const user =
+        await getAuthenticatedUser(req);
+
+      if (!requireAuthenticatedUser(user, res)) {
+        return;
+      }
+
+      const roomCode =
+        String(
+          req.params.roomCode || ""
+        )
+        .trim()
+        .toUpperCase();
+
+      if (!roomCode) {
+        return res
+          .status(400)
+          .json({
+            error:
+              "roomCode is required."
+          });
+      }
+
+      const supabase =
+        await getUserSupabaseClient(req);
+
+      const {
+        data: room,
+        error: loadError
+      } = await supabase
+        .from("challenge_rooms")
+        .select("id,host_user_id,guest_user_id")
+        .eq("room_code", roomCode)
+        .or(
+          `host_user_id.eq.${user.id},guest_user_id.eq.${user.id}`
+        )
+        .maybeSingle();
+
+      if (loadError) {
+        throw loadError;
+      }
+
+      if (!room) {
+        return res
+          .status(404)
+          .json({
+            error:
+              "Challenge room not found."
+          });
+      }
+
+      const {
+        error: deleteError
+      } = await supabase
+        .from("challenge_rooms")
+        .delete()
+        .eq("id", room.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      res.json({
+        success: true,
+        roomCode
+      });
+
+    }
+    catch (error) {
+
+      console.error(
+        "Challenge room delete error:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          error:
+            error.message ||
+            "Could not delete challenge room."
+        });
+
+    }
+
+  }
+);
+
+
+/* =======================================================
    QUESTION BANK API
 ======================================================= */
 

@@ -11993,118 +11993,59 @@ async function ensureUsername() {
 
     container
       .querySelectorAll(
-        ".flo-saved-room-card"
+        'button[onclick*="__floReturnToChallengeRoom"]'
       )
-      .forEach(card => {
+      .forEach(returnButton => {
 
         if(
-          card.dataset.deleteEnhancement === "true"
+          returnButton.dataset.deleteEnhancement === "true"
         ){
           return;
         }
 
-        const parent =
-          card.parentElement;
+        const onclick =
+          returnButton.getAttribute("onclick") ||
+          "";
 
-        if(!parent){
+        const match =
+          onclick.match(
+            /__floReturnToChallengeRoom\(\s*["']([^"']+)["']\s*\)/
+          );
+
+        if(!match){
           return;
         }
 
         const roomCode =
-          card.dataset.roomCode ||
-          "";
+          match[1];
 
-        const returnButton =
-          card.querySelector(
-            'button[onclick*="__floReturnToChallengeRoom"]'
-          );
+        returnButton.style.padding =
+          "9px 14px";
 
-        if(returnButton){
+        returnButton.style.fontSize =
+          "13px";
 
-          returnButton.style.padding =
-            "9px 14px";
+        returnButton.style.minWidth =
+          "0";
 
-          returnButton.style.fontSize =
-            "13px";
+        returnButton.style.whiteSpace =
+          "nowrap";
 
-          returnButton.style.minWidth =
-            "0";
+        const row =
+          returnButton.parentElement;
 
-          returnButton.style.whiteSpace =
-            "nowrap";
-
-          const deleteButton =
-            document.createElement(
-              "button"
-            );
-
-          deleteButton.type =
-            "button";
-
-          deleteButton.innerHTML =
-            "🗑";
-
-          deleteButton.setAttribute(
-            "aria-label",
-            "Delete saved room"
-          );
-
-          deleteButton.style.cssText = `
-            flex:0 0 auto;
-            width:34px;
-            height:34px;
-            border:0;
-            border-radius:10px;
-            background:#d9534f;
-            color:#fff;
-            font-size:22px;
-            line-height:1;
-            font-weight:600;
-            cursor:pointer;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          `;
-
-          deleteButton.addEventListener(
-            "click",
-            function(event){
-
-              event.preventDefault();
-              event.stopPropagation();
-
-              window.__floDeleteChallengeRoom(
-                roomCode
-              );
-
-            }
-          );
-
-          returnButton.parentElement.appendChild(
-            deleteButton
-          );
-
-        }
-
-        if(!roomCode){
+        if(!row){
           return;
         }
 
-        parent.classList.add(
-          "flo-saved-room-enhanced"
-        );
+        row.style.display =
+          "flex";
 
-        parent.style.position =
-          "relative";
+        row.style.alignItems =
+          "center";
 
-        parent.style.overflow =
-          "hidden";
-
-        parent.style.background =
-          "#d9534f";
-
-        parent.style.borderRadius =
-          "14px";
+        row.style.gap =
+          "8px";
 
         const deleteButton =
           document.createElement(
@@ -12114,21 +12055,33 @@ async function ensureUsername() {
         deleteButton.type =
           "button";
 
-        deleteButton.textContent =
-          "Delete";
+        deleteButton.innerHTML =
+          "🗑";
+
+        deleteButton.setAttribute(
+          "aria-label",
+          "Delete saved room"
+        );
+
+        deleteButton.title =
+          "Delete saved room";
 
         deleteButton.style.cssText = `
-          position:absolute;
-          right:0;
-          top:0;
-          bottom:0;
-          width:92px;
+          flex:0 0 auto;
+          width:34px;
+          height:34px;
+          padding:0;
           border:0;
+          border-radius:10px;
           background:#d9534f;
           color:#fff;
-          font-weight:700;
+          font-size:20px;
+          line-height:1;
+          font-weight:600;
           cursor:pointer;
-          z-index:1;
+          display:flex;
+          align-items:center;
+          justify-content:center;
         `;
 
         deleteButton.addEventListener(
@@ -12145,163 +12098,16 @@ async function ensureUsername() {
           }
         );
 
-        parent.insertBefore(
-          deleteButton,
-          card
+        row.appendChild(
+          deleteButton
         );
 
-        card.style.position =
-          "relative";
-
-        card.style.zIndex =
-          "2";
-
-        card.style.transition =
-          "transform .22s ease";
-
-        card.style.touchAction =
-          "pan-y";
-
-        const actions =
-          document.createElement(
-            "button"
-          );
-
-        actions.type =
-          "button";
-
-        actions.textContent =
-          "⋯";
-
-        actions.setAttribute(
-          "aria-label",
-          "Room actions"
-        );
-
-        actions.style.cssText = `
-          border:0;
-          background:transparent;
-          font-size:22px;
-          line-height:1;
-          padding:4px 8px;
-          cursor:pointer;
-          flex:0 0 auto;
-        `;
-
-        actions.addEventListener(
-          "click",
-          function(event){
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            const open =
-              card.dataset.deleteOpen === "true";
-
-            card.style.transform =
-              open
-                ? "translateX(0)"
-                : "translateX(-92px)";
-
-            card.dataset.deleteOpen =
-              open
-                ? "false"
-                : "true";
-
-          }
-        );
-
-        const header =
-          card.querySelector(
-            "div"
-          );
-
-        if(header){
-
-          header.appendChild(
-            actions
-          );
-
-        }
-
-        let startX = 0;
-        let startY = 0;
-
-        card.addEventListener(
-          "touchstart",
-          function(event){
-
-            const touch =
-              event.touches?.[0];
-
-            if(!touch){
-              return;
-            }
-
-            startX =
-              touch.clientX;
-
-            startY =
-              touch.clientY;
-
-          },
-          {passive:true}
-        );
-
-        card.addEventListener(
-          "touchend",
-          function(event){
-
-            const touch =
-              event.changedTouches?.[0];
-
-            if(!touch){
-              return;
-            }
-
-            const deltaX =
-              touch.clientX - startX;
-
-            const deltaY =
-              touch.clientY - startY;
-
-            if(
-              Math.abs(deltaX) < 40 ||
-              Math.abs(deltaX) <
-                Math.abs(deltaY)
-            ){
-              return;
-            }
-
-            if(deltaX < 0){
-
-              card.style.transform =
-                "translateX(-92px)";
-
-              card.dataset.deleteOpen =
-                "true";
-
-            }else{
-
-              card.style.transform =
-                "translateX(0)";
-
-              card.dataset.deleteOpen =
-                "false";
-
-            }
-
-          },
-          {passive:true}
-        );
-
-        card.dataset.deleteEnhancement =
+        returnButton.dataset.deleteEnhancement =
           "true";
 
       });
 
   }
-
 
   function watchSavedChallengeRooms(){
 
@@ -12372,7 +12178,6 @@ async function ensureUsername() {
     );
 
   }
-
 
   watchSavedChallengeRooms();
 

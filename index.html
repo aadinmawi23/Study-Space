@@ -6244,101 +6244,609 @@ function renderSubjectTopics(
     }
   }
 
-  if(!subject.topics.length){
+  container.innerHTML = `
 
-    container.innerHTML = `
+    <div
+      style="
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        margin-bottom:22px;
+        flex-wrap:wrap;
+      "
+    >
 
-      <div class="empty-state">
-
-        <h3
+      <div>
+        <h2
           style="
-            font:24px Georgia,serif;
-            margin-top:0
+            font:28px Georgia,serif;
+            margin:0 0 5px;
           "
         >
-          No topics yet
-        </h3>
+          Topics
+        </h2>
 
-        <p>
-          Import a JSON question bank for
-          this subject to populate its topics.
-        </p>
-
+        <div class="small">
+          Drag to reorder your topics
+        </div>
       </div>
-    `;
 
+      <button
+        class="btn"
+        type="button"
+        onclick="addSubjectTopic('${escapeHTML(subject.key)}')"
+      >
+        + Add Topic
+      </button>
+
+    </div>
+
+    ${
+      subject.topics.length
+        ? `
+          <div
+            id="floTopicGrid"
+            class="topic-grid"
+          >
+
+            ${subject.topics.map((topic,index)=>{
+
+              const stats =
+                topicStats(
+                  subject,
+                  topic
+                );
+
+              return `
+
+                <div
+                  class="topic-card"
+                  draggable="true"
+                  data-topic-index="${index}"
+                  style="
+                    cursor:grab;
+                    position:relative;
+                  "
+                >
+
+                  <div
+                    style="
+                      display:flex;
+                      align-items:flex-start;
+                      justify-content:space-between;
+                      gap:12px;
+                    "
+                  >
+
+                    <div style="min-width:0;flex:1;">
+
+                      <h3
+                        style="
+                          word-break:break-word;
+                        "
+                      >
+                        ${escapeHTML(topic)}
+                      </h3>
+
+                      <div class="topic-meta">
+
+                        ${stats.questions}
+                        questions
+                        ·
+                        ${stats.mastery}%
+                        mastery
+
+                        ${
+                          stats.due
+                            ? ` · ${stats.due} due`
+                            : ""
+                        }
+
+                      </div>
+
+                    </div>
+
+                    <div
+                      style="
+                        position:relative;
+                        flex:0 0 auto;
+                      "
+                    >
+
+                      <button
+                        type="button"
+                        aria-label="Topic options"
+                        title="Topic options"
+                        onclick='event.stopPropagation();toggleSubjectTopicMenu(this)'
+                        style="
+                          width:32px;
+                          height:32px;
+                          padding:0;
+                          border:1px solid var(--line);
+                          border-radius:9px;
+                          background:var(--card);
+                          color:var(--muted);
+                          cursor:pointer;
+                          display:flex;
+                          align-items:center;
+                          justify-content:center;
+                          font-size:20px;
+                          line-height:1;
+                        "
+                      >
+                        ⋮
+                      </button>
+
+                      <div
+                        class="flo-topic-menu"
+                        style="
+                          display:none;
+                          position:absolute;
+                          top:38px;
+                          right:0;
+                          z-index:50;
+                          min-width:120px;
+                          padding:5px;
+                          background:var(--card);
+                          border:1px solid var(--line);
+                          border-radius:12px;
+                          box-shadow:0 8px 24px rgba(0,0,0,.10);
+                        "
+                      >
+
+                        <button
+                          type="button"
+                          onclick='event.stopPropagation();closeSubjectTopicMenus();editSubjectTopic(
+                            ${JSON.stringify(subject.key)},
+                            ${JSON.stringify(topic)}
+                          )'
+                          style="
+                            display:block;
+                            width:100%;
+                            padding:9px 11px;
+                            border:0;
+                            border-radius:8px;
+                            background:transparent;
+                            color:var(--ink);
+                            text-align:left;
+                            cursor:pointer;
+                            font:inherit;
+                          "
+                        >
+                          Rename
+                        </button>
+
+                        <button
+                          type="button"
+                          onclick='event.stopPropagation();closeSubjectTopicMenus();deleteSubjectTopic(
+                            ${JSON.stringify(subject.key)},
+                            ${JSON.stringify(topic)}
+                          )'
+                          style="
+                            display:block;
+                            width:100%;
+                            padding:9px 11px;
+                            border:0;
+                            border-radius:8px;
+                            background:transparent;
+                            color:var(--ink);
+                            text-align:left;
+                            cursor:pointer;
+                            font:inherit;
+                          "
+                        >
+                          Delete
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div class="bar">
+
+                    <div
+                      class="fill"
+                      style="
+                        width:${stats.mastery}%
+                      "
+                    ></div>
+
+                  </div>
+
+                  <div class="topic-actions">
+
+                    <button
+                      class="btn"
+                      onclick='startQuizFor(
+                        ${JSON.stringify(subject.name)},
+                        ${JSON.stringify(topic)}
+                      )'
+                      ${stats.questions ? "" : "disabled"}
+                    >
+                      Start Quiz
+                    </button>
+
+                  </div>
+
+                </div>
+              `;
+
+            }).join("")}
+
+          </div>
+        `
+        : `
+          <div class="empty-state">
+
+            <h3
+              style="
+                font:24px Georgia,serif;
+                margin-top:0
+              "
+            >
+              No topics yet
+            </h3>
+
+            <p>
+              Add your first topic using the button above.
+            </p>
+
+          </div>
+        `
+    }
+  `;
+
+  installSubjectTopicDragHandlers(subject);
+
+}
+
+
+function closeSubjectTopicMenus(){
+
+  document
+    .querySelectorAll(
+      ".flo-topic-menu"
+    )
+    .forEach(menu => {
+
+      menu.style.display =
+        "none";
+
+    });
+
+}
+
+
+function toggleSubjectTopicMenu(button){
+
+  const menu =
+    button.parentElement
+      ?.querySelector(
+        ".flo-topic-menu"
+      );
+
+  if(!menu){
     return;
   }
 
+  const wasOpen =
+    menu.style.display === "block";
 
-  container.innerHTML = `
+  closeSubjectTopicMenus();
 
-    <div class="topic-grid">
+  if(!wasOpen){
 
-      ${subject.topics.map(topic=>{
+    menu.style.display =
+      "block";
 
-        const stats =
-          topicStats(
-            subject,
-            topic
+  }
+
+}
+
+
+document.addEventListener(
+  "click",
+  function(event){
+
+    if(
+      !event.target.closest(
+        ".flo-topic-menu"
+      ) &&
+      !event.target.closest(
+        '[aria-label="Topic options"]'
+      )
+    ){
+
+      closeSubjectTopicMenus();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   SUBJECT TOPIC MANAGEMENT
+   ========================================================= */
+
+function addSubjectTopic(subjectKey){
+
+  const subject =
+    getSubject(subjectKey);
+
+  if(!subject){
+    return;
+  }
+
+  const name =
+    prompt("Enter the new topic name:");
+
+  if(name === null){
+    return;
+  }
+
+  const topic =
+    name.trim();
+
+  if(!topic){
+    toast("Topic name cannot be empty.");
+    return;
+  }
+
+  if(
+    subject.topics.some(
+      existing =>
+        normalize(existing) ===
+        normalize(topic)
+    )
+  ){
+    toast("That topic already exists.");
+    return;
+  }
+
+  subject.topics.push(topic);
+
+  saveSubjects();
+
+  renderSubject(
+    subject,
+    "topics"
+  );
+
+  toast("Topic added.");
+}
+
+
+function editSubjectTopic(
+  subjectKey,
+  oldTopic
+){
+
+  const subject =
+    getSubject(subjectKey);
+
+  if(!subject){
+    return;
+  }
+
+  const newName =
+    prompt(
+      "Rename topic:",
+      oldTopic
+    );
+
+  if(newName === null){
+    return;
+  }
+
+  const newTopic =
+    newName.trim();
+
+  if(!newTopic){
+    toast("Topic name cannot be empty.");
+    return;
+  }
+
+  if(
+    normalize(newTopic) !== normalize(oldTopic) &&
+    subject.topics.some(
+      existing =>
+        normalize(existing) ===
+        normalize(newTopic)
+    )
+  ){
+    toast("That topic already exists.");
+    return;
+  }
+
+  const index =
+    subject.topics.findIndex(
+      topic => topic === oldTopic
+    );
+
+  if(index === -1){
+    return;
+  }
+
+  subject.topics[index] =
+    newTopic;
+
+  saveSubjects();
+
+  renderSubject(
+    subject,
+    "topics"
+  );
+
+  toast("Topic renamed.");
+}
+
+
+function deleteSubjectTopic(
+  subjectKey,
+  topic
+){
+
+  const subject =
+    getSubject(subjectKey);
+
+  if(!subject){
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      `Delete "${topic}" from this subject?`
+    );
+
+  if(!confirmed){
+    return;
+  }
+
+  subject.topics =
+    subject.topics.filter(
+      existing =>
+        existing !== topic
+    );
+
+  saveSubjects();
+
+  renderSubject(
+    subject,
+    "topics"
+  );
+
+  toast("Topic deleted.");
+}
+
+
+function installSubjectTopicDragHandlers(
+  subject
+){
+
+  const grid =
+    document.getElementById(
+      "floTopicGrid"
+    );
+
+  if(!grid){
+    return;
+  }
+
+  let draggedIndex = null;
+
+  grid
+    .querySelectorAll(
+      "[data-topic-index]"
+    )
+    .forEach(card => {
+
+      card.addEventListener(
+        "dragstart",
+        function(event){
+
+          draggedIndex =
+            Number(
+              card.dataset.topicIndex
+            );
+
+          card.style.opacity =
+            "0.55";
+
+          event.dataTransfer.effectAllowed =
+            "move";
+
+        }
+      );
+
+      card.addEventListener(
+        "dragend",
+        function(){
+
+          card.style.opacity =
+            "";
+
+          card.style.transform =
+            "";
+
+          draggedIndex =
+            null;
+
+        }
+      );
+
+      card.addEventListener(
+        "dragover",
+        function(event){
+
+          event.preventDefault();
+
+          card.style.transform =
+            "translateY(-4px)";
+
+        }
+      );
+
+      card.addEventListener(
+        "dragleave",
+        function(){
+
+          card.style.transform =
+            "";
+
+        }
+      );
+
+      card.addEventListener(
+        "drop",
+        function(event){
+
+          event.preventDefault();
+
+          card.style.transform =
+            "";
+
+          const targetIndex =
+            Number(
+              card.dataset.topicIndex
+            );
+
+          if(
+            draggedIndex === null ||
+            draggedIndex === targetIndex
+          ){
+            return;
+          }
+
+          const movedTopic =
+            subject.topics.splice(
+              draggedIndex,
+              1
+            )[0];
+
+          subject.topics.splice(
+            targetIndex,
+            0,
+            movedTopic
           );
 
-        return `
+          saveSubjects();
 
-          <div class="topic-card">
+          renderSubject(
+            subject,
+            "topics"
+          );
 
-            <h3>
-              ${escapeHTML(topic)}
-            </h3>
+          toast("Topic order saved.");
 
-            <div class="topic-meta">
+        }
+      );
 
-              ${stats.questions}
-              questions
-              ·
-              ${stats.mastery}%
-              mastery
+    });
 
-              ${
-                stats.due
-                  ? ` · ${stats.due} due`
-                  : ""
-              }
-
-            </div>
-
-            <div class="bar">
-
-              <div
-                class="fill"
-                style="
-                  width:${stats.mastery}%
-                "
-              ></div>
-
-            </div>
-
-            <div class="topic-actions">
-
-              <button
-                class="btn"
-                onclick='startQuizFor(
-                  ${JSON.stringify(subject.name)},
-                  ${JSON.stringify(topic)}
-                )'
-                ${stats.questions ? "" : "disabled"}
-              >
-                Start Quiz
-              </button>
-
-            </div>
-
-          </div>
-        `;
-      }).join("")}
-
-    </div>
-  `;
 }
 
 

@@ -7193,7 +7193,7 @@ function startQuizFor(
   window.__floQuizQuestions =
     [...questions];
 
-  openQuizModeModalFinal();
+  window.openQuizTypeModal();
 }
 
 
@@ -11189,6 +11189,10 @@ async function ensureUsername() {
             extra.currentIndex ??
             challenge.index,
 
+          questionIds:
+            extra.questionIds ??
+            challenge.questionIds,
+
           hostReady:
             extra.hostReady ??
             (
@@ -11377,9 +11381,959 @@ async function ensureUsername() {
 
   /*
    * ========================================================
+   * QUIZ TYPE SELECTOR
+   * ========================================================
+   */
+
+  window.openQuizTypeModal =
+    function(){
+
+      const questions =
+        window.__floQuizQuestions ||
+        [];
+
+      const modal =
+        document.getElementById(
+          "floQuizModeModal"
+        );
+
+      const content =
+        document.getElementById(
+          "floQuizModeContent"
+        );
+
+      if(
+        !modal ||
+        !content
+      ){
+        return;
+      }
+
+      const modes = [
+        {
+          key:"mcq",
+          title:"MCQ",
+          description:"Multiple-choice questions with options and instant feedback.",
+          enabled:true
+        },
+        {
+          key:"fill",
+          title:"Fill in the Blanks",
+          description:"Complete the missing word or phrase.",
+          enabled:false
+        },
+        {
+          key:"questions",
+          title:"Questions",
+          description:"Answer questions in your own words.",
+          enabled:false
+        },
+        {
+          key:"case",
+          title:"Case Based Qs",
+          description:"Apply your knowledge to case-based scenarios.",
+          enabled:false
+        },
+        {
+          key:"match",
+          title:"Match the Column",
+          description:"Match related items from two columns.",
+          enabled:false
+        },
+        {
+          key:"map",
+          title:"Map",
+          description:"Identify and work with locations on a map.",
+          enabled:false
+        }
+      ];
+
+      content.innerHTML = `
+        <div class="flo-quiz-eyebrow">
+          QUIZ TYPE
+        </div>
+
+        <h2 class="flo-quiz-title">
+          How do you want to study?
+        </h2>
+
+        <p class="flo-quiz-subtitle">
+          Choose a question format for this topic.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:18px;">
+          ${modes.map(mode => `
+            <button
+              type="button"
+              class="flo-quiz-choice"
+              ${mode.enabled
+                ? `onclick="window.__floSelectQuizType('${mode.key}')"`
+                : `disabled`
+              }
+              style="
+                margin-top:0;
+                ${mode.enabled
+                  ? ""
+                  : "opacity:.48;cursor:not-allowed;"
+                }
+              "
+            >
+              <strong>
+                ${mode.title}
+              </strong>
+              <span>
+                ${mode.description}
+                ${mode.enabled ? "" : " · Coming soon"}
+              </span>
+            </button>
+          `).join("")}
+        </div>
+
+        <div class="flo-quiz-actions">
+          <button
+            class="btn light"
+            type="button"
+            onclick="window.__floCloseQuizMode()"
+          >
+            Cancel
+          </button>
+        </div>
+      `;
+
+      modal.classList.add("open");
+
+      modal.setAttribute(
+        "aria-hidden",
+        "false"
+      );
+
+    };
+
+
+  window.__floRenderQuizModePage =
+    function(type){
+
+      const modal =
+        document.getElementById(
+          "floQuizModeModal"
+        );
+
+      const content =
+        document.getElementById(
+          "floQuizModeContent"
+        );
+
+      if(!modal || !content){
+        return;
+      }
+
+      const topic =
+        window.pendingQuizTopic ||
+        "Current Topic";
+
+      const subject =
+        window.pendingQuizSubject ||
+        "Study";
+
+      const pages = {
+
+        fill: {
+          eyebrow:"FILL IN THE BLANKS",
+          title:"Complete the statement",
+          subtitle:"Read the statement and type the missing answer.",
+          body:``
+        },
+
+        questions: {
+          eyebrow:"QUESTIONS",
+          title:"Answer in your own words",
+          subtitle:"Write a response based on what you have studied.",
+          body:`
+            <div style="padding:8px 0 20px;">
+              <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+                Question 1 of 10
+              </div>
+
+              <div style="padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);font:18px Georgia,serif;line-height:1.6;">
+                Your question will appear here.
+              </div>
+
+              <textarea
+                placeholder="Write your answer..."
+                rows="7"
+                style="width:100%;box-sizing:border-box;margin-top:18px;padding:15px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;resize:vertical;"
+              ></textarea>
+            </div>
+          `
+        },
+
+        case: {
+          eyebrow:"CASE BASED QUESTIONS",
+          title:"Analyse the case",
+          subtitle:"Read the case carefully and answer the question that follows.",
+          body:`
+            <div style="padding:8px 0 20px;">
+              <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+                Case 1
+              </div>
+
+              <div style="padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--bg);line-height:1.65;">
+                <strong>Case Vignette</strong>
+                <p style="margin:10px 0 0;">
+                  The case information will appear here once
+                  case-based questions are available for this topic.
+                </p>
+              </div>
+
+              <div style="margin-top:16px;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--card);font:17px Georgia,serif;line-height:1.6;">
+                What would you conclude from this case?
+              </div>
+
+              <textarea
+                placeholder="Write your response..."
+                rows="6"
+                style="width:100%;box-sizing:border-box;margin-top:16px;padding:15px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;resize:vertical;"
+              ></textarea>
+            </div>
+          `
+        },
+
+        match: {
+          eyebrow:"MATCH THE COLUMN",
+          title:"Match the related items",
+          subtitle:"Select an item from each column to create a match.",
+          body:`
+            <div style="padding:8px 0 20px;">
+              <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">
+                Question 1 of 10
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:7px;">
+                    Column A
+                  </div>
+
+                  <button class="flo-quiz-choice" style="margin-top:0;">
+                    Item A
+                  </button>
+
+                  <button class="flo-quiz-choice">
+                    Item B
+                  </button>
+
+                  <button class="flo-quiz-choice">
+                    Item C
+                  </button>
+                </div>
+
+                <div>
+                  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:7px;">
+                    Column B
+                  </div>
+
+                  <button class="flo-quiz-choice" style="margin-top:0;">
+                    Match 1
+                  </button>
+
+                  <button class="flo-quiz-choice">
+                    Match 2
+                  </button>
+
+                  <button class="flo-quiz-choice">
+                    Match 3
+                  </button>
+                </div>
+              </div>
+            </div>
+          `
+        },
+
+        map: {
+          eyebrow:"MAP",
+          title:"Locate the answer",
+          subtitle:"Use the map to identify the location requested.",
+          body:`
+            <div style="padding:8px 0 20px;">
+              <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+                Question 1 of 10
+              </div>
+
+              <div style="padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--bg);text-align:center;">
+                <div style="height:270px;border-radius:12px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);">
+                  Map area
+                </div>
+              </div>
+
+              <div style="margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--card);font:17px Georgia,serif;">
+                Identify the location shown or requested.
+              </div>
+
+              <button
+                class="btn"
+                type="button"
+                style="width:100%;margin-top:14px;"
+              >
+                Select Location
+              </button>
+            </div>
+          `
+        }
+
+      };
+
+      const page =
+        pages[type];
+
+      if(!page){
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="flo-quiz-eyebrow">
+          ${page.eyebrow}
+        </div>
+
+        <h2 class="flo-quiz-title">
+          ${page.title}
+        </h2>
+
+        <p class="flo-quiz-subtitle">
+          ${page.subtitle}
+        </p>
+
+        ${page.body}
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;">
+          <button
+            class="btn light"
+            type="button"
+            onclick="window.openQuizTypeModal()"
+          >
+            ← Quiz Types
+          </button>
+
+          <button
+            class="btn"
+            type="button"
+            onclick="
+              type === 'fill'
+                ? window.__floNextFillQuestion()
+                : null
+            "
+          >
+            Next →
+          </button>
+        </div>
+
+        <div style="margin-top:18px;font-size:12px;color:var(--muted);text-align:center;">
+          ${escapeHTML(subject)} · ${escapeHTML(topic)}
+        </div>
+      `;
+
+      modal.classList.add("open");
+
+      modal.setAttribute(
+        "aria-hidden",
+        "false"
+      );
+
+    };
+
+
+
+  window.__floStartFillInTheBlanks =
+    function(questions){
+
+      const modal =
+        document.getElementById("floQuizModeModal");
+
+      const content =
+        document.getElementById("floQuizModeContent");
+
+      if(!modal || !content){
+        return;
+      }
+
+      const usable =
+        Array.isArray(questions)
+          ? questions.filter(
+              q =>
+                q &&
+                q.question &&
+                (
+                  q.answer ||
+                  q.reference_answer
+                )
+            )
+          : [];
+
+      if(!usable.length){
+        toast(
+          "No Fill in the Blanks questions are loaded for this topic yet."
+        );
+        return;
+      }
+
+      window.__floFillQuiz = {
+        questions: usable,
+        index: 0,
+        score: 0,
+        answered: false,
+        answers: []
+      };
+
+      window.__floRenderFillQuestion();
+
+    };
+
+
+  window.__floRenderFillQuestion =
+    function(){
+
+      const quiz =
+        window.__floFillQuiz;
+
+      const modal =
+        document.getElementById("floQuizModeModal");
+
+      const content =
+        document.getElementById("floQuizModeContent");
+
+      if(!quiz || !modal || !content){
+        return;
+      }
+
+      if(
+        quiz.index >=
+        quiz.questions.length
+      ){
+
+        window.__floFinishFillQuiz();
+
+        return;
+      }
+
+      const q =
+        quiz.questions[quiz.index];
+
+      quiz.answered = false;
+
+      const total =
+        quiz.questions.length;
+
+      const number =
+        quiz.index + 1;
+
+      const questionText =
+        String(q.question || "");
+
+      content.innerHTML = `
+        <div class="flo-quiz-eyebrow">
+          FILL IN THE BLANKS
+        </div>
+
+        <h2 class="flo-quiz-title">
+          Complete the statement
+        </h2>
+
+        <p class="flo-quiz-subtitle">
+          Type the missing answer in your own words.
+        </p>
+
+        <div style="padding:8px 0 20px;">
+
+          <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+            Question ${number} of ${total}
+          </div>
+
+          <div
+            style="
+              padding:24px;
+              border:1px solid var(--line);
+              border-radius:16px;
+              background:var(--card);
+              font:18px Georgia,serif;
+              line-height:1.7;
+            "
+          >
+            ${escapeHTML(questionText)}
+          </div>
+
+          <input
+            id="floFillAnswer"
+            type="text"
+            autocomplete="off"
+            placeholder="Type your answer..."
+            onkeydown="
+              if(event.key === 'Enter'){
+                event.preventDefault();
+                window.__floSubmitFillAnswer();
+              }
+            "
+            style="
+              width:100%;
+              box-sizing:border-box;
+              margin-top:18px;
+              padding:15px 16px;
+              border:1px solid var(--line);
+              border-radius:12px;
+              background:var(--bg);
+              color:var(--ink);
+              font:inherit;
+              outline:none;
+            "
+          />
+
+          <div
+            id="floFillFeedback"
+            style="display:none;margin-top:14px;"
+          ></div>
+
+        </div>
+
+        <div
+          style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            margin-top:4px;
+          "
+        >
+
+          <button
+            class="btn light"
+            type="button"
+            onclick="window.openQuizTypeModal()"
+          >
+            ← Quiz Types
+          </button>
+
+          <button
+            id="floFillSubmit"
+            class="btn"
+            type="button"
+            onclick="window.__floSubmitFillAnswer()"
+          >
+            Check Answer
+          </button>
+
+        </div>
+
+        <div
+          style="
+            margin-top:18px;
+            font-size:12px;
+            color:var(--muted);
+            text-align:center;
+          "
+        >
+          ${escapeHTML(window.pendingQuizSubject || "Study")}
+          ·
+          ${escapeHTML(window.pendingQuizTopic || "Current Topic")}
+        </div>
+      `;
+
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden","false");
+
+      setTimeout(() => {
+        const input =
+          document.getElementById("floFillAnswer");
+
+        if(input){
+          input.focus();
+        }
+      },50);
+
+    };
+
+
+  window.__floNormalizeFillAnswer =
+    function(value){
+
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFKC")
+        .replace(/[“”‘’]/g, "'")
+        .replace(/[^a-z0-9\s]/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    };
+
+
+  window.__floFillAnswerIsCorrect =
+    function(userAnswer,q){
+
+      const given =
+        window.__floNormalizeFillAnswer(
+          userAnswer
+        );
+
+      if(!given){
+        return false;
+      }
+
+      const accepted = [
+        q.answer,
+        ...(Array.isArray(q.accepted_answers)
+          ? q.accepted_answers
+          : [])
+      ]
+        .filter(Boolean)
+        .map(
+          answer =>
+            window.__floNormalizeFillAnswer(answer)
+        )
+        .filter(Boolean);
+
+      if(accepted.includes(given)){
+        return true;
+      }
+
+      /*
+       * For Fill-in-the-Blanks, allow minor
+       * wording differences while keeping the
+       * source answer as the authority.
+       */
+      return accepted.some(answer => {
+
+        if(
+          given.length < 3 ||
+          answer.length < 3
+        ){
+          return false;
+        }
+
+        if(
+          given === answer ||
+          given.includes(answer) ||
+          answer.includes(given)
+        ){
+          return true;
+        }
+
+        const givenWords =
+          new Set(given.split(" "));
+
+        const answerWords =
+          new Set(answer.split(" "));
+
+        const overlap =
+          [...givenWords].filter(
+            word =>
+              answerWords.has(word)
+          ).length;
+
+        const denominator =
+          Math.max(
+            givenWords.size,
+            answerWords.size
+          );
+
+        return denominator > 0 &&
+          overlap / denominator >= 0.7;
+
+      });
+
+    };
+
+
+  window.__floSubmitFillAnswer =
+    function(){
+
+      const quiz =
+        window.__floFillQuiz;
+
+      if(!quiz || quiz.answered){
+        return;
+      }
+
+      const input =
+        document.getElementById(
+          "floFillAnswer"
+        );
+
+      const feedback =
+        document.getElementById(
+          "floFillFeedback"
+        );
+
+      const submit =
+        document.getElementById(
+          "floFillSubmit"
+        );
+
+      if(!input || !feedback){
+        return;
+      }
+
+      const userAnswer =
+        input.value.trim();
+
+      if(!userAnswer){
+        toast("Type an answer first.");
+        input.focus();
+        return;
+      }
+
+      const q =
+        quiz.questions[quiz.index];
+
+      const correct =
+        window.__floFillAnswerIsCorrect(
+          userAnswer,
+          q
+        );
+
+      quiz.answered = true;
+
+      quiz.answers.push({
+        questionId:q.id || null,
+        answer:userAnswer,
+        correct
+      });
+
+      if(correct){
+        quiz.score++;
+      }
+
+      input.disabled = true;
+
+      if(submit){
+        submit.textContent =
+          quiz.index + 1 >=
+          quiz.questions.length
+            ? "Finish Quiz"
+            : "Next →";
+      }
+
+      const correctAnswer =
+        q.answer ||
+        q.reference_answer ||
+        "";
+
+      feedback.style.display = "block";
+
+      feedback.innerHTML = `
+        <div
+          style="
+            padding:15px 16px;
+            border-radius:12px;
+            border:1px solid ${correct ? "#b9d8bf" : "#e2b8b8"};
+            background:${correct ? "#eef8f0" : "#fff2f2"};
+          "
+        >
+
+          <strong>
+            ${correct ? "Correct" : "Not quite"}
+          </strong>
+
+          ${
+            correct
+              ? `
+                <div style="margin-top:6px;">
+                  Your answer was accepted.
+                </div>
+              `
+              : `
+                <div style="margin-top:6px;">
+                  Correct answer:
+                  <strong>
+                    ${escapeHTML(String(correctAnswer))}
+                  </strong>
+                </div>
+              `
+          }
+
+          ${
+            q.explanation
+              ? `
+                <div
+                  style="
+                    margin-top:9px;
+                    color:var(--muted);
+                    line-height:1.5;
+                  "
+                >
+                  ${escapeHTML(String(q.explanation))}
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+      `;
+
+      input.blur();
+
+    };
+
+
+  window.__floNextFillQuestion =
+    function(){
+
+      const quiz =
+        window.__floFillQuiz;
+
+      if(!quiz){
+        return;
+      }
+
+      if(!quiz.answered){
+        window.__floSubmitFillAnswer();
+        return;
+      }
+
+      quiz.index++;
+
+      window.__floRenderFillQuestion();
+
+    };
+
+
+  window.__floFinishFillQuiz =
+    function(){
+
+      const quiz =
+        window.__floFillQuiz;
+
+      if(!quiz){
+        return;
+      }
+
+      const total =
+        quiz.questions.length;
+
+      const percentage =
+        Math.round(
+          quiz.score /
+          Math.max(1,total) *
+          100
+        );
+
+      const content =
+        document.getElementById(
+          "floQuizModeContent"
+        );
+
+      if(!content){
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="flo-quiz-eyebrow">
+          FILL IN THE BLANKS
+        </div>
+
+        <h2 class="flo-quiz-title">
+          Quiz Complete
+        </h2>
+
+        <p class="flo-quiz-subtitle">
+          You completed all ${total} questions.
+        </p>
+
+        <div
+          style="
+            padding:28px;
+            margin:18px 0;
+            border:1px solid var(--line);
+            border-radius:18px;
+            background:var(--card);
+            text-align:center;
+          "
+        >
+          <div
+            style="
+              font:42px Georgia,serif;
+              line-height:1;
+            "
+          >
+            ${quiz.score}/${total}
+          </div>
+
+          <div
+            style="
+              margin-top:9px;
+              color:var(--muted);
+            "
+          >
+            ${percentage}% correct
+          </div>
+        </div>
+
+        <div
+          style="
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+          "
+        >
+          <button
+            class="btn light"
+            type="button"
+            onclick="window.openQuizTypeModal()"
+          >
+            Quiz Types
+          </button>
+
+          <button
+            class="btn"
+            type="button"
+            onclick="window.__floRenderQuizModePage('fill')"
+          >
+            Try Again
+          </button>
+        </div>
+      `;
+
+    };
+
+  window.__floSelectQuizType =
+    function(type){
+
+      if(type === "mcq"){
+
+        window.openQuizModeModalFinal();
+
+        return;
+      }
+
+      if(type === "fill"){
+
+        window.__floStartFillInTheBlanks(
+          window.__floQuizQuestions || []
+        );
+
+        return;
+      }
+
+      if(
+        ["questions","case","match","map"].includes(type)
+      ){
+
+        window.__floRenderQuizModePage(type);
+
+        return;
+      }
+
+      toast(
+        "This quiz type is not available for this topic yet."
+      );
+
+    };
+
+
+  /*
+   * ========================================================
    * QUIZ MODE MODAL
    * ========================================================
    */
+
+  window.openQuizModeModalFinal =
 
   window.openQuizModeModalFinal =
     function(){
@@ -11507,6 +12461,276 @@ async function ensureUsername() {
     };
 
 
+
+  window.__floQuestionCountQuestions = [];
+
+  window.__floOpenQuestionCountSelector =
+    function(mode, questions){
+
+      const modal =
+        document.getElementById(
+          "floQuizModeModal"
+        );
+
+      const content =
+        document.getElementById(
+          "floQuizModeContent"
+        );
+
+      if(
+        !modal ||
+        !content ||
+        !questions?.length
+      ){
+        return;
+      }
+
+      window.__floQuestionCountQuestions =
+        [...questions];
+
+      window.__floQuestionCountMode =
+        mode;
+
+      const max =
+        questions.length;
+
+      const defaultCount =
+        Math.min(
+          10,
+          max
+        );
+
+      content.innerHTML = `
+        <div class="flo-quiz-eyebrow">
+          NUMBER OF QUESTIONS
+        </div>
+
+        <h2 class="flo-quiz-title">
+          How many questions?
+        </h2>
+
+        <p class="flo-quiz-subtitle">
+          Choose how many questions you want to answer.
+          They will be shuffled before the quiz begins.
+        </p>
+
+        <div style="padding:10px 0 18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <span class="small">
+              Questions
+            </span>
+
+            <strong
+              id="floQuestionCountValue"
+              style="font-size:22px;"
+            >
+              ${defaultCount}
+            </strong>
+          </div>
+
+          <input
+            id="floQuestionCountSlider"
+            type="range"
+            min="1"
+            max="${max}"
+            value="${defaultCount}"
+            step="1"
+            style="width:100%;accent-color:var(--accent);cursor:pointer;"
+            oninput="
+              document.getElementById('floQuestionCountValue').textContent = this.value
+            "
+          >
+
+          <div style="display:flex;justify-content:space-between;margin-top:7px;">
+            <span class="small">1</span>
+            <span class="small">${max}</span>
+          </div>
+        </div>
+
+        <div class="flo-quiz-actions">
+          <button
+            class="btn light"
+            onclick="
+              window.__floCloseQuizMode()
+            "
+          >
+            Cancel
+          </button>
+
+          <button
+            class="btn"
+            onclick="
+              window.__floConfirmQuestionCount()
+            "
+          >
+            Start Quiz
+          </button>
+        </div>
+      `;
+
+      modal.classList.add("open");
+
+      modal.setAttribute(
+        "aria-hidden",
+        "false"
+      );
+
+    };
+
+
+  window.__floConfirmQuestionCount =
+    async function(){
+
+      const questions =
+        window.__floQuestionCountQuestions || [];
+
+      const mode =
+        window.__floQuestionCountMode;
+
+      const slider =
+        document.getElementById(
+          "floQuestionCountSlider"
+        );
+
+      if(
+        !questions.length ||
+        !slider
+      ){
+        return;
+      }
+
+      const count =
+        Math.max(
+          1,
+          Math.min(
+            Number(slider.value) || 1,
+            questions.length
+          )
+        );
+
+      const shuffled =
+        [...questions];
+
+      for(
+        let i = shuffled.length - 1;
+        i > 0;
+        i--
+      ){
+        const j =
+          Math.floor(
+            Math.random() * (i + 1)
+          );
+
+        [
+          shuffled[i],
+          shuffled[j]
+        ] =
+        [
+          shuffled[j],
+          shuffled[i]
+        ];
+      }
+
+      const selected =
+        shuffled.slice(
+          0,
+          count
+        );
+
+      window.__floCloseQuizMode();
+
+      if(mode === "solo"){
+
+        const subject =
+          SUBJECT_CATALOG.find(
+            s =>
+              normalize(
+                s.questionSubject ||
+                s.name
+              ) ===
+              normalize(
+                window.pendingQuizSubject
+              )
+          );
+
+        selectedSubject =
+          subject ||
+          selectedSubject;
+
+        startQuiz(
+          selected
+        );
+
+        return;
+      }
+
+      if(mode === "challenge"){
+
+        if(!challenge.isHost){
+          return;
+        }
+
+        challenge.questionIds =
+          selected.map(
+            q => q.id
+          );
+
+        challenge.questions =
+          [...selected];
+
+        challenge.index = 0;
+        challenge.answers = {};
+        challenge.myScore = 0;
+        challenge.opponentScore = 0;
+        challenge.myCorrect = 0;
+        challenge.opponentCorrect = 0;
+
+        try{
+
+          await savePersistentChallengeRoom({
+            status:"in_progress",
+            currentIndex:0,
+            questionIds:
+              challenge.questionIds
+          });
+
+          await broadcast(
+            "flo-start",
+            {
+              subjectName:
+                challenge.subjectName,
+
+              topic:
+                challenge.topic,
+
+              questionIds:
+                challenge.questionIds
+            }
+          );
+
+          beginChallenge(
+            challenge.questionIds
+          );
+
+        }catch(error){
+
+          console.error(
+            "Could not start challenge:",
+            error
+          );
+
+          toast(
+            error?.message ||
+            "Could not start the challenge."
+          );
+
+        }
+
+      }
+
+    };
+
+
   window.__floSelectQuizMode =
     async function(mode){
 
@@ -11552,7 +12776,8 @@ async function ensureUsername() {
           subject ||
           selectedSubject;
 
-        startQuiz(
+        window.__floOpenQuestionCountSelector(
+          "solo",
           questions
         );
 
@@ -13137,6 +14362,21 @@ async function ensureUsername() {
     channel.on(
       "broadcast",
       {
+        event:"flo-complete"
+      },
+      ({payload}) => {
+
+        onChallengeComplete(
+          payload
+        );
+
+      }
+    );
+
+
+    channel.on(
+      "broadcast",
+      {
         event:"flo-leave"
       },
       ({payload}) => {
@@ -14311,23 +15551,9 @@ async function ensureUsername() {
       }
 
 
-      await broadcast(
-        "flo-start",
-        {
-          subjectName:
-            challenge.subjectName,
-
-          topic:
-            challenge.topic,
-
-          questionIds:
-            challenge.questionIds
-        }
-      );
-
-
-      beginChallenge(
-        challenge.questionIds
+      window.__floOpenQuestionCountSelector(
+        "challenge",
+        window.__floQuizQuestions || []
       );
 
     };
@@ -14387,6 +15613,11 @@ async function ensureUsername() {
         error
       );
 
+    }
+
+    if(Array.isArray(payload.questionIds)){
+      challenge.questionIds =
+        payload.questionIds;
     }
 
     beginChallenge(
@@ -15053,7 +16284,7 @@ async function ensureUsername() {
                 let extra = "";
 
                 if(
-                  bothAnswered &&
+                  slot.me &&
                   letter === q.answer
                 ){
 
@@ -15064,22 +16295,20 @@ async function ensureUsername() {
 
 
                 if(
-                  bothAnswered &&
                   (
-                    (
-                      slot.me &&
-                      slot.me.result ===
-                        "wrong" &&
-                      slot.me.choice ===
-                        letter
-                    ) ||
-                    (
-                      slot.opponent &&
-                      slot.opponent.result ===
-                        "wrong" &&
-                      slot.opponent.choice ===
-                        letter
-                    )
+                    slot.me &&
+                    slot.me.result ===
+                      "wrong" &&
+                    slot.me.choice ===
+                      letter
+                  ) ||
+                  (
+                    bothAnswered &&
+                    slot.opponent &&
+                    slot.opponent.result ===
+                      "wrong" &&
+                    slot.opponent.choice ===
+                      letter
                   )
                 ){
 
@@ -15090,7 +16319,6 @@ async function ensureUsername() {
 
 
                 const meChose =
-                  bothAnswered &&
                   slot.me &&
                   slot.me.choice ===
                     letter;
@@ -15334,8 +16562,423 @@ async function ensureUsername() {
   }
 
 
+  function renderChallengeResults(){
+
+    const total =
+      challenge.questions.length;
+
+    const myAccuracy =
+      Math.round(
+        challenge.myCorrect /
+        Math.max(1,total) *
+        100
+      );
+
+    const opponentAccuracy =
+      Math.round(
+        challenge.opponentCorrect /
+        Math.max(1,total) *
+        100
+      );
+
+    const tied =
+      challenge.myScore ===
+      challenge.opponentScore;
+
+    const iWon =
+      challenge.myScore >
+      challenge.opponentScore;
+
+    const headline =
+      tied
+        ? "IT'S A TIE"
+        : iWon
+          ? "YOU WON"
+          : "CHALLENGE COMPLETE";
+
+    const subline =
+      tied
+        ? "Both players finished on the same score."
+        : iWon
+          ? "You finished ahead in this challenge."
+          : `${escapeHTML(
+              challenge.opponentUsername ||
+              "Your opponent"
+            )} won this challenge.`;
+
+    const trophy =
+      tied
+        ? `
+          <div style="
+            width:76px;
+            height:76px;
+            margin:0 auto 18px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:var(--card);
+            border:1px solid var(--line);
+            box-shadow:0 12px 30px rgba(0,0,0,.08);
+          ">
+            <svg width="38" height="38" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/>
+              <path d="M8 6H5a3 3 0 0 0 3 3"/>
+              <path d="M16 6h3a3 3 0 0 1-3 3"/>
+              <path d="M12 13v4"/>
+              <path d="M8 21h8"/>
+              <path d="M9 17h6"/>
+            </svg>
+          </div>
+        `
+        : `
+          <div style="
+            width:92px;
+            height:92px;
+            margin:0 auto 18px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:var(--card);
+            border:1px solid var(--line);
+            box-shadow:0 16px 38px rgba(0,0,0,.10);
+            animation:floChallengeTrophyIn .55s ease both;
+          ">
+            <svg width="48" height="48" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/>
+              <path d="M8 6H5a3 3 0 0 0 3 3"/>
+              <path d="M16 6h3a3 3 0 0 1-3 3"/>
+              <path d="M12 13v4"/>
+              <path d="M8 21h8"/>
+              <path d="M9 17h6"/>
+            </svg>
+          </div>
+        `;
+
+    const myCard =
+      iWon
+        ? "border:2px solid var(--accent);box-shadow:0 14px 34px rgba(0,0,0,.10);"
+        : "";
+
+    const opponentCard =
+      !tied && !iWon
+        ? "border:2px solid var(--accent);box-shadow:0 14px 34px rgba(0,0,0,.10);"
+        : "";
+
+    const myLabel =
+      tied
+        ? ""
+        : iWon
+          ? `<div style="font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:7px;">WINNER</div>`
+          : "";
+
+    const opponentLabel =
+      tied
+        ? ""
+        : !iWon
+          ? `<div style="font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:7px;">WINNER</div>`
+          : "";
+
+    const main =
+      document.getElementById("main");
+
+    main.innerHTML = `
+
+      <style>
+        @keyframes floChallengeTrophyIn{
+          from{
+            opacity:0;
+            transform:scale(.72) translateY(10px);
+          }
+          to{
+            opacity:1;
+            transform:scale(1) translateY(0);
+          }
+        }
+
+        @keyframes floChallengeResultIn{
+          from{
+            opacity:0;
+            transform:translateY(12px);
+          }
+          to{
+            opacity:1;
+            transform:translateY(0);
+          }
+        }
+
+        .flo-result-card{
+          animation:floChallengeResultIn .45s ease both;
+        }
+
+        @media(max-width:640px){
+          .flo-challenge-result-grid{
+            grid-template-columns:1fr !important;
+          }
+        }
+      </style>
+
+      <div class="flo-challenge-shell">
+
+        <div class="flo-question-card flo-result-box"
+          style="text-align:center;padding:38px 24px;">
+
+          ${trophy}
+
+          <div class="flo-challenge-label">
+            CHALLENGE COMPLETE
+          </div>
+
+          <h2 class="flo-result-title"
+            style="margin-top:10px;">
+            ${headline}
+          </h2>
+
+          <p class="flo-result-subtitle"
+            style="max-width:520px;margin:0 auto 26px;">
+            ${subline}
+          </p>
+
+          <div class="flo-result-card"
+            style="
+              max-width:500px;
+              margin:0 auto 24px;
+              padding:22px;
+              border:1px solid var(--line);
+              border-radius:18px;
+              background:var(--card);
+            ">
+
+            <div style="
+              font-size:11px;
+              font-weight:800;
+              letter-spacing:.12em;
+              margin-bottom:10px;
+            ">
+              ${escapeHTML(challenge.topic || "")}
+            </div>
+
+            <div style="
+              font-size:40px;
+              line-height:1;
+              font-weight:800;
+              margin-bottom:7px;
+            ">
+              ${challenge.myScore}
+              <span style="font-size:17px;font-weight:500;color:var(--muted);">
+                / ${total}
+              </span>
+            </div>
+
+            <div class="small">
+              ${myAccuracy}% accuracy ·
+              ${challenge.myCorrect} correct
+            </div>
+
+          </div>
+
+          <div
+            class="flo-challenge-result-grid"
+            style="
+              display:grid;
+              grid-template-columns:1fr 1fr;
+              gap:12px;
+              max-width:620px;
+              margin:0 auto 28px;
+            "
+          >
+
+            <div class="flo-result-card"
+              style="
+                padding:20px;
+                border-radius:16px;
+                background:var(--card);
+                border:1px solid var(--line);
+                ${myCard}
+              "
+            >
+              ${myLabel}
+
+              <div style="font-weight:750;word-break:break-word;">
+                ${escapeHTML(challenge.username || "You")}
+              </div>
+
+              <div style="font-size:30px;font-weight:800;margin-top:6px;">
+                ${challenge.myScore}
+              </div>
+
+              <div class="small">
+                ${challenge.myCorrect}/${total} correct
+              </div>
+            </div>
+
+            <div class="flo-result-card"
+              style="
+                padding:20px;
+                border-radius:16px;
+                background:var(--card);
+                border:1px solid var(--line);
+                ${opponentCard}
+              "
+            >
+              ${opponentLabel}
+
+              <div style="font-weight:750;word-break:break-word;">
+                ${escapeHTML(
+                  challenge.opponentUsername ||
+                  "Opponent"
+                )}
+              </div>
+
+              <div style="font-size:30px;font-weight:800;margin-top:6px;">
+                ${challenge.opponentScore}
+              </div>
+
+              <div class="small">
+                ${challenge.opponentCorrect}/${total} correct
+              </div>
+            </div>
+
+          </div>
+
+          <div style="
+            max-width:500px;
+            margin:0 auto 26px;
+            padding:16px 18px;
+            border-radius:14px;
+            background:var(--soft);
+            border:1px solid var(--line);
+            text-align:left;
+          ">
+            <div style="
+              font-size:11px;
+              font-weight:800;
+              letter-spacing:.1em;
+              margin-bottom:8px;
+            ">
+              YOUR PERFORMANCE
+            </div>
+
+            <div style="display:flex;justify-content:space-between;gap:12px;">
+              <span>${challenge.myCorrect} correct</span>
+              <strong>${myAccuracy}%</strong>
+            </div>
+
+            <div style="
+              height:7px;
+              margin-top:10px;
+              border-radius:999px;
+              background:rgba(0,0,0,.07);
+              overflow:hidden;
+            ">
+              <div style="
+                width:${myAccuracy}%;
+                height:100%;
+                border-radius:999px;
+                background:var(--accent);
+              "></div>
+            </div>
+          </div>
+
+          <div class="flo-quiz-actions">
+
+            <button
+              class="btn light"
+              onclick="
+                window.__floLeaveChallenge()
+              "
+            >
+              Back to Topic
+            </button>
+
+            <button
+              class="btn"
+              onclick="
+                startQuizFor(
+                  ${JSON.stringify(challenge.subjectName)},
+                  ${JSON.stringify(challenge.topic)}
+                )
+              "
+            >
+              Play Again
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  function onChallengeComplete(payload){
+
+    if(
+      !payload ||
+      payload.playerId ===
+      challenge.playerId
+    ){
+      return;
+    }
+
+    if(
+      challenge.finished
+    ){
+      return;
+    }
+
+    if(
+      typeof payload.myScore === "number" &&
+      typeof payload.opponentScore === "number"
+    ){
+
+      challenge.myScore =
+        payload.opponentScore;
+
+      challenge.opponentScore =
+        payload.myScore;
+
+    }
+
+    if(
+      typeof payload.myCorrect === "number" &&
+      typeof payload.opponentCorrect === "number"
+    ){
+
+      challenge.myCorrect =
+        payload.opponentCorrect;
+
+      challenge.opponentCorrect =
+        payload.myCorrect;
+
+    }
+
+    challenge.active = false;
+    challenge.finished = true;
+
+    if(
+      typeof playAppSound ===
+      "function"
+    ){
+      playAppSound("complete");
+    }
+
+    renderChallengeResults();
+
+  }
+
+
   window.__floFinishChallenge =
-    function(){
+    async function(){
 
       if(
         challenge.finished
@@ -15343,168 +16986,67 @@ async function ensureUsername() {
         return;
       }
 
+      challenge.active = false;
+      challenge.finished = true;
 
-      challenge.active =
-        false;
+      try{
 
-      challenge.finished =
-        true;
+        await savePersistentChallengeRoom({
+          status:"completed",
+          currentIndex:challenge.index
+        });
 
-      savePersistentChallengeRoom({
-        status:"completed",
-        currentIndex:challenge.index
-      }).catch(error => {
+      }catch(error){
+
         console.error(
           "Could not save completed challenge:",
           error
         );
-      });
 
+      }
+
+      try{
+
+        await broadcast(
+          "flo-complete",
+          {
+            playerId:
+              challenge.playerId,
+
+            username:
+              challenge.username,
+
+            myScore:
+              challenge.myScore,
+
+            opponentScore:
+              challenge.opponentScore,
+
+            myCorrect:
+              challenge.myCorrect,
+
+            opponentCorrect:
+              challenge.opponentCorrect
+          }
+        );
+
+      }catch(error){
+
+        console.error(
+          "Could not broadcast challenge completion:",
+          error
+        );
+
+      }
 
       if(
         typeof playAppSound ===
         "function"
       ){
-
-        playAppSound(
-          "complete"
-        );
-
+        playAppSound("complete");
       }
 
-
-      const total =
-        challenge.questions.length;
-
-
-      const myAccuracy =
-        Math.round(
-          challenge.myCorrect /
-          Math.max(
-            1,
-            total
-          ) *
-          100
-        );
-
-
-      const opponentAccuracy =
-        Math.round(
-          challenge.opponentCorrect /
-          Math.max(
-            1,
-            total
-          ) *
-          100
-        );
-
-
-      const main =
-        document.getElementById(
-          "main"
-        );
-
-
-      main.innerHTML = `
-
-        <div class="flo-challenge-shell">
-
-          <div class="flo-question-card flo-result-box">
-
-            <div class="flo-challenge-label">
-              CHALLENGE COMPLETE
-            </div>
-
-
-            <h2 class="flo-result-title">
-              Challenge Complete
-            </h2>
-
-
-            <p class="flo-result-subtitle">
-              ${escapeHTML(
-                challenge.topic ||
-                ""
-              )}
-            </p>
-
-
-            <div class="flo-result-grid">
-
-              <div class="flo-result-card">
-
-                <div class="flo-result-name">
-                  ${escapeHTML(
-                    challenge.username
-                  )}
-                </div>
-
-                <div class="flo-result-score">
-                  ${challenge.myScore}
-                </div>
-
-                <div class="flo-result-accuracy">
-                  ${myAccuracy}% accuracy
-                </div>
-
-              </div>
-
-
-              <div class="flo-result-card">
-
-                <div class="flo-result-name">
-                  ${escapeHTML(
-                    challenge.opponentUsername
-                  )}
-                </div>
-
-                <div class="flo-result-score">
-                  ${challenge.opponentScore}
-                </div>
-
-                <div class="flo-result-accuracy">
-                  ${opponentAccuracy}% accuracy
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <div class="flo-quiz-actions">
-
-              <button
-                class="btn light"
-                onclick="
-                  window.__floLeaveChallenge()
-                "
-              >
-                Back to Topic
-              </button>
-
-
-              <button
-                class="btn"
-                onclick="
-                  startQuizFor(
-                    ${JSON.stringify(
-                      challenge.subjectName
-                    )},
-                    ${JSON.stringify(
-                      challenge.topic
-                    )}
-                  )
-                "
-              >
-                Play Again
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-      `;
+      renderChallengeResults();
 
     };
 

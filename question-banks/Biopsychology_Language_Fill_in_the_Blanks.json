@@ -1,0 +1,2427 @@
+{
+  "subject": "Biopsychology",
+  "topic": "Language",
+  "mode": "fill_in_the_blanks",
+  "questions": [
+    {
+      "id": "fib-001",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "At the highest level, agrammatism involves grammatical ________.",
+      "answer": "structuring",
+      "accepted_answers": [
+        "structuring"
+      ],
+      "explanation": "The document identifies “structuring” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-002",
+      "subtopic": "General",
+      "question": "The supplementary motor area plans and coordinates complex sequences of ________ movements.",
+      "answer": "speech",
+      "accepted_answers": [
+        "speech"
+      ],
+      "explanation": "The document identifies “speech” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-003",
+      "subtopic": "General",
+      "question": "White-matter structural differences are associated with L2 proficiency and ________.",
+      "answer": "immersion",
+      "accepted_answers": [
+        "immersion"
+      ],
+      "explanation": "The document identifies “immersion” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-004",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s aphasia makes function words such as a, the, some, in, and ________ difficult.",
+      "answer": "about",
+      "accepted_answers": [
+        "about"
+      ],
+      "explanation": "The document identifies “about” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-005",
+      "subtopic": "General",
+      "question": "In transcortical sensory aphasia, a patient may repeat 'The boy is running' without understanding what it ________.",
+      "answer": "means",
+      "accepted_answers": [
+        "means"
+      ],
+      "explanation": "The document identifies “means” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-006",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "Prosody involves rhythm, pitch, stress, and ________ of speech.",
+      "answer": "intonation",
+      "accepted_answers": [
+        "intonation"
+      ],
+      "explanation": "The document identifies “intonation” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-007",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Surface dyslexia is associated with dysfunction of the VWFA in the left ________ gyrus.",
+      "answer": "fusiform",
+      "accepted_answers": [
+        "fusiform"
+      ],
+      "explanation": "The document identifies “fusiform” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-008",
+      "subtopic": "Basal Ganglia and Speech",
+      "question": "The basal ganglia help initiate and regulate speech movements and maintain ________.",
+      "answer": "fluency",
+      "accepted_answers": [
+        "fluency"
+      ],
+      "explanation": "The document identifies “fluency” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-009",
+      "subtopic": "Language Lateralization",
+      "question": "Right-hemisphere speech dominance was found in only ________% of strongly right-handed people.",
+      "answer": "4",
+      "accepted_answers": [
+        "4"
+      ],
+      "explanation": "The document identifies “4” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-010",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s area is located in the auditory association cortex of the left ________ lobe.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-011",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with surface dyslexia may pronounce 'pint' as though it rhymes with ________.",
+      "answer": "mint",
+      "accepted_answers": [
+        "mint"
+      ],
+      "explanation": "The document identifies “mint” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-012",
+      "subtopic": "Insula and Speech Articulation",
+      "question": "At the lowest processing level, articulation difficulties involve motor control of the speech ________.",
+      "answer": "muscles",
+      "accepted_answers": [
+        "muscles"
+      ],
+      "explanation": "The document identifies “muscles” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-013",
+      "subtopic": "General",
+      "question": "The thalamus supports communication between cortical language areas and helps regulate ________ processing.",
+      "answer": "language",
+      "accepted_answers": [
+        "language"
+      ],
+      "explanation": "The document identifies “language” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-014",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Whole-word reading recognizes a familiar word as a whole visual ________.",
+      "answer": "pattern",
+      "accepted_answers": [
+        "pattern"
+      ],
+      "explanation": "The document identifies “pattern” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-015",
+      "subtopic": "Bilingualism",
+      "question": "Repeated bilingual practice can change grey matter, cortical thickness, and white-matter ________.",
+      "answer": "integrity",
+      "accepted_answers": [
+        "integrity"
+      ],
+      "explanation": "The document identifies “integrity” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-016",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Agrammatism involves difficulty constructing ________ sentences.",
+      "answer": "grammatical",
+      "accepted_answers": [
+        "grammatical"
+      ],
+      "explanation": "The document identifies “grammatical” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-017",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Conduction aphasia primarily involves the connections between Broca’s and Wernicke’s areas, especially the ________.",
+      "answer": "arcuate fasciculus",
+      "accepted_answers": [
+        "arcuate fasciculus"
+      ],
+      "explanation": "The document identifies “arcuate fasciculus” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-018",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "The angular gyrus is involved in reading, writing, semantic processing, and linking ________ information with language.",
+      "answer": "visual",
+      "accepted_answers": [
+        "visual"
+      ],
+      "explanation": "The document identifies “visual” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-019",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s aphasia results from damage to the left inferior frontal lobe, especially ________ area.",
+      "answer": "Broca’s",
+      "accepted_answers": [
+        "Broca’s"
+      ],
+      "explanation": "The document identifies “Broca’s” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-020",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "Metaphors, proverbs, sarcasm, humour, implied meanings, and non-literal language rely particularly on the ________ hemisphere.",
+      "answer": "right",
+      "accepted_answers": [
+        "right"
+      ],
+      "explanation": "The document identifies “right” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-021",
+      "subtopic": "Bilingualism",
+      "question": "Early bilinguals show greater recruitment of the left caudate, inferior frontal gyrus, and ________ frontal gyrus during switching tasks.",
+      "answer": "middle",
+      "accepted_answers": [
+        "middle"
+      ],
+      "explanation": "The document identifies “middle” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-022",
+      "subtopic": "Auditory Pathway",
+      "question": "After the cochlear branch, auditory information reaches the cochlear nuclei in the ________.",
+      "answer": "medulla",
+      "accepted_answers": [
+        "medulla"
+      ],
+      "explanation": "The document identifies “medulla” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-023",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Orthographic dysgraphia particularly affects the spelling of ________ words.",
+      "answer": "irregular",
+      "accepted_answers": [
+        "irregular"
+      ],
+      "explanation": "The document identifies “irregular” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-024",
+      "subtopic": "General",
+      "question": "For auditory language, the first step is recognizing the sequence of ________ that make up a word.",
+      "answer": "sounds",
+      "accepted_answers": [
+        "sounds"
+      ],
+      "explanation": "The document identifies “sounds” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-025",
+      "subtopic": "General",
+      "question": "Normally, both hemispheres share information through the ________.",
+      "answer": "corpus callosum",
+      "accepted_answers": [
+        "corpus callosum"
+      ],
+      "explanation": "The document identifies “corpus callosum” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-026",
+      "subtopic": "General",
+      "question": "The left hemisphere is dominant for literal meaning, grammar, and ________ comprehension.",
+      "answer": "word/sentence",
+      "accepted_answers": [
+        "word/sentence"
+      ],
+      "explanation": "The document identifies “word/sentence” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-027",
+      "subtopic": "Word Retrieval and Anomia",
+      "question": "The tip-of-the-tongue phenomenon can occur when individuals know the word semantically but cannot retrieve its ________ form.",
+      "answer": "phonological",
+      "accepted_answers": [
+        "phonological"
+      ],
+      "explanation": "The document identifies “phonological” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-028",
+      "subtopic": "Insula and Speech Articulation",
+      "question": "Dronkers (1996) identified the left precentral gyrus of the ________ as a critical location for speech articulation.",
+      "answer": "insula",
+      "accepted_answers": [
+        "insula"
+      ],
+      "explanation": "The document identifies “insula” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-029",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "In agrammatism, patients may omit function words and grammatical ________.",
+      "answer": "markers",
+      "accepted_answers": [
+        "markers"
+      ],
+      "explanation": "The document identifies “markers” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-030",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The supramarginal gyrus is mainly associated with Brodmann area ________.",
+      "answer": "40",
+      "accepted_answers": [
+        "40"
+      ],
+      "explanation": "The document identifies “40” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-031",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "The reading pathway ultimately reaches speech production and the stage of ________ the word aloud.",
+      "answer": "saying",
+      "accepted_answers": [
+        "saying"
+      ],
+      "explanation": "The document identifies “saying” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-032",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Orthographic dysgraphia involves difficulty recalling the visual ________ of words.",
+      "answer": "spelling",
+      "accepted_answers": [
+        "spelling"
+      ],
+      "explanation": "The document identifies “spelling” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-033",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "The Wernicke pathway can be summarized as sound → words → ________ → comprehension.",
+      "answer": "meaning",
+      "accepted_answers": [
+        "meaning"
+      ],
+      "explanation": "The document identifies “meaning” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-034",
+      "subtopic": "General",
+      "question": "Talking about the future or things that never happened involves ________, which is based on past knowledge and experience.",
+      "answer": "imagination",
+      "accepted_answers": [
+        "imagination"
+      ],
+      "explanation": "The document identifies “imagination” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-035",
+      "subtopic": "Language Lateralization",
+      "question": "Among strongly left-handed subjects, the percentages for left-sided, bilateral, and right-sided language dominance were ________%, ________%, and ________%, respectively.",
+      "answer": "73.7%, 15.8%, and 10.5%",
+      "accepted_answers": [
+        "73.7%, 15.8%, and 10.5%"
+      ],
+      "explanation": "The document identifies “73.7%, 15.8%, and 10.5%” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-036",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Phonagnosia is the inability to recognize familiar ________ despite normal hearing.",
+      "answer": "voices",
+      "accepted_answers": [
+        "voices"
+      ],
+      "explanation": "The document identifies “voices” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-037",
+      "subtopic": "General",
+      "question": "Language is a system of communication used by humans to convey thoughts, ideas, emotions, and ________.",
+      "answer": "information",
+      "accepted_answers": [
+        "information"
+      ],
+      "explanation": "The document identifies “information” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-038",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Pure alexia involves loss of reading ability with preserved ________ ability.",
+      "answer": "writing",
+      "accepted_answers": [
+        "writing"
+      ],
+      "explanation": "The document identifies “writing” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-039",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "In alexia, previously acquired reading ability is ________ or impaired.",
+      "answer": "lost",
+      "accepted_answers": [
+        "lost"
+      ],
+      "explanation": "The document identifies “lost” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-040",
+      "subtopic": "Cognitive Reserve",
+      "question": "Cognitive reserve is the ability to maintain ________ despite ageing or brain changes.",
+      "answer": "cognition",
+      "accepted_answers": [
+        "cognition"
+      ],
+      "explanation": "The document identifies “cognition” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-041",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Surface dyslexia involves difficulty with whole-word recognition and overreliance on ________ reading.",
+      "answer": "phonetic",
+      "accepted_answers": [
+        "phonetic"
+      ],
+      "explanation": "The document identifies “phonetic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-042",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The supramarginal gyrus helps maintain and manipulate phonological representations in ________ languages.",
+      "answer": "both",
+      "accepted_answers": [
+        "both"
+      ],
+      "explanation": "The document identifies “both” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-043",
+      "subtopic": "Bilingualism",
+      "question": "Bilingualism is associated with both structural and ________ differences compared with monolingualism.",
+      "answer": "functional",
+      "accepted_answers": [
+        "functional"
+      ],
+      "explanation": "The document identifies “functional” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-044",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Alexia commonly results from brain damage such as a ________.",
+      "answer": "stroke",
+      "accepted_answers": [
+        "stroke"
+      ],
+      "explanation": "The document identifies “stroke” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-045",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Complete the reading pathway: sight of word → letter/word recognition → whole-word reading OR phonetic reading → phonetic coding → speech production → ________.",
+      "answer": "saying the word aloud",
+      "accepted_answers": [
+        "saying the word aloud"
+      ],
+      "explanation": "The document identifies “saying the word aloud” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-046",
+      "subtopic": "Language Lateralization",
+      "question": "Among strongly right-handed subjects, left-sided language cerebral dominance was recorded in ________%.",
+      "answer": "87.5",
+      "accepted_answers": [
+        "87.5"
+      ],
+      "explanation": "The document identifies “87.5” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-047",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Dyslexia is not caused by events such as stroke or traumatic ________ injury.",
+      "answer": "brain",
+      "accepted_answers": [
+        "brain"
+      ],
+      "explanation": "The document identifies “brain” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-048",
+      "subtopic": "Auditory Pathway",
+      "question": "The medial geniculate nucleus is located in the ________.",
+      "answer": "thalamus",
+      "accepted_answers": [
+        "thalamus"
+      ],
+      "explanation": "The document identifies “thalamus” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-049",
+      "subtopic": "Bilingualism",
+      "question": "Bilinguals tend to show increased ________ matter volume compared with monolinguals.",
+      "answer": "grey",
+      "accepted_answers": [
+        "grey"
+      ],
+      "explanation": "The document identifies “grey” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-050",
+      "subtopic": "Bilingualism",
+      "question": "The effects of bilingualism depend on age of acquisition, proficiency, frequency of use, and degree of ________.",
+      "answer": "immersion",
+      "accepted_answers": [
+        "immersion"
+      ],
+      "explanation": "The document identifies “immersion” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-051",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Pure alexia is usually associated with damage to the left occipital cortex and the ________ of the corpus callosum.",
+      "answer": "splenium",
+      "accepted_answers": [
+        "splenium"
+      ],
+      "explanation": "The document identifies “splenium” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-052",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Word-form dyslexia requires the person to spell out individual ________ before recognizing a familiar word.",
+      "answer": "letters",
+      "accepted_answers": [
+        "letters"
+      ],
+      "explanation": "The document identifies “letters” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-053",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Orthographic dysgraphia is associated with damage to the Visual Word-Form Area at the base of the ________ lobe.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-054",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s area plus adjacent frontal association cortex handles syntactic structuring, word order, and construction of proper ________.",
+      "answer": "sentences",
+      "accepted_answers": [
+        "sentences"
+      ],
+      "explanation": "The document identifies “sentences” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-055",
+      "subtopic": "General",
+      "question": "In Khedr et al. (2002), ________ subjects developed speech arrest at 140% of motor threshold.",
+      "answer": "27",
+      "accepted_answers": [
+        "27"
+      ],
+      "explanation": "The document identifies “27” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-056",
+      "subtopic": "General",
+      "question": "Memory and perception are largely processed by the posterior brain regions—the parietal, temporal, and ________ lobes.",
+      "answer": "occipital",
+      "accepted_answers": [
+        "occipital"
+      ],
+      "explanation": "The document identifies “occipital” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-057",
+      "subtopic": "General",
+      "question": "Language production involves producing meaningful speech about past, present, future, or ________ events.",
+      "answer": "imaginary",
+      "accepted_answers": [
+        "imaginary"
+      ],
+      "explanation": "The document identifies “imaginary” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-058",
+      "subtopic": "Basal Ganglia and Speech",
+      "question": "The primary motor cortex and basal ganglia contribute to control of speech ________.",
+      "answer": "movements",
+      "accepted_answers": [
+        "movements"
+      ],
+      "explanation": "The document identifies “movements” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-059",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "The reading pathway begins with sight of the word, followed by letter/word recognition and then either whole-word or ________ reading.",
+      "answer": "phonetic",
+      "accepted_answers": [
+        "phonetic"
+      ],
+      "explanation": "The document identifies “phonetic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-060",
+      "subtopic": "General",
+      "question": "Human communication involves both ________ and ________ forms.",
+      "answer": "verbal and nonverbal",
+      "accepted_answers": [
+        "verbal and nonverbal"
+      ],
+      "explanation": "The document identifies “verbal and nonverbal” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-061",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "Complete the distinction: the left hemisphere is dominant for literal meaning, grammar, and word/sentence comprehension, whereas the right hemisphere contributes to ________.",
+      "answer": "subtle, abstract, and contextual aspects of language, including metaphors, proverbs, sarcasm, humour, implied meanings, and non-literal language",
+      "accepted_answers": [
+        "subtle, abstract, and contextual aspects of language, including metaphors, proverbs, sarcasm, humour, implied meanings, and non-literal language"
+      ],
+      "explanation": "The document identifies “subtle, abstract, and contextual aspects of language, including metaphors, proverbs, sarcasm, humour, implied meanings, and non-literal language” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-062",
+      "subtopic": "Bilingualism",
+      "question": "The striatum/basal ganglia acts as a ________ system during continuous language switching.",
+      "answer": "gating",
+      "accepted_answers": [
+        "gating"
+      ],
+      "explanation": "The document identifies “gating” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-063",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Direct dyslexia allows a person to read words aloud without understanding their ________.",
+      "answer": "meaning",
+      "accepted_answers": [
+        "meaning"
+      ],
+      "explanation": "The document identifies “meaning” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-064",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Reading involves two major processes: whole-word reading and ________ reading.",
+      "answer": "phonetic",
+      "accepted_answers": [
+        "phonetic"
+      ],
+      "explanation": "The document identifies “phonetic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-065",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Whole-word reading mainly involves the Visual Word-Form Area, or ________.",
+      "answer": "VWFA",
+      "accepted_answers": [
+        "VWFA"
+      ],
+      "explanation": "The document identifies “VWFA” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-066",
+      "subtopic": "General",
+      "question": "The posterior association cortex combines sensory inputs from ________ brain regions.",
+      "answer": "multiple",
+      "accepted_answers": [
+        "multiple"
+      ],
+      "explanation": "The document identifies “multiple” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-067",
+      "subtopic": "Bilingualism",
+      "question": "Repeated bilingual practice makes it easier to ________ automatic responses.",
+      "answer": "override",
+      "accepted_answers": [
+        "override"
+      ],
+      "explanation": "The document identifies “override” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-068",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right superior ________ cortex is particularly involved in interpreting non-literal meanings.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-069",
+      "subtopic": "Split-Brain and Hemispheric Communication",
+      "question": "The corpus callosum facilitates communication between the two ________.",
+      "answer": "hemispheres",
+      "accepted_answers": [
+        "hemispheres"
+      ],
+      "explanation": "The document identifies “hemispheres” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-070",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Complete the Broca speech pattern: content words such as 'girl, flowers, house' are relatively preserved, whereas function words such as 'a, the, some, in, about' are difficult, producing ________.",
+      "answer": "telegraphic speech such as “Girl… give… flowers.”",
+      "accepted_answers": [
+        "telegraphic speech such as “Girl… give… flowers.”"
+      ],
+      "explanation": "The document identifies “telegraphic speech such as “Girl… give… flowers.”” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-071",
+      "subtopic": "General",
+      "question": "Patients with conduction aphasia may repeat familiar real words but struggle more with ________ words.",
+      "answer": "nonsense",
+      "accepted_answers": [
+        "nonsense"
+      ],
+      "explanation": "The document identifies “nonsense” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-072",
+      "subtopic": "Executive Control and Language",
+      "question": "The DLPFC supports executive control, working memory, attention, and ________-making.",
+      "answer": "decision",
+      "accepted_answers": [
+        "decision"
+      ],
+      "explanation": "The document identifies “decision” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-073",
+      "subtopic": "General",
+      "question": "Functional imaging has implicated the right anterior superior ________ cortex in voice recognition.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-074",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "The VWFA is part of the ________ visual stream.",
+      "answer": "ventral",
+      "accepted_answers": [
+        "ventral"
+      ],
+      "explanation": "The document identifies “ventral” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-075",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "The Visual Word-Form Area supports whole-word recognition and visual word ________.",
+      "answer": "processing",
+      "accepted_answers": [
+        "processing"
+      ],
+      "explanation": "The document identifies “processing” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-076",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Severity of Broca’s aphasia varies depending on the location and ________ of the lesion.",
+      "answer": "size",
+      "accepted_answers": [
+        "size"
+      ],
+      "explanation": "The document identifies “size” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-077",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "People with Broca’s aphasia are usually able to understand speech well and maintain the ability to ________.",
+      "answer": "read",
+      "accepted_answers": [
+        "read"
+      ],
+      "explanation": "The document identifies “read” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-078",
+      "subtopic": "Executive Control and Language",
+      "question": "The DLPFC is associated with BA 9 and BA ________.",
+      "answer": "46",
+      "accepted_answers": [
+        "46"
+      ],
+      "explanation": "The document identifies “46” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-079",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s area is located in the ________ frontal gyrus.",
+      "answer": "inferior",
+      "accepted_answers": [
+        "inferior"
+      ],
+      "explanation": "The document identifies “inferior” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-080",
+      "subtopic": "General",
+      "question": "Anomic aphasia is characterized by difficulty retrieving or ________ words.",
+      "answer": "naming",
+      "accepted_answers": [
+        "naming"
+      ],
+      "explanation": "The document identifies “naming” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-081",
+      "subtopic": "Word Retrieval and Anomia",
+      "question": "At the middle processing level, anomia involves word ________.",
+      "answer": "retrieval",
+      "accepted_answers": [
+        "retrieval"
+      ],
+      "explanation": "The document identifies “retrieval” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-082",
+      "subtopic": "Bilingualism",
+      "question": "Bilingual language areas are located in frontal and posterior temporal/________ cortex.",
+      "answer": "parietal",
+      "accepted_answers": [
+        "parietal"
+      ],
+      "explanation": "The document identifies “parietal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-083",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Speech comprehension begins in the ________ system.",
+      "answer": "auditory",
+      "accepted_answers": [
+        "auditory"
+      ],
+      "explanation": "The document identifies “auditory” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-084",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with pure alexia may write 'The boy is playing' but cannot ________ the same sentence.",
+      "answer": "read",
+      "accepted_answers": [
+        "read"
+      ],
+      "explanation": "The document identifies “read” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-085",
+      "subtopic": "Language Lateralization",
+      "question": "Brain lateralization is the functional ________ of one hemisphere over the other.",
+      "answer": "dominance",
+      "accepted_answers": [
+        "dominance"
+      ],
+      "explanation": "The document identifies “dominance” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-086",
+      "subtopic": "General",
+      "question": "The frontal lobe contributes to speech production and ________.",
+      "answer": "articulation",
+      "accepted_answers": [
+        "articulation"
+      ],
+      "explanation": "The document identifies “articulation” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-087",
+      "subtopic": "Bilingualism",
+      "question": "Complete the long-term bilingualism mechanism: the striatum/caudate selects the relevant language and suppresses the competing one; selected information is then passed through basal-ganglia–thalamic circuits to the PFC, where it supports ________.",
+      "answer": "inhibition, monitoring, and response selection",
+      "accepted_answers": [
+        "inhibition, monitoring, and response selection"
+      ],
+      "explanation": "The document identifies “inhibition, monitoring, and response selection” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-088",
+      "subtopic": "Executive Control and Language",
+      "question": "TMS stands for transcranial ________ stimulation.",
+      "answer": "magnetic",
+      "accepted_answers": [
+        "magnetic"
+      ],
+      "explanation": "The document identifies “magnetic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-089",
+      "subtopic": "Executive Control and Language",
+      "question": "The ACC is mainly associated with BA 24 and BA ________.",
+      "answer": "32",
+      "accepted_answers": [
+        "32"
+      ],
+      "explanation": "The document identifies “32” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-090",
+      "subtopic": "Auditory Pathway",
+      "question": "The auditory pathway then proceeds through the lateral lemniscus to the inferior ________.",
+      "answer": "colliculus",
+      "accepted_answers": [
+        "colliculus"
+      ],
+      "explanation": "The document identifies “colliculus” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-091",
+      "subtopic": "Language Lateralization",
+      "question": "Speech lateralized to the left-side cerebral dominance in strongly right- and left-handed subjects, while bilateral representation was frequent in ________ handedness.",
+      "answer": "mixed",
+      "accepted_answers": [
+        "mixed"
+      ],
+      "explanation": "The document identifies “mixed” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-092",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s aphasia is also called ________ or ________ aphasia.",
+      "answer": "fluent; receptive",
+      "accepted_answers": [
+        "fluent; receptive"
+      ],
+      "explanation": "The document identifies “fluent; receptive” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-093",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Phonological dyslexia is associated with dysfunction of the left ________ cortex.",
+      "answer": "temporoparietal",
+      "accepted_answers": [
+        "temporoparietal"
+      ],
+      "explanation": "The document identifies “temporoparietal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-094",
+      "subtopic": "General",
+      "question": "Semantic agraphia is associated with disruption of semantic language networks, especially connections between conceptual/semantic systems and language ________ regions.",
+      "answer": "output",
+      "accepted_answers": [
+        "output"
+      ],
+      "explanation": "The document identifies “output” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-095",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s aphasia speech may contain nonsense or ________ words.",
+      "answer": "irrelevant",
+      "accepted_answers": [
+        "irrelevant"
+      ],
+      "explanation": "The document identifies “irrelevant” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-096",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s area is involved in recognition of spoken words, comprehension of word meanings, and conversion of thoughts into ________.",
+      "answer": "words",
+      "accepted_answers": [
+        "words"
+      ],
+      "explanation": "The document identifies “words” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-097",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The supramarginal gyrus is involved in phonological processing and language ________ memory.",
+      "answer": "working",
+      "accepted_answers": [
+        "working"
+      ],
+      "explanation": "The document identifies “working” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-098",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s aphasia is associated with fluent speech, impaired comprehension, and frequent ________.",
+      "answer": "paraphasias",
+      "accepted_answers": [
+        "paraphasias"
+      ],
+      "explanation": "The document identifies “paraphasias” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-099",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The temporal lobe contributes to word analysis and ________ processing.",
+      "answer": "language",
+      "accepted_answers": [
+        "language"
+      ],
+      "explanation": "The document identifies “language” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-100",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right hemisphere helps recognize complex geometrical forms, perceive spatial relationships, and read ________.",
+      "answer": "maps",
+      "accepted_answers": [
+        "maps"
+      ],
+      "explanation": "The document identifies “maps” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-101",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Phonological dysgraphia involves difficulty converting sounds into written ________.",
+      "answer": "letters",
+      "accepted_answers": [
+        "letters"
+      ],
+      "explanation": "The document identifies “letters” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-102",
+      "subtopic": "Executive Control and Language",
+      "question": "The IFC helps select the appropriate language and suppress interference from the ________ language.",
+      "answer": "non-target",
+      "accepted_answers": [
+        "non-target"
+      ],
+      "explanation": "The document identifies “non-target” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-103",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Posterior language regions transmit information toward Broca’s area primarily through the ________.",
+      "answer": "arcuate fasciculus",
+      "accepted_answers": [
+        "arcuate fasciculus"
+      ],
+      "explanation": "The document identifies “arcuate fasciculus” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-104",
+      "subtopic": "Bilingualism",
+      "question": "The DLPFC helps maintain the ________ language and manage language switching.",
+      "answer": "target",
+      "accepted_answers": [
+        "target"
+      ],
+      "explanation": "The document identifies “target” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-105",
+      "subtopic": "Auditory Pathway",
+      "question": "The auditory pathway begins with the cochlear branch of cranial nerve ________.",
+      "answer": "VIII",
+      "accepted_answers": [
+        "VIII"
+      ],
+      "explanation": "The document identifies “VIII” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-106",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The parietal lobe integrates sensory information and supports ________ awareness.",
+      "answer": "spatial",
+      "accepted_answers": [
+        "spatial"
+      ],
+      "explanation": "The document identifies “spatial” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-107",
+      "subtopic": "General",
+      "question": "The temporoparietal cortex supports phonological analysis and ________-symbol connections.",
+      "answer": "sound",
+      "accepted_answers": [
+        "sound"
+      ],
+      "explanation": "The document identifies “sound” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-108",
+      "subtopic": "Cognitive Reserve",
+      "question": "Greater neural reserve may improve compensation for age-related ________ changes.",
+      "answer": "brain",
+      "accepted_answers": [
+        "brain"
+      ],
+      "explanation": "The document identifies “brain” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-109",
+      "subtopic": "Basal Ganglia and Speech",
+      "question": "Caudate nucleus lesions can produce ________-like aphasia.",
+      "answer": "Broca",
+      "accepted_answers": [
+        "Broca"
+      ],
+      "explanation": "The document identifies “Broca” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-110",
+      "subtopic": "General",
+      "question": "The example 'lipstick → likstip' illustrates an ________ problem.",
+      "answer": "articulation",
+      "accepted_answers": [
+        "articulation"
+      ],
+      "explanation": "The document identifies “articulation” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-111",
+      "subtopic": "Executive Control and Language",
+      "question": "The ACC monitors conflict and ________.",
+      "answer": "errors",
+      "accepted_answers": [
+        "errors"
+      ],
+      "explanation": "The document identifies “errors” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-112",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s aphasia is also called ________ or ________ aphasia.",
+      "answer": "non-fluent; expressive",
+      "accepted_answers": [
+        "non-fluent; expressive"
+      ],
+      "explanation": "The document identifies “non-fluent; expressive” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-113",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Phonological dysgraphia is associated with damage to Broca’s area, ventral precentral gyrus, and ________.",
+      "answer": "insula",
+      "accepted_answers": [
+        "insula"
+      ],
+      "explanation": "The document identifies “insula” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-114",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with phonological dysgraphia may write familiar words but fail to spell a dictated nonword such as ________.",
+      "answer": "blaf",
+      "accepted_answers": [
+        "blaf"
+      ],
+      "explanation": "The document identifies “blaf” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-115",
+      "subtopic": "Executive Control and Language",
+      "question": "The IFC includes BA 44, 45, and ________.",
+      "answer": "47",
+      "accepted_answers": [
+        "47"
+      ],
+      "explanation": "The document identifies “47” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-116",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Phonetic reading mainly involves the ________ cortex.",
+      "answer": "temporoparietal",
+      "accepted_answers": [
+        "temporoparietal"
+      ],
+      "explanation": "The document identifies “temporoparietal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-117",
+      "subtopic": "Executive Control and Language",
+      "question": "The PFC helps suppress competing or ________ responses.",
+      "answer": "automatic",
+      "accepted_answers": [
+        "automatic"
+      ],
+      "explanation": "The document identifies “automatic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-118",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with direct dyslexia may correctly read 'apple' aloud but fail to explain what an ________ is.",
+      "answer": "apple",
+      "accepted_answers": [
+        "apple"
+      ],
+      "explanation": "The document identifies “apple” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-119",
+      "subtopic": "General",
+      "question": "The superior longitudinal fasciculus connects frontal regions with parietal and ________ areas.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-120",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Alexia occurs after an acquired ________ event.",
+      "answer": "neurological",
+      "accepted_answers": [
+        "neurological"
+      ],
+      "explanation": "The document identifies “neurological” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-121",
+      "subtopic": "Bilingualism",
+      "question": "The left inferior frontal gyrus may show greater grey matter ________ in bilinguals.",
+      "answer": "volume",
+      "accepted_answers": [
+        "volume"
+      ],
+      "explanation": "The document identifies “volume” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-122",
+      "subtopic": "General",
+      "question": "The main feature of conduction aphasia is severely impaired ________ despite relatively fluent speech and good comprehension.",
+      "answer": "repetition",
+      "accepted_answers": [
+        "repetition"
+      ],
+      "explanation": "The document identifies “repetition” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-123",
+      "subtopic": "General",
+      "question": "A person with semantic agraphia may write 'elephant' when dictated but cannot independently write meaningful ________ about an elephant.",
+      "answer": "thoughts",
+      "accepted_answers": [
+        "thoughts"
+      ],
+      "explanation": "The document identifies “thoughts” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-124",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s aphasia involves impaired comprehension, but patients can produce connected ________.",
+      "answer": "speech",
+      "accepted_answers": [
+        "speech"
+      ],
+      "explanation": "The document identifies “speech” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-125",
+      "subtopic": "Auditory Pathway",
+      "question": "The superior olivary nucleus is located in the ________.",
+      "answer": "pons",
+      "accepted_answers": [
+        "pons"
+      ],
+      "explanation": "The document identifies “pons” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-126",
+      "subtopic": "Basal Ganglia and Speech",
+      "question": "The basal ganglia include the caudate, putamen, and globus ________.",
+      "answer": "pallidus",
+      "accepted_answers": [
+        "pallidus"
+      ],
+      "explanation": "The document identifies “pallidus” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-127",
+      "subtopic": "General",
+      "question": "Talking about the past depends on ________, whereas talking about the present depends on perception.",
+      "answer": "memory",
+      "accepted_answers": [
+        "memory"
+      ],
+      "explanation": "The document identifies “memory” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-128",
+      "subtopic": "Bilingualism",
+      "question": "Bilingual-related differences are particularly evident in language processing, executive control, and cognitive ________.",
+      "answer": "flexibility",
+      "accepted_answers": [
+        "flexibility"
+      ],
+      "explanation": "The document identifies “flexibility” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-129",
+      "subtopic": "Auditory Pathway",
+      "question": "From the medial geniculate nucleus, auditory information reaches the primary ________ cortex.",
+      "answer": "auditory",
+      "accepted_answers": [
+        "auditory"
+      ],
+      "explanation": "The document identifies “auditory” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-130",
+      "subtopic": "Executive Control and Language",
+      "question": "DLPFC stands for ________ prefrontal cortex.",
+      "answer": "dorsolateral",
+      "accepted_answers": [
+        "dorsolateral"
+      ],
+      "explanation": "The document identifies “dorsolateral” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-131",
+      "subtopic": "Insula and Speech Articulation",
+      "question": "The insula lies deep in the lateral wall of the cerebral hemisphere, behind the anterior ________ lobe.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-132",
+      "subtopic": "Motor Control of Speech",
+      "question": "The primary motor cortex controls movements of the lips, tongue, jaw, and ________ needed for speech.",
+      "answer": "larynx",
+      "accepted_answers": [
+        "larynx"
+      ],
+      "explanation": "The document identifies “larynx” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-133",
+      "subtopic": "Split-Brain and Hemispheric Communication",
+      "question": "In a split-brain, the left can speak and the right can perceive, but the information does not integrate ________ between them.",
+      "answer": "smoothly",
+      "accepted_answers": [
+        "smoothly"
+      ],
+      "explanation": "The document identifies “smoothly” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-134",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with word-form dyslexia may have to read E-L-E-P-H-A-N-T letter by letter before recognizing ________.",
+      "answer": "elephant",
+      "accepted_answers": [
+        "elephant"
+      ],
+      "explanation": "The document identifies “elephant” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-135",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "In dyslexia, reading ability is difficult to ________.",
+      "answer": "acquire",
+      "accepted_answers": [
+        "acquire"
+      ],
+      "explanation": "The document identifies “acquire” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-136",
+      "subtopic": "General",
+      "question": "The arcuate fasciculus carries information about the ________ or phonological form of words rather than their meanings.",
+      "answer": "sounds",
+      "accepted_answers": [
+        "sounds"
+      ],
+      "explanation": "The document identifies “sounds” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-137",
+      "subtopic": "General",
+      "question": "A language intention is the idea, message, or communicative ________ a person wants to express.",
+      "answer": "goal",
+      "accepted_answers": [
+        "goal"
+      ],
+      "explanation": "The document identifies “goal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-138",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Patients with Broca’s aphasia have difficulty expressing thoughts and constructing ________.",
+      "answer": "sentences",
+      "accepted_answers": [
+        "sentences"
+      ],
+      "explanation": "The document identifies “sentences” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-139",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s area organizes movements involving the tongue, lips, jaw, and ________ cords.",
+      "answer": "vocal",
+      "accepted_answers": [
+        "vocal"
+      ],
+      "explanation": "The document identifies “vocal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-140",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s aphasia involves the left inferior ________ gyrus.",
+      "answer": "frontal",
+      "accepted_answers": [
+        "frontal"
+      ],
+      "explanation": "The document identifies “frontal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-141",
+      "subtopic": "General",
+      "question": "The hippocampus supports recalling past events and imagining or describing ________ events.",
+      "answer": "future",
+      "accepted_answers": [
+        "future"
+      ],
+      "explanation": "The document identifies “future” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-142",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Telegraphic Broca-type speech may sound like “Girl… give… ________.”",
+      "answer": "flowers",
+      "accepted_answers": [
+        "flowers"
+      ],
+      "explanation": "The document identifies “flowers” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-143",
+      "subtopic": "General",
+      "question": "Language is largely lateralized on the ________ hemisphere.",
+      "answer": "left",
+      "accepted_answers": [
+        "left"
+      ],
+      "explanation": "The document identifies “left” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-144",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The occipital lobe contributes to recognition and processing of ________ and words.",
+      "answer": "letters",
+      "accepted_answers": [
+        "letters"
+      ],
+      "explanation": "The document identifies “letters” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-145",
+      "subtopic": "Insula and Speech Articulation",
+      "question": "The left precentral gyrus of the insula integrates motor planning with higher-order ________ processes.",
+      "answer": "linguistic",
+      "accepted_answers": [
+        "linguistic"
+      ],
+      "explanation": "The document identifies “linguistic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-146",
+      "subtopic": "Bilingualism",
+      "question": "Bilingualism may improve multitasking, task switching, sustained attention, and ________ memory.",
+      "answer": "working",
+      "accepted_answers": [
+        "working"
+      ],
+      "explanation": "The document identifies “working” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-147",
+      "subtopic": "Executive Control and Language",
+      "question": "The temporal lobe supports understanding speech, accessing word meanings, and talking about ________ experiences.",
+      "answer": "past",
+      "accepted_answers": [
+        "past"
+      ],
+      "explanation": "The document identifies “past” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-148",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with orthographic dysgraphia may spell tree correctly but write 'yot' for ________.",
+      "answer": "yacht",
+      "accepted_answers": [
+        "yacht"
+      ],
+      "explanation": "The document identifies “yacht” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-149",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "Disrupting the right superior temporal cortex with TMS can impair understanding of ________ metaphors.",
+      "answer": "novel",
+      "accepted_answers": [
+        "novel"
+      ],
+      "explanation": "The document identifies “novel” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-150",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "A person with phonological dyslexia may read 'house' but be unable to read a nonword such as ________.",
+      "answer": "glab/trisk",
+      "accepted_answers": [
+        "glab/trisk"
+      ],
+      "explanation": "The document identifies “glab/trisk” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-151",
+      "subtopic": "Basal Ganglia and Speech",
+      "question": "The striatum/caudate helps select the relevant language and ________ the competing one.",
+      "answer": "suppress",
+      "accepted_answers": [
+        "suppress"
+      ],
+      "explanation": "The document identifies “suppress” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-152",
+      "subtopic": "General",
+      "question": "The primary auditory cortex receives and processes ________ information, including speech sounds.",
+      "answer": "auditory",
+      "accepted_answers": [
+        "auditory"
+      ],
+      "explanation": "The document identifies “auditory” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-153",
+      "subtopic": "General",
+      "question": "Selected information is passed through basal-ganglia–thalamic circuits to the ________.",
+      "answer": "PFC",
+      "accepted_answers": [
+        "PFC"
+      ],
+      "explanation": "The document identifies “PFC” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-154",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s area contains memories of the sequences of ________ that constitute words.",
+      "answer": "sounds",
+      "accepted_answers": [
+        "sounds"
+      ],
+      "explanation": "The document identifies “sounds” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-155",
+      "subtopic": "Language Lateralization",
+      "question": "Among strongly right-handed subjects, right-sided language cerebral dominance was recorded in ________%.",
+      "answer": "4.2",
+      "accepted_answers": [
+        "4.2"
+      ],
+      "explanation": "The document identifies “4.2” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-156",
+      "subtopic": "Motor Control of Speech",
+      "question": "The cerebellum supports the ________ aspects involved in speech.",
+      "answer": "motor",
+      "accepted_answers": [
+        "motor"
+      ],
+      "explanation": "The document identifies “motor” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-157",
+      "subtopic": "Basal Ganglia and Speech",
+      "question": "The basal ganglia provide motor control and sequencing, helping smooth initiation and switching of articulatory ________.",
+      "answer": "patterns",
+      "accepted_answers": [
+        "patterns"
+      ],
+      "explanation": "The document identifies “patterns” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-158",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Phonetic reading involves analyzing individual letters and converting them into corresponding ________ sounds.",
+      "answer": "speech",
+      "accepted_answers": [
+        "speech"
+      ],
+      "explanation": "The document identifies “speech” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-159",
+      "subtopic": "General",
+      "question": "Language comprehension involves recognizing words and understanding their ________.",
+      "answer": "meaning",
+      "accepted_answers": [
+        "meaning"
+      ],
+      "explanation": "The document identifies “meaning” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-160",
+      "subtopic": "Language Lateralization",
+      "question": "Among strongly right-handed subjects, bilateral cerebral representation was recorded in ________%.",
+      "answer": "8.2",
+      "accepted_answers": [
+        "8.2"
+      ],
+      "explanation": "The document identifies “8.2” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-161",
+      "subtopic": "Language Lateralization",
+      "question": "Right-hemisphere speech dominance occurred in 27% of ________-handed people.",
+      "answer": "left",
+      "accepted_answers": [
+        "left"
+      ],
+      "explanation": "The document identifies “left” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-162",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s aphasia is characterized by slow, effortful, ________ speech.",
+      "answer": "non-fluent",
+      "accepted_answers": [
+        "non-fluent"
+      ],
+      "explanation": "The document identifies “non-fluent” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-163",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Semantic agraphia/direct dysgraphia allows a person to write dictated words without ________ them.",
+      "answer": "understanding",
+      "accepted_answers": [
+        "understanding"
+      ],
+      "explanation": "The document identifies “understanding” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-164",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Dyslexia usually occurs during development when ________ is being learned.",
+      "answer": "reading",
+      "accepted_answers": [
+        "reading"
+      ],
+      "explanation": "The document identifies “reading” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-165",
+      "subtopic": "Split-Brain and Hemispheric Communication",
+      "question": "Split-brain research examines what happens when the ________ connecting the two hemispheres is cut.",
+      "answer": "corpus callosum",
+      "accepted_answers": [
+        "corpus callosum"
+      ],
+      "explanation": "The document identifies “corpus callosum” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-166",
+      "subtopic": "Auditory Pathway",
+      "question": "The inferior colliculus is located in the ________.",
+      "answer": "midbrain",
+      "accepted_answers": [
+        "midbrain"
+      ],
+      "explanation": "The document identifies “midbrain” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-167",
+      "subtopic": "Split-Brain and Hemispheric Communication",
+      "question": "An object shown to the left visual field is processed by the ________ hemisphere.",
+      "answer": "right",
+      "accepted_answers": [
+        "right"
+      ],
+      "explanation": "The document identifies “right” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-168",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "Complete the split-brain example: an object shown to the left visual field is processed by the right hemisphere, so the person may be unable to say its name; however, they may still be able to ________.",
+      "answer": "point to or pick up the object with the left hand",
+      "accepted_answers": [
+        "point to or pick up the object with the left hand"
+      ],
+      "explanation": "The document identifies “point to or pick up the object with the left hand” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-169",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s area connects with neural circuits containing memories and ________ associated with a word.",
+      "answer": "meanings",
+      "accepted_answers": [
+        "meanings"
+      ],
+      "explanation": "The document identifies “meanings” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-170",
+      "subtopic": "Language Lateralization",
+      "question": "Right-hemisphere speech dominance occurred in 15% of ________ people.",
+      "answer": "ambidextrous",
+      "accepted_answers": [
+        "ambidextrous"
+      ],
+      "explanation": "The document identifies “ambidextrous” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-171",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right hemisphere is particularly important for ________ and affective prosody.",
+      "answer": "emotional",
+      "accepted_answers": [
+        "emotional"
+      ],
+      "explanation": "The document identifies “emotional” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-172",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s aphasia, pure word deafness, and transcortical sensory aphasia are discussed as disorders of speech ________.",
+      "answer": "comprehension",
+      "accepted_answers": [
+        "comprehension"
+      ],
+      "explanation": "The document identifies “comprehension” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-173",
+      "subtopic": "General",
+      "question": "Auditory information first reaches the primary auditory cortex in ________ gyrus.",
+      "answer": "Heschl’s",
+      "accepted_answers": [
+        "Heschl’s"
+      ],
+      "explanation": "The document identifies “Heschl’s” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-174",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right hemisphere processes and expresses the emotional ________ of speech.",
+      "answer": "tone",
+      "accepted_answers": [
+        "tone"
+      ],
+      "explanation": "The document identifies “tone” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-175",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Phonetic reading is particularly useful for ________ words.",
+      "answer": "unfamiliar",
+      "accepted_answers": [
+        "unfamiliar"
+      ],
+      "explanation": "The document identifies “unfamiliar” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-176",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Complete the pathway: auditory information → primary auditory cortex in Heschl’s gyrus → auditory association cortex → Wernicke’s area, where the sounds are interpreted as ________.",
+      "answer": "meaningful language",
+      "accepted_answers": [
+        "meaningful language"
+      ],
+      "explanation": "The document identifies “meaningful language” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-177",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Whole-word reading is primarily used for familiar and frequently encountered ________.",
+      "answer": "words",
+      "accepted_answers": [
+        "words"
+      ],
+      "explanation": "The document identifies “words” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-178",
+      "subtopic": "Language Lateralization",
+      "question": "Approximately ________% of the total population has left-hemisphere dominance for speech and language functions.",
+      "answer": "90",
+      "accepted_answers": [
+        "90"
+      ],
+      "explanation": "The document identifies “90” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-179",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Pure word deafness means the patient is not deaf but cannot understand spoken ________.",
+      "answer": "words",
+      "accepted_answers": [
+        "words"
+      ],
+      "explanation": "The document identifies “words” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-180",
+      "subtopic": "Language Lateralization",
+      "question": "In mixed-handed subjects, bilateral cerebral representation was observed in ________%, while left-sided language dominance was observed in ________%.",
+      "answer": "57%; 43%",
+      "accepted_answers": [
+        "57%; 43%"
+      ],
+      "explanation": "The document identifies “57%; 43%” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-181",
+      "subtopic": "Auditory Pathway",
+      "question": "Complete the auditory pathway: cochlear branch of vestibulocochlear nerve → cochlear nuclei in medulla → superior olivary nucleus in pons → lateral lemniscus → inferior colliculus → medial geniculate nucleus of thalamus → ________.",
+      "answer": "primary auditory cortex",
+      "accepted_answers": [
+        "primary auditory cortex"
+      ],
+      "explanation": "The document identifies “primary auditory cortex” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-182",
+      "subtopic": "Bilingualism",
+      "question": "Two active languages create constant language competition involving selection, inhibition, and ________.",
+      "answer": "switching",
+      "accepted_answers": [
+        "switching"
+      ],
+      "explanation": "The document identifies “switching” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-183",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right hemisphere is important for prosody, emotional tone, rhythm, and interpretation of ________.",
+      "answer": "context",
+      "accepted_answers": [
+        "context"
+      ],
+      "explanation": "The document identifies “context” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-184",
+      "subtopic": "Bilingualism",
+      "question": "Language competition recruits the PFC, ACC, basal ganglia, and ________ regions.",
+      "answer": "parietal",
+      "accepted_answers": [
+        "parietal"
+      ],
+      "explanation": "The document identifies “parietal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-185",
+      "subtopic": "General",
+      "question": "Transcortical sensory aphasia is characterized by poor comprehension and poor meaningful spontaneous speech, but ________ is preserved.",
+      "answer": "repetition",
+      "accepted_answers": [
+        "repetition"
+      ],
+      "explanation": "The document identifies “repetition” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-186",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The angular gyrus is crucial for connecting words with ________ concepts.",
+      "answer": "visual",
+      "accepted_answers": [
+        "visual"
+      ],
+      "explanation": "The document identifies “visual” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-187",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s area organizes information into a plan for ________ production.",
+      "answer": "speech",
+      "accepted_answers": [
+        "speech"
+      ],
+      "explanation": "The document identifies “speech” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-188",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s area is responsible for speech production, articulation, and ________ processing.",
+      "answer": "grammatical",
+      "accepted_answers": [
+        "grammatical"
+      ],
+      "explanation": "The document identifies “grammatical” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-189",
+      "subtopic": "Motor Control of Speech",
+      "question": "The primary motor cortex directs fine motor movements of the lips, tongue, and jaw needed for ________.",
+      "answer": "articulation",
+      "accepted_answers": [
+        "articulation"
+      ],
+      "explanation": "The document identifies “articulation” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-190",
+      "subtopic": "Split-Brain and Hemispheric Communication",
+      "question": "A split-brain patient may be unable to name an object shown in the left visual field but may still pick it up with the ________ hand.",
+      "answer": "left",
+      "accepted_answers": [
+        "left"
+      ],
+      "explanation": "The document identifies “left” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-191",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s aphasia tends to preserve content words such as girl, flowers, and ________.",
+      "answer": "house",
+      "accepted_answers": [
+        "house"
+      ],
+      "explanation": "The document identifies “house” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-192",
+      "subtopic": "General",
+      "question": "Language is unique to human beings and results from the complex interplay of our cognitive, social, and ________ evolution.",
+      "answer": "cultural",
+      "accepted_answers": [
+        "cultural"
+      ],
+      "explanation": "The document identifies “cultural” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-193",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Dyslexia is a developmental reading disorder, whereas alexia is an ________ reading disorder.",
+      "answer": "acquired",
+      "accepted_answers": [
+        "acquired"
+      ],
+      "explanation": "The document identifies “acquired” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-194",
+      "subtopic": "Language-Related Brain Regions",
+      "question": "The occipital lobe enables descriptions of visual scenes, colors, shapes, and ________.",
+      "answer": "imagery",
+      "accepted_answers": [
+        "imagery"
+      ],
+      "explanation": "The document identifies “imagery” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-195",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "In pure word deafness, a person can hear sounds and speech but cannot recognize them as meaningful ________.",
+      "answer": "words",
+      "accepted_answers": [
+        "words"
+      ],
+      "explanation": "The document identifies “words” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-196",
+      "subtopic": "General",
+      "question": "Conduction aphasia is characterized by fluent and meaningful speech, relatively good comprehension, but severely impaired ________.",
+      "answer": "repetition",
+      "accepted_answers": [
+        "repetition"
+      ],
+      "explanation": "The document identifies “repetition” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-197",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Phonological dyslexia involves difficulty converting letters into ________.",
+      "answer": "sounds",
+      "accepted_answers": [
+        "sounds"
+      ],
+      "explanation": "The document identifies “sounds” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-198",
+      "subtopic": "Insula and Speech Articulation",
+      "question": "The insula acts as a hub coordinating motor speech planning and lexical retrieval; damage can cause a 'tip of the ________' experience.",
+      "answer": "tongue",
+      "accepted_answers": [
+        "tongue"
+      ],
+      "explanation": "The document identifies “tongue” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-199",
+      "subtopic": "Executive Control and Language",
+      "question": "IFC stands for ________ frontal cortex.",
+      "answer": "inferior",
+      "accepted_answers": [
+        "inferior"
+      ],
+      "explanation": "The document identifies “inferior” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-200",
+      "subtopic": "Split-Brain and Hemispheric Communication",
+      "question": "When the corpus callosum is cut, the two hemispheres can work ________ and have different abilities.",
+      "answer": "independently",
+      "accepted_answers": [
+        "independently"
+      ],
+      "explanation": "The document identifies “independently” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-201",
+      "subtopic": "General",
+      "question": "The verbal form includes spoken and written language, whereas non-verbal communication includes body language, eye contact, tone of voice, gestures, and ________.",
+      "answer": "other non-verbal forms/behaviours",
+      "accepted_answers": [
+        "other non-verbal forms/behaviours"
+      ],
+      "explanation": "The document identifies “other non-verbal forms/behaviours” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-202",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Global aphasia produces severe impairment of speaking, understanding, reading, and ________.",
+      "answer": "writing",
+      "accepted_answers": [
+        "writing"
+      ],
+      "explanation": "The document identifies “writing” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-203",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right hemisphere contributes to subtle, abstract, and ________ aspects of language.",
+      "answer": "contextual",
+      "accepted_answers": [
+        "contextual"
+      ],
+      "explanation": "The document identifies “contextual” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-204",
+      "subtopic": "Cognitive Reserve",
+      "question": "Greater cognitive reserve may help maintain functioning during ageing and potentially delay manifestations of ________.",
+      "answer": "dementia",
+      "accepted_answers": [
+        "dementia"
+      ],
+      "explanation": "The document identifies “dementia” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-205",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "Dyslexia occurs despite ________ vision.",
+      "answer": "normal",
+      "accepted_answers": [
+        "normal"
+      ],
+      "explanation": "The document identifies “normal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-206",
+      "subtopic": "General",
+      "question": "Writing can involve auditory input, visual input, memorization, and ________ memory.",
+      "answer": "motor",
+      "accepted_answers": [
+        "motor"
+      ],
+      "explanation": "The document identifies “motor” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-207",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Damage to Wernicke’s area can result in ________ but meaningless speech.",
+      "answer": "fluent",
+      "accepted_answers": [
+        "fluent"
+      ],
+      "explanation": "The document identifies “fluent” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-208",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Complete the Broca pathway: language intention → posterior language regions → arcuate fasciculus → Broca’s area → motor regions controlling the lips, tongue, jaw, larynx, and other speech muscles, allowing the person to ________.",
+      "answer": "produce speech",
+      "accepted_answers": [
+        "produce speech"
+      ],
+      "explanation": "The document identifies “produce speech” as the term that completes the statement.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "fib-209",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "Prosody refers to the rhythmic, emphatic, and ________ aspects of speech.",
+      "answer": "melodic",
+      "accepted_answers": [
+        "melodic"
+      ],
+      "explanation": "The document identifies “melodic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-210",
+      "subtopic": "Motor Control of Speech",
+      "question": "The cerebellum coordinates the timing, precision, and ________ of speech movements.",
+      "answer": "smoothness",
+      "accepted_answers": [
+        "smoothness"
+      ],
+      "explanation": "The document identifies “smoothness” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-211",
+      "subtopic": "Reading and Writing Disorders",
+      "question": "The VWFA is located in the left ________ gyrus.",
+      "answer": "fusiform",
+      "accepted_answers": [
+        "fusiform"
+      ],
+      "explanation": "The document identifies “fusiform” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-212",
+      "subtopic": "Executive Control and Language",
+      "question": "ACC stands for anterior ________ cortex.",
+      "answer": "cingulate",
+      "accepted_answers": [
+        "cingulate"
+      ],
+      "explanation": "The document identifies “cingulate” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-213",
+      "subtopic": "General",
+      "question": "The inferior longitudinal fasciculus connects visual and ________ regions.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-214",
+      "subtopic": "Word Retrieval and Anomia",
+      "question": "Anomia means difficulty with ________ retrieval.",
+      "answer": "word",
+      "accepted_answers": [
+        "word"
+      ],
+      "explanation": "The document identifies “word” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-215",
+      "subtopic": "General",
+      "question": "The arcuate fasciculus connects ________ and ________ areas.",
+      "answer": "Broca’s; Wernicke’s",
+      "accepted_answers": [
+        "Broca’s; Wernicke’s"
+      ],
+      "explanation": "The document identifies “Broca’s; Wernicke’s” as the term that completes the statement.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "fib-216",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s area is responsible for language comprehension and understanding ________ language.",
+      "answer": "spoken",
+      "accepted_answers": [
+        "spoken"
+      ],
+      "explanation": "The document identifies “spoken” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-217",
+      "subtopic": "Right-Hemisphere Language Functions",
+      "question": "The right hemisphere helps organize and understand the overall structure and meaning of ________.",
+      "answer": "narratives",
+      "accepted_answers": [
+        "narratives"
+      ],
+      "explanation": "The document identifies “narratives” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-218",
+      "subtopic": "Broca’s Area and Aphasia",
+      "question": "Broca’s area contributes to the ________ aspects of prosody.",
+      "answer": "linguistic",
+      "accepted_answers": [
+        "linguistic"
+      ],
+      "explanation": "The document identifies “linguistic” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-219",
+      "subtopic": "Insula and Speech Articulation",
+      "question": "Difficulty producing speech movements accurately is called articulation ________.",
+      "answer": "difficulty",
+      "accepted_answers": [
+        "difficulty"
+      ],
+      "explanation": "The document identifies “difficulty” as the term that completes the statement.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "fib-220",
+      "subtopic": "Wernicke’s Area and Speech Comprehension",
+      "question": "Wernicke’s aphasia involves the left posterior ________ lobe.",
+      "answer": "temporal",
+      "accepted_answers": [
+        "temporal"
+      ],
+      "explanation": "The document identifies “temporal” as the term that completes the statement.",
+      "difficulty": "easy"
+    }
+  ]
+}

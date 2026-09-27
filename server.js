@@ -432,15 +432,149 @@ function validateQuestion(rawQuestion, index, fileName) {
   };
 }
 
+
+/* =======================================================
+   FILL IN THE BLANKS VALIDATION
+======================================================= */
+
+function validateFillInTheBlank(
+  rawQuestion,
+  index,
+  fileName
+) {
+  const errors = [];
+
+  if (
+    !rawQuestion ||
+    typeof rawQuestion !== "object" ||
+    Array.isArray(rawQuestion)
+  ) {
+    return {
+      valid: false,
+      errors: [
+        `Question ${index + 1}: question must be an object.`
+      ]
+    };
+  }
+
+  const question =
+    normalizeText(
+      rawQuestion.question
+    );
+
+  if (!question) {
+    errors.push(
+      `Question ${index + 1}: missing "question".`
+    );
+  }
+
+  const answer =
+    normalizeText(
+      rawQuestion.answer
+    );
+
+  if (!answer) {
+    errors.push(
+      `Question ${index + 1}: missing "answer".`
+    );
+  }
+
+  const acceptedAnswers =
+    Array.isArray(
+      rawQuestion.accepted_answers
+    )
+      ? rawQuestion.accepted_answers
+          .map(answer =>
+            normalizeText(answer)
+          )
+          .filter(Boolean)
+      : [];
+
+  if (
+    answer &&
+    !acceptedAnswers.includes(answer)
+  ) {
+    acceptedAnswers.unshift(answer);
+  }
+
+  if (!acceptedAnswers.length) {
+    errors.push(
+      `Question ${index + 1}: "accepted_answers" must contain at least one valid answer.`
+    );
+  }
+
+  if (errors.length) {
+    return {
+      valid: false,
+      errors
+    };
+  }
+
+  const id =
+    normalizeText(rawQuestion.id) ||
+    makeQuestionId(
+      fileName,
+      index,
+      question
+    );
+
+  return {
+    valid: true,
+
+    question: {
+      id,
+
+      question,
+
+      answer,
+
+      accepted_answers:
+        acceptedAnswers,
+
+      explanation:
+        normalizeText(
+          rawQuestion.explanation
+        ),
+
+      subtopic:
+        normalizeText(
+          rawQuestion.subtopic
+        ),
+
+      difficulty:
+        normalizeText(
+          rawQuestion.difficulty
+        ),
+
+      mode:
+        "fill_in_the_blanks",
+
+      source:
+        normalizeText(
+          rawQuestion.source
+        ) || fileName
+    }
+  };
+}
+
+
 /* =======================================================
    QUESTION BANK NORMALIZATION
 
-   Supported format:
+   Supported formats:
 
+   MCQ:
    {
-     "subject": "Indian History",
-     "topic": "Maurya Period",
-     "subtopic": "Sources",
+     "subject": "...",
+     "topic": "...",
+     "questions": [...]
+   }
+
+   Fill in the Blanks:
+   {
+     "subject": "...",
+     "topic": "...",
+     "mode": "fill_in_the_blanks",
      "questions": [...]
    }
 
@@ -453,6 +587,7 @@ function normalizeBank(raw, fileName) {
   let subject = "";
   let topic = "";
   let subtopic = "";
+  let mode = "";
 
   let questions = [];
 
@@ -472,17 +607,18 @@ function normalizeBank(raw, fileName) {
     raw &&
     typeof raw === "object"
   ) {
-    subject = normalizeText(
-      raw.subject
-    );
+    subject =
+      normalizeText(raw.subject);
 
-    topic = normalizeText(
-      raw.topic
-    );
+    topic =
+      normalizeText(raw.topic);
 
-    subtopic = normalizeText(
-      raw.subtopic
-    );
+    subtopic =
+      normalizeText(raw.subtopic);
+
+    mode =
+      normalizeText(raw.mode)
+        .toLowerCase();
 
     if (Array.isArray(raw.questions)) {
       questions = raw.questions;
@@ -517,18 +653,36 @@ function normalizeBank(raw, fileName) {
     !subject &&
     questions[0]?.subject
   ) {
-    subject = normalizeText(
-      questions[0].subject
-    );
+    subject =
+      normalizeText(
+        questions[0].subject
+      );
   }
 
   if (
     !topic &&
     questions[0]?.topic
   ) {
-    topic = normalizeText(
-      questions[0].topic
-    );
+    topic =
+      normalizeText(
+        questions[0].topic
+      );
+  }
+
+  /* -----------------------------------------------
+     Detect FIB mode from questions if necessary
+  ------------------------------------------------ */
+
+  if (
+    !mode &&
+    questions.some(
+      question =>
+        question?.mode ===
+        "fill_in_the_blanks"
+    )
+  ) {
+    mode =
+      "fill_in_the_blanks";
   }
 
   if (!subject) {
@@ -552,12 +706,24 @@ function normalizeBank(raw, fileName) {
   questions.forEach(
     (rawQuestion, index) => {
 
+      const isFillInTheBlank =
+        mode ===
+          "fill_in_the_blanks" ||
+        rawQuestion?.mode ===
+          "fill_in_the_blanks";
+
       const result =
-        validateQuestion(
-          rawQuestion,
-          index,
-          fileName
-        );
+        isFillInTheBlank
+          ? validateFillInTheBlank(
+              rawQuestion,
+              index,
+              fileName
+            )
+          : validateQuestion(
+              rawQuestion,
+              index,
+              fileName
+            );
 
       if (!result.valid) {
         errors.push(
@@ -621,6 +787,8 @@ function normalizeBank(raw, fileName) {
       topic,
 
       subtopic,
+
+      mode,
 
       source: fileName,
 
@@ -1323,6 +1491,11 @@ app.put(
           typeof body.guestReady === "boolean"
             ? body.guestReady
             : existingRoom.guest_ready,
+
+        question_ids:
+          Array.isArray(body.questionIds)
+            ? body.questionIds
+            : existingRoom.question_ids,
 
         host_answers:
           body.hostAnswers ??

@@ -12019,6 +12019,22 @@ async function ensureUsername() {
         const roomCode =
           match[1];
 
+        const card =
+          returnButton.closest(
+            'div[style*="border-radius:14px"]'
+          );
+
+        if(!card){
+          return;
+        }
+
+        const actionRow =
+          returnButton.parentElement;
+
+        if(!actionRow){
+          return;
+        }
+
         returnButton.style.padding =
           "9px 14px";
 
@@ -12031,21 +12047,25 @@ async function ensureUsername() {
         returnButton.style.whiteSpace =
           "nowrap";
 
-        const row =
-          returnButton.parentElement;
+        actionRow.style.position =
+          "relative";
 
-        if(!row){
-          return;
-        }
+        actionRow.style.zIndex =
+          "2";
 
-        row.style.display =
-          "flex";
+        const wrapper =
+          document.createElement(
+            "div"
+          );
 
-        row.style.alignItems =
-          "center";
-
-        row.style.gap =
-          "8px";
+        wrapper.style.cssText = `
+          position:relative;
+          display:flex;
+          align-items:center;
+          flex:0 0 auto;
+          overflow:hidden;
+          border-radius:11px;
+        `;
 
         const deleteButton =
           document.createElement(
@@ -12055,9 +12075,6 @@ async function ensureUsername() {
         deleteButton.type =
           "button";
 
-        deleteButton.innerHTML =
-          "🗑";
-
         deleteButton.setAttribute(
           "aria-label",
           "Delete saved room"
@@ -12066,22 +12083,40 @@ async function ensureUsername() {
         deleteButton.title =
           "Delete saved room";
 
+        deleteButton.innerHTML = `
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 15H6L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+        `;
+
         deleteButton.style.cssText = `
           flex:0 0 auto;
-          width:34px;
-          height:34px;
+          width:36px;
+          height:36px;
           padding:0;
-          border:0;
+          border:1px solid rgba(0,0,0,.10);
           border-radius:10px;
-          background:#d9534f;
-          color:#fff;
-          font-size:20px;
-          line-height:1;
-          font-weight:600;
+          background:rgba(255,255,255,.82);
+          color:#6f6f6f;
           cursor:pointer;
           display:flex;
           align-items:center;
           justify-content:center;
+          box-sizing:border-box;
         `;
 
         deleteButton.addEventListener(
@@ -12098,8 +12133,117 @@ async function ensureUsername() {
           }
         );
 
-        row.appendChild(
+        wrapper.appendChild(
           deleteButton
+        );
+
+        const actions =
+          document.createElement(
+            "div"
+          );
+
+        actions.style.cssText = `
+          display:flex;
+          align-items:center;
+          gap:8px;
+          transform:translateX(44px);
+          transition:transform .22s ease;
+        `;
+
+        actions.appendChild(
+          deleteButton
+        );
+
+        const originalParent =
+          returnButton.parentElement;
+
+        originalParent.appendChild(
+          wrapper
+        );
+
+        wrapper.innerHTML = "";
+
+        wrapper.appendChild(
+          actions
+        );
+
+        let startX = 0;
+        let startY = 0;
+        let open = false;
+
+        function setOpen(value){
+
+          open = value;
+
+          actions.style.transform =
+            open
+              ? "translateX(0)"
+              : "translateX(44px)";
+
+        }
+
+        card.style.overflow =
+          "hidden";
+
+        card.style.position =
+          "relative";
+
+        card.style.touchAction =
+          "pan-y";
+
+        card.addEventListener(
+          "touchstart",
+          function(event){
+
+            const touch =
+              event.touches?.[0];
+
+            if(!touch){
+              return;
+            }
+
+            startX =
+              touch.clientX;
+
+            startY =
+              touch.clientY;
+
+          },
+          {passive:true}
+        );
+
+        card.addEventListener(
+          "touchend",
+          function(event){
+
+            const touch =
+              event.changedTouches?.[0];
+
+            if(!touch){
+              return;
+            }
+
+            const deltaX =
+              touch.clientX - startX;
+
+            const deltaY =
+              touch.clientY - startY;
+
+            if(
+              Math.abs(deltaX) < 40 ||
+              Math.abs(deltaX) <= Math.abs(deltaY)
+            ){
+              return;
+            }
+
+            if(deltaX < 0){
+              setOpen(true);
+            }else{
+              setOpen(false);
+            }
+
+          },
+          {passive:true}
         );
 
         returnButton.dataset.deleteEnhancement =

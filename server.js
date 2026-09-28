@@ -1696,6 +1696,65 @@ function normalizeBank(
   };
 }
 
+app.delete(
+  "/api/question-banks/:filename",
+  async (req, res) => {
+    try {
+      await ensureDirectories();
+
+      const filename =
+        path.basename(
+          decodeURIComponent(
+            String(req.params.filename || "")
+          )
+        );
+
+      if (
+        !filename ||
+        !filename.toLowerCase().endsWith(".json")
+      ) {
+        return res.status(400).json({
+          error: "Invalid question bank filename."
+        });
+      }
+
+      const filePath =
+        path.join(
+          QUESTION_BANK_DIR,
+          filename
+        );
+
+      try {
+        await fs.access(filePath);
+      } catch {
+        return res.status(404).json({
+          error: "Question bank not found."
+        });
+      }
+
+      await fs.unlink(filePath);
+
+      res.json({
+        success: true,
+        filename
+      });
+
+    } catch (error) {
+      console.error(
+        "Question bank delete error:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error?.message ||
+          "Failed to delete question bank."
+      });
+    }
+  }
+);
+
+
 /* =========================================================
    QUESTION BANK LOADING
    ========================================================= */
@@ -2248,32 +2307,32 @@ app.post(
   "/api/question-banks/import",
   async (req, res) => {
     try {
-      const {
-        filename,
-        bank,
-        data
-      } = req.body || {};
+      await ensureDirectories();
 
-      const importedBank =
-        bank || data;
+      const filename =
+        path.basename(
+          String(
+            req.body?.filename || ""
+          ).trim()
+        );
+
+      const data =
+        req.body?.data ??
+        req.body?.bank;
 
       if (
         !filename ||
-        !importedBank
+        !data ||
+        typeof data !== "object"
       ) {
         return res.status(400).json({
           error:
-            "filename and bank are required."
+            "filename and valid JSON data are required."
         });
       }
 
-      const safeFilename =
-        path.basename(
-          filename
-        );
-
       if (
-        !safeFilename
+        !filename
           .toLowerCase()
           .endsWith(".json")
       ) {
@@ -2285,27 +2344,33 @@ app.post(
 
       const normalized =
         normalizeBank(
-          importedBank,
-          safeFilename
+          data,
+          filename
         );
 
-      if (!normalized) {
+      if (
+        !normalized ||
+        !Array.isArray(
+          normalized.questions
+        ) ||
+        !normalized.questions.length
+      ) {
         return res.status(400).json({
           error:
-            "Invalid question bank."
+            "The JSON does not contain any valid questions for the study system."
         });
       }
 
       const outputPath =
         path.join(
           QUESTION_BANK_DIR,
-          safeFilename
+          filename
         );
 
       await fs.writeFile(
         outputPath,
         JSON.stringify(
-          normalized,
+          data,
           null,
           2
         ),
@@ -2314,165 +2379,27 @@ app.post(
 
       res.json({
         success: true,
-        filename:
-          safeFilename,
+        filename,
         questionCount:
-          normalized.questions?.length || 0,
+          normalized.questions.length,
         bank:
           normalized
       });
 
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Question bank import error:",
+        error
+      );
 
       res.status(500).json({
         error:
+          error?.message ||
           "Failed to import question bank."
       });
     }
   }
 );
-
-/* =========================================================
-   PERFORMANCE STORAGE
-   ========================================================= */
-
-async function readPerformance() {
-  await ensureDirectories();
-
-  try {
-    const raw =
-      await fs.readFile(
-        PERFORMANCE_FILE,
-        "utf8"
-      );
-
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-async function writePerformance(
-  performance
-) {
-  await ensureDirectories();
-
-  await fs.writeFile(
-    PERFORMANCE_FILE,
-
-    JSON.stringify(
-      performance,
-      null,
-      2
-    ),
-
-    "utf8"
-  );
-}
-
-/* =========================================================
-   PERFORMANCE API
-   ========================================================= */
-
-app.get(
-  "/api/performance",
-  async (_req, res) => {
-    try {
-      const performance =
-        await readPerformance();
-
-      res.json(
-        performance
-      );
-
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        error:
-          "Failed to load performance."
-      });
-    }
-  }
-);
-
-app.post(
-  "/api/performance",
-  async (req, res) => {
-    try {
-      const performance =
-        await readPerformance();
-
-      const incoming =
-        req.body || {};
-
-      Object.assign(
-        performance,
-        incoming
-      );
-
-      await writePerformance(
-        performance
-      );
-
-      res.json({
-        success: true
-      });
-
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        error:
-          "Failed to save performance."
-      });
-    }
-  }
-);
-
-/* =========================================================
-   HEALTH CHECK
-   ========================================================= */
-
-app.get(
-  "/api/health",
-  (_req, res) => {
-    res.json({
-      ok: true,
-      timestamp:
-        new Date().toISOString()
-    });
-  }
-);
-
-/* =========================================================
-   FALLBACK
-   ========================================================= */
-
-app.use(async (req, res, next) => {
-  if (req.method !== "GET") {
-    return next();
-  }
-
-  if (req.path.startsWith("/api/")) {
-    return next();
-  }
-
-  try {
-    await fs.access(
-      path.join(ROOT, "index.html")
-    );
-
-    res.sendFile(
-      path.join(ROOT, "index.html")
-    );
-  } catch {
-    res.status(404).send(
-      "index.html not found."
-    );
-  }
-});
 
 /* =========================================================
    ERROR HANDLER

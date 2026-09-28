@@ -10257,31 +10257,14 @@ async function loadImportedJsonFiles(){
 
         const safeName =
           String(fileName)
-            .replace(
-              /&/g,
-              "&amp;"
-            )
-            .replace(
-              /</g,
-              "&lt;"
-            )
-            .replace(
-              />/g,
-              "&gt;"
-            )
-            .replace(
-              /"/g,
-              "&quot;"
-            )
-            .replace(
-              /'/g,
-              "&#039;"
-            );
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
 
         const encodedFile =
-          encodeURIComponent(
-            fileName
-          );
+          encodeURIComponent(fileName);
 
         return `
           <div
@@ -10292,7 +10275,7 @@ async function loadImportedJsonFiles(){
               overflow:hidden;
               margin-top:10px;
               border-radius:14px;
-              background:#d9534f;
+              background:#eee5dc;
             "
           >
 
@@ -10304,23 +10287,30 @@ async function loadImportedJsonFiles(){
                 align-items:center;
                 justify-content:flex-end;
                 padding-right:8px;
+                background:#eee5dc;
               "
             >
 
               <button
                 type="button"
                 onclick='window.__floDeleteImportedJson("${encodedFile}")'
+                aria-label="Delete imported JSON"
+                title="Delete imported JSON"
                 style="
                   border:0;
                   border-radius:10px;
-                  background:#fff;
-                  color:#b52b2b;
-                  font-weight:700;
-                  padding:10px 14px;
+                  background:#f4eee8;
+                  color:#514a42;
+                  width:42px;
+                  height:42px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
                   cursor:pointer;
+                  font-size:18px;
                 "
               >
-                Delete
+                🗑
               </button>
 
             </div>
@@ -10378,22 +10368,21 @@ async function loadImportedJsonFiles(){
 
                 </div>
 
-                <button
-                  type="button"
-                  aria-label="File actions"
-                  onclick='window.__floToggleImportedJsonDelete("${encodedFile}")'
+                <span
+                  class="flo-imported-file-arrow"
+                  aria-hidden="true"
                   style="
                     flex:0 0 auto;
-                    border:0;
-                    background:transparent;
-                    font-size:22px;
+                    color:#514a42;
+                    font-size:20px;
                     line-height:1;
-                    padding:4px 8px;
-                    cursor:pointer;
+                    padding:4px 4px 4px 8px;
+                    user-select:none;
+                    transition:opacity .15s ease;
                   "
                 >
-                  ⋯
-                </button>
+                  &gt;
+                </span>
 
               </div>
 
@@ -10402,7 +10391,6 @@ async function loadImportedJsonFiles(){
           </div>
         `;
       }).join("");
-
 
     installImportedJsonSwipeHandlers();
 
@@ -10417,7 +10405,7 @@ async function loadImportedJsonFiles(){
     container.innerHTML = `
       <div
         class="small"
-        style="color:#b52b2b"
+        style="color:#514a42"
       >
         Could not load imported files.
       </div>
@@ -10482,6 +10470,11 @@ function installImportedJsonSwipeHandlers(){
             return;
           }
 
+          const arrow =
+            card.querySelector(
+              ".flo-imported-file-arrow"
+            );
+
           if(deltaX < 0){
 
             card.style.transform =
@@ -10489,6 +10482,10 @@ function installImportedJsonSwipeHandlers(){
 
             card.dataset.deleteOpen =
               "true";
+
+            if(arrow){
+              arrow.style.opacity = "0";
+            }
 
           }
           else{
@@ -10498,6 +10495,10 @@ function installImportedJsonSwipeHandlers(){
 
             card.dataset.deleteOpen =
               "false";
+
+            if(arrow){
+              arrow.style.opacity = "1";
+            }
 
           }
 
@@ -10510,46 +10511,11 @@ function installImportedJsonSwipeHandlers(){
 
 
 window.__floToggleImportedJsonDelete =
-  function(encodedFile){
+  function(){
 
-    const fileName =
-      decodeURIComponent(
-        encodedFile
-      );
+    /* Three-dot control removed.
+       Swipe the file card left instead. */
 
-    const selector =
-      `.flo-imported-file-wrap[data-file-name="${CSS.escape(fileName)}"]`;
-
-    const wrap =
-      document.querySelector(
-        selector
-      );
-
-    if(!wrap){
-      return;
-    }
-
-    const card =
-      wrap.querySelector(
-        ".flo-imported-file-card"
-      );
-
-    if(!card){
-      return;
-    }
-
-    const isOpen =
-      card.dataset.deleteOpen === "true";
-
-    card.style.transform =
-      isOpen
-        ? "translateX(0)"
-        : "translateX(-92px)";
-
-    card.dataset.deleteOpen =
-      isOpen
-        ? "false"
-        : "true";
   };
 
 
@@ -10596,13 +10562,50 @@ window.__floDeleteImportedJson =
 
       }
 
-      toast(
-        `"${fileName}" deleted.`
-      );
+      const wrap =
+        document.querySelector(
+          `.flo-imported-file-wrap[data-file-name="${CSS.escape(fileName)}"]`
+        );
+
+      if(wrap){
+        wrap.remove();
+      }
 
       await loadBanks();
 
-      renderSettings();
+      const remainingFiles =
+        document.querySelectorAll(
+          ".flo-imported-file-wrap"
+        );
+
+      if(!remainingFiles.length){
+
+        const container =
+          document.getElementById(
+            "floImportedJsonFiles"
+          );
+
+        if(container){
+
+          container.innerHTML = `
+            <div
+              class="small"
+              style="
+                padding:12px 0;
+                opacity:.7;
+              "
+            >
+              No imported JSON files yet.
+            </div>
+          `;
+
+        }
+
+      }
+
+      toast(
+        `"${fileName}" deleted.`
+      );
 
     }
     catch(error){

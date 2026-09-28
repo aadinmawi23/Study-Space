@@ -21484,6 +21484,197 @@ window.selectQuizMode =
 
 </script>
 
+
+<script>
+/* =========================================================
+   FLO MCQ JSON COMPATIBILITY FIX
+   Converts website-ready imported MCQs into the format
+   expected by the existing MCQ quiz renderer.
+   ========================================================= */
+
+(function(){
+
+  function normalizeImportedMCQ(q){
+
+    if(!q || typeof q !== "object"){
+      return q;
+    }
+
+    /*
+     * Only touch MCQs.
+     * Leave FIB, short-answer, case, match and map alone.
+     */
+    const isMCQ =
+      q.mode === "mcq" ||
+      Array.isArray(q.options) ||
+      (
+        q.options &&
+        typeof q.options === "object" &&
+        ["A","B","C","D"].some(
+          key => Object.prototype.hasOwnProperty.call(
+            q.options,
+            key
+          )
+        )
+      );
+
+    if(!isMCQ){
+      return q;
+    }
+
+    let options = q.options;
+
+    /*
+     * NEW JSON FORMAT:
+     *
+     * options: [
+     *   "option A",
+     *   "option B",
+     *   "option C",
+     *   "option D"
+     * ]
+     */
+    if(Array.isArray(options)){
+
+      options = {
+        A: options[0] || "",
+        B: options[1] || "",
+        C: options[2] || "",
+        D: options[3] || ""
+      };
+    }
+
+    /*
+     * OLD FORMAT:
+     *
+     * options: {
+     *   A: "...",
+     *   B: "...",
+     *   C: "...",
+     *   D: "..."
+     * }
+     *
+     * Keep it unchanged.
+     */
+    if(
+      !options ||
+      typeof options !== "object"
+    ){
+      return q;
+    }
+
+    let answer =
+      typeof q.answer === "string"
+        ? q.answer.trim()
+        : "";
+
+    /*
+     * If answer is already A/B/C/D,
+     * keep it that way.
+     */
+    if(
+      !["A","B","C","D"].includes(
+        answer.toUpperCase()
+      )
+    ){
+
+      /*
+       * NEW JSON FORMAT stores the COMPLETE
+       * correct option as the answer.
+       *
+       * Convert it to A/B/C/D for the old
+       * renderer.
+       */
+      const answerLower =
+        answer.toLowerCase();
+
+      const letters =
+        ["A","B","C","D"];
+
+      const matchingLetter =
+        letters.find(letter => {
+
+          const option =
+            String(
+              options[letter] || ""
+            ).trim();
+
+          return (
+            option === answer ||
+            option.toLowerCase() === answerLower
+          );
+        });
+
+      if(matchingLetter){
+        answer = matchingLetter;
+      }
+    }else{
+      answer =
+        answer.toUpperCase();
+    }
+
+    return {
+      ...q,
+      mode: "mcq",
+      options,
+      answer
+    };
+  }
+
+
+  /*
+   * Keep the existing startQuiz implementation.
+   * We only normalize the questions before it receives them.
+   */
+  const originalStartQuiz =
+    window.startQuiz;
+
+  if(
+    typeof originalStartQuiz !== "function"
+  ){
+    console.error(
+      "FLO MCQ FIX: original startQuiz() was not found."
+    );
+    return;
+  }
+
+
+  window.startQuiz =
+    function(questions){
+
+      const normalizedQuestions =
+        Array.isArray(questions)
+          ? questions.map(
+              normalizeImportedMCQ
+            )
+          : [];
+
+      console.log(
+        "FLO MCQ FIX: normalized",
+        normalizedQuestions.length,
+        "questions"
+      );
+
+      return originalStartQuiz(
+        normalizedQuestions
+      );
+    };
+
+
+  /*
+   * Also expose the normalizer for debugging
+   * and for any future quiz-loading code.
+   */
+  window.__floNormalizeImportedMCQ =
+    normalizeImportedMCQ;
+
+  console.log(
+    "FLO MCQ JSON compatibility fix loaded."
+  );
+
+})();
+</script>
+
 </body>
 </html>
 

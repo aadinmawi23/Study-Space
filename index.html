@@ -21262,72 +21262,75 @@ window.selectQuizMode =
 </script>
 
 
+
+
+
+
+
+
 <script>
 /* =========================================================
-   FLO DIRECT CHALLENGE ROOM FIX
+   FLO CORRECT CHALLENGE ROOM ROUTING
    ========================================================= */
 
 (function(){
 
-  window.__floSelectQuizMode = async function(mode){
+  window.__floSelectQuizMode = function(mode){
 
-    /*
-     * SOLO
-     * Keep the existing question-count flow.
-     */
-    if(mode === "solo"){
+    if(mode === "challenge"){
 
+      /* Close the Start Quiz selector */
       if(typeof window.__floCloseQuizMode === "function"){
         window.__floCloseQuizMode();
       }
 
-      const questions =
-        window.__floQuizQuestions || [];
+      /*
+       * IMPORTANT:
+       * challenge is scoped inside the original Challenge IIFE.
+       * The original code exposes it as window.__floChallenge,
+       * so always use that here.
+       */
+      const room =
+        window.__floChallenge;
 
-      if(!questions.length){
-        toast("No questions are loaded for this topic.");
+      if(!room){
+        console.error(
+          "window.__floChallenge is missing."
+        );
+
+        toast(
+          "Challenge system could not be loaded."
+        );
+
         return;
       }
 
-      if(typeof window.__floOpenQuestionCountSelector === "function"){
-        window.__floOpenQuestionCountSelector(
-          "solo",
-          questions
-        );
-      }
-
-      return;
-    }
-
-
-    /*
-     * CHALLENGE
-     *
-     * IMPORTANT:
-     * Do NOT open the question-count selector here.
-     * Do NOT require the username here.
-     *
-     * Go directly to the existing
-     * CREATE ROOM / JOIN ROOM popup.
-     */
-    if(mode === "challenge"){
-
-      if(typeof window.__floCloseQuizMode === "function"){
-        window.__floCloseQuizMode();
-      }
-
-      challenge.subjectName =
+      room.subjectName =
         window.pendingQuizSubject || "";
 
-      challenge.topic =
+      room.topic =
         window.pendingQuizTopic || "";
 
-      challenge.username =
-        (typeof currentUsername !== "undefined" &&
-         currentUsername)
+      room.questions =
+        [...(window.__floQuizQuestions || [])];
+
+      room.questionIds =
+        room.questions.map(
+          q => q.id
+        );
+
+      room.username =
+        (
+          typeof currentUsername !== "undefined" &&
+          currentUsername
+        )
           ? currentUsername
           : "Player";
 
+      /*
+       * Open the existing Create Room /
+       * Join Room popup.
+       */
       if(
         typeof window.__floOpenChallengeChoice ===
         "function"
@@ -21336,169 +21339,21 @@ window.selectQuizMode =
         window.__floOpenChallengeChoice();
 
         return;
+
       }
 
       console.error(
-        "Challenge room chooser is missing."
+        "__floOpenChallengeChoice is missing."
       );
 
       toast(
-        "Challenge rooms could not be opened."
+        "Challenge room chooser could not be loaded."
       );
 
       return;
     }
 
-  };
 
-  /*
-   * Keep old code compatible.
-   */
-  window.selectQuizMode =
-    window.__floSelectQuizMode;
-
-})();
-
-</script>
-
-
-<script>
-/* =========================================================
-   FLO FINAL CHALLENGE ROOM ROUTING
-   ========================================================= */
-
-(function(){
-
-  window.__floSelectQuizMode = async function(mode){
-
-    if(mode === "challenge"){
-
-      /* Close the Solo/Challenge selector first */
-      if(typeof window.__floCloseQuizMode === "function"){
-        window.__floCloseQuizMode();
-      }
-
-      /* Preserve the current quiz context */
-      challenge.subjectName =
-        window.pendingQuizSubject || "";
-
-      challenge.topic =
-        window.pendingQuizTopic || "";
-
-      challenge.questions =
-        [...(window.__floQuizQuestions || [])];
-
-      challenge.questionIds =
-        challenge.questions.map(q => q.id);
-
-      challenge.username =
-        (typeof currentUsername !== "undefined" &&
-         currentUsername)
-          ? currentUsername
-          : "Player";
-
-      /*
-       * Open the EXISTING Create Room / Join Room
-       * chooser directly.
-       */
-      if(typeof window.__floOpenChallengeChoice === "function"){
-
-        window.__floOpenChallengeChoice();
-        return;
-
-      }
-
-      /*
-       * Safety fallback:
-       * If the challenge modal itself is missing,
-       * create the same modal structure dynamically.
-       */
-      let modal =
-        document.getElementById("floChallengeModal");
-
-      let content =
-        document.getElementById("floChallengeContent");
-
-      if(!modal){
-
-        modal = document.createElement("div");
-
-        modal.id = "floChallengeModal";
-        modal.className = "modal";
-        modal.setAttribute("aria-hidden", "true");
-
-        content = document.createElement("div");
-
-        content.id = "floChallengeContent";
-        content.className = "modal-box";
-
-        modal.appendChild(content);
-        document.body.appendChild(modal);
-
-      }
-
-      if(!content){
-        console.error("Challenge content container is missing.");
-        toast("Challenge room could not be opened.");
-        return;
-      }
-
-      content.innerHTML = `
-        <div class="flo-quiz-eyebrow">
-          CHALLENGE MODE
-        </div>
-
-        <h2 class="flo-quiz-title">
-          Play with another student
-        </h2>
-
-        <p class="flo-quiz-subtitle">
-          Create a room and share the code,
-          or join a room using a code.
-        </p>
-
-        <button
-          class="flo-quiz-choice"
-          onclick="window.__floCreateRoom()"
-        >
-          <strong>Create Room</strong>
-          <span>
-            Start a room and wait for the other
-            player to join.
-          </span>
-        </button>
-
-        <button
-          class="flo-quiz-choice"
-          onclick="window.__floShowJoinRoom()"
-        >
-          <strong>Join Room</strong>
-          <span>
-            Enter the six-character room code
-            from the host.
-          </span>
-        </button>
-
-        <div class="flo-quiz-actions">
-          <button
-            class="btn light"
-            onclick="window.__floCloseChallengeModal()"
-          >
-            Cancel
-          </button>
-        </div>
-      `;
-
-      modal.classList.add("open");
-      modal.setAttribute("aria-hidden", "false");
-
-      return;
-    }
-
-    /*
-     * Leave Solo handling to the existing question-count
-     * / quiz system.
-     */
     if(mode === "solo"){
 
       if(typeof window.__floCloseQuizMode === "function"){
@@ -21509,15 +21364,22 @@ window.selectQuizMode =
         window.__floQuizQuestions || [];
 
       if(!questions.length){
-        toast("No questions are loaded for this topic.");
+        toast(
+          "No questions are loaded for this topic."
+        );
         return;
       }
 
-      if(typeof window.__floOpenQuestionCountSelector === "function"){
+      if(
+        typeof window.__floOpenQuestionCountSelector ===
+        "function"
+      ){
+
         window.__floOpenQuestionCountSelector(
           "solo",
           questions
         );
+
         return;
       }
 
@@ -21526,13 +21388,16 @@ window.selectQuizMode =
         return;
       }
 
-      toast("Solo quiz could not be started.");
+      toast(
+        "Solo quiz could not be started."
+      );
+
     }
 
   };
 
   /*
-   * Keep the older alias pointing to the same handler.
+   * Keep both possible function names synchronized.
    */
   window.selectQuizMode =
     window.__floSelectQuizMode;

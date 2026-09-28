@@ -706,10 +706,18 @@ async function generateStudyBankFromPdf({
     let response;
 
     try {
-      response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
+      let lastGeminiError = null;
 
-        contents: [
+      for (let geminiAttempt = 1; geminiAttempt <= 4; geminiAttempt++) {
+        try {
+          console.log(
+            `Gemini generation attempt ${geminiAttempt}/4 using ${GEMINI_MODEL}`
+          );
+
+          response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+
+            contents: [
           {
             role: "user",
 
@@ -754,7 +762,53 @@ async function generateStudyBankFromPdf({
             )
           )
         }
-      });
+          });
+
+          lastGeminiError = null;
+          break;
+
+        } catch (error) {
+          lastGeminiError = error;
+
+          const status =
+            error?.status ??
+            error?.code ??
+            error?.response?.status;
+
+          const isRetryable =
+            status === 429 ||
+            status === 500 ||
+            status === 502 ||
+            status === 503 ||
+            status === 504 ||
+            String(error?.message || "").includes("high demand") ||
+            String(error?.message || "").includes("UNAVAILABLE");
+
+          console.error(
+            `Gemini attempt ${geminiAttempt}/4 failed:`,
+            error?.message || error
+          );
+
+          if (!isRetryable || geminiAttempt === 4) {
+            throw error;
+          }
+
+          const delay =
+            Math.min(30000, 3000 * Math.pow(2, geminiAttempt - 1));
+
+          console.log(
+            `Gemini temporarily unavailable. Retrying in ${delay / 1000}s...`
+          );
+
+          await new Promise(resolve =>
+            setTimeout(resolve, delay)
+          );
+        }
+      }
+
+      if (lastGeminiError) {
+        throw lastGeminiError;
+      }
 
     } catch (error) {
       console.error(

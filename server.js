@@ -1530,6 +1530,26 @@ function flattenQuestionBanks(
 }
 
 /* =========================================================
+   SUPABASE CONFIG API
+   ========================================================= */
+
+app.get(
+  "/api/supabase-config",
+  (_req, res) => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return res.status(500).json({
+        error: "Supabase configuration is unavailable."
+      });
+    }
+
+    res.json({
+      url: SUPABASE_URL,
+      key: SUPABASE_ANON_KEY
+    });
+  }
+);
+
+/* =========================================================
    QUESTION BANK API
    ========================================================= */
 

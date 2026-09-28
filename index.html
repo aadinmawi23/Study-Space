@@ -10279,42 +10279,66 @@ async function loadImportedJsonFiles(){
             "
           >
 
+            <!-- DELETE ACTION: COMPLETELY HIDDEN UNTIL SWIPED -->
             <div
+              class="flo-imported-file-delete-layer"
               style="
                 position:absolute;
                 inset:0;
                 display:flex;
                 align-items:center;
                 justify-content:flex-end;
-                padding-right:8px;
+                padding-right:10px;
                 background:#eee5dc;
+                pointer-events:none;
               "
             >
 
               <button
                 type="button"
+                class="flo-imported-file-delete-button"
                 onclick='window.__floDeleteImportedJson("${encodedFile}")'
                 aria-label="Delete imported JSON"
                 title="Delete imported JSON"
                 style="
+                  width:42px;
+                  height:42px;
+                  padding:0;
                   border:0;
                   border-radius:10px;
                   background:#f4eee8;
                   color:#514a42;
-                  width:42px;
-                  height:42px;
                   display:flex;
                   align-items:center;
                   justify-content:center;
                   cursor:pointer;
-                  font-size:18px;
+                  opacity:0;
+                  pointer-events:none;
+                  transition:opacity .15s ease;
                 "
               >
-                🗑
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 6h18"/>
+                  <path d="M8 6V4h8v2"/>
+                  <path d="M19 6l-1 14H6L5 6"/>
+                  <path d="M10 11v5"/>
+                  <path d="M14 11v5"/>
+                </svg>
               </button>
 
             </div>
 
+            <!-- FILE CARD -->
             <div
               class="flo-imported-file-card"
               data-file-name="${safeName}"
@@ -10322,11 +10346,14 @@ async function loadImportedJsonFiles(){
                 position:relative;
                 z-index:2;
                 padding:14px;
-                background:rgba(255,255,255,.82);
+                background:#fffdfb;
                 border:1px solid rgba(0,0,0,.08);
                 border-radius:14px;
-                transition:transform .2s ease;
+                transition:transform .22s ease;
                 touch-action:pan-y;
+                cursor:grab;
+                user-select:none;
+                -webkit-user-select:none;
               "
             >
 
@@ -10368,16 +10395,18 @@ async function loadImportedJsonFiles(){
 
                 </div>
 
+                <!-- SMALL SLIDE INDICATOR -->
                 <span
                   class="flo-imported-file-arrow"
                   aria-hidden="true"
                   style="
                     flex:0 0 auto;
                     color:#514a42;
-                    font-size:20px;
+                    font-size:19px;
+                    font-weight:500;
                     line-height:1;
-                    padding:4px 4px 4px 8px;
-                    user-select:none;
+                    padding:4px 3px 4px 8px;
+                    opacity:.75;
                     transition:opacity .15s ease;
                   "
                 >
@@ -10424,68 +10453,207 @@ function installImportedJsonSwipeHandlers(){
 
       let startX = 0;
       let startY = 0;
+      let currentX = 0;
+      let dragging = false;
 
-      card.addEventListener(
-        "touchstart",
-        event => {
+      const wrap =
+        card.closest(
+          ".flo-imported-file-wrap"
+        );
 
-          const touch =
-            event.touches?.[0];
+      const deleteButton =
+        wrap?.querySelector(
+          ".flo-imported-file-delete-button"
+        );
 
-          if(!touch){
-            return;
+      const arrow =
+        card.querySelector(
+          ".flo-imported-file-arrow"
+        );
+
+      const openDelete =
+        () => {
+
+          card.style.transition =
+            "transform .22s ease";
+
+          card.style.transform =
+            "translateX(-72px)";
+
+          card.dataset.deleteOpen =
+            "true";
+
+          if(arrow){
+            arrow.style.opacity = "0";
           }
 
-          startX =
-            touch.clientX;
+          if(deleteButton){
 
-          startY =
-            touch.clientY;
+            deleteButton.style.opacity =
+              "1";
 
-        },
-        {passive:true}
-      );
+            deleteButton.style.pointerEvents =
+              "auto";
 
-      card.addEventListener(
-        "touchend",
-        event => {
-
-          const touch =
-            event.changedTouches?.[0];
-
-          if(!touch){
-            return;
           }
 
-          const deltaX =
-            touch.clientX - startX;
+        };
 
-          const deltaY =
-            touch.clientY - startY;
+      const closeDelete =
+        () => {
+
+          card.style.transition =
+            "transform .22s ease";
+
+          card.style.transform =
+            "translateX(0)";
+
+          card.dataset.deleteOpen =
+            "false";
+
+          if(arrow){
+            arrow.style.opacity = ".75";
+          }
+
+          if(deleteButton){
+
+            deleteButton.style.opacity =
+              "0";
+
+            deleteButton.style.pointerEvents =
+              "none";
+
+          }
+
+        };
+
+
+      /*
+       * POINTER EVENTS
+       * Works with:
+       * - mouse
+       * - trackpad
+       * - touchscreen
+       */
+      card.addEventListener(
+        "pointerdown",
+        event => {
 
           if(
-            Math.abs(deltaX) < 40 ||
-            Math.abs(deltaX) < Math.abs(deltaY)
+            event.pointerType === "mouse" &&
+            event.button !== 0
           ){
             return;
           }
 
-          const arrow =
-            card.querySelector(
-              ".flo-imported-file-arrow"
+          startX =
+            event.clientX;
+
+          startY =
+            event.clientY;
+
+          currentX =
+            event.clientX;
+
+          dragging = true;
+
+          card.style.transition =
+            "none";
+
+          try{
+            card.setPointerCapture(
+              event.pointerId
             );
+          }
+          catch(_){}
+
+        }
+      );
+
+
+      card.addEventListener(
+        "pointermove",
+        event => {
+
+          if(!dragging){
+            return;
+          }
+
+          currentX =
+            event.clientX;
+
+          const deltaX =
+            currentX - startX;
+
+          const deltaY =
+            event.clientY - startY;
+
+          if(
+            Math.abs(deltaY) >
+            Math.abs(deltaX) + 10
+          ){
+            return;
+          }
 
           if(deltaX < 0){
 
+            const distance =
+              Math.min(
+                72,
+                Math.max(
+                  0,
+                  Math.abs(deltaX)
+                )
+              );
+
             card.style.transform =
-              "translateX(-92px)";
+              `translateX(-${distance}px)`;
 
-            card.dataset.deleteOpen =
-              "true";
+          }
 
-            if(arrow){
-              arrow.style.opacity = "0";
-            }
+        }
+      );
+
+
+      const finishPointer =
+        event => {
+
+          if(!dragging){
+            return;
+          }
+
+          dragging = false;
+
+          const deltaX =
+            event.clientX - startX;
+
+          const deltaY =
+            event.clientY - startY;
+
+          card.style.transition =
+            "transform .22s ease";
+
+          if(
+            deltaX < -35 &&
+            Math.abs(deltaX) >= Math.abs(deltaY)
+          ){
+
+            openDelete();
+
+          }
+          else if(
+            deltaX > 35 &&
+            Math.abs(deltaX) >= Math.abs(deltaY)
+          ){
+
+            closeDelete();
+
+          }
+          else if(
+            card.dataset.deleteOpen === "true"
+          ){
+
+            closeDelete();
 
           }
           else{
@@ -10493,17 +10661,26 @@ function installImportedJsonSwipeHandlers(){
             card.style.transform =
               "translateX(0)";
 
-            card.dataset.deleteOpen =
-              "false";
-
-            if(arrow){
-              arrow.style.opacity = "1";
-            }
-
           }
 
-        },
-        {passive:true}
+          try{
+            card.releasePointerCapture(
+              event.pointerId
+            );
+          }
+          catch(_){}
+
+        };
+
+
+      card.addEventListener(
+        "pointerup",
+        finishPointer
+      );
+
+      card.addEventListener(
+        "pointercancel",
+        finishPointer
       );
 
     });
@@ -10513,8 +10690,10 @@ function installImportedJsonSwipeHandlers(){
 window.__floToggleImportedJsonDelete =
   function(){
 
-    /* Three-dot control removed.
-       Swipe the file card left instead. */
+    /*
+     * Three-dot control intentionally removed.
+     * Imported JSON files are opened by swiping.
+     */
 
   };
 
@@ -10562,44 +10741,61 @@ window.__floDeleteImportedJson =
 
       }
 
+      /*
+       * Remove the exact card immediately.
+       * No page refresh and no full settings reload.
+       */
       const wrap =
         document.querySelector(
           `.flo-imported-file-wrap[data-file-name="${CSS.escape(fileName)}"]`
         );
 
       if(wrap){
-        wrap.remove();
+
+        wrap.style.transition =
+          "opacity .15s ease, transform .15s ease";
+
+        wrap.style.opacity =
+          "0";
+
+        wrap.style.transform =
+          "scale(.98)";
+
+        setTimeout(
+          () => wrap.remove(),
+          160
+        );
+
       }
 
       await loadBanks();
 
-      const remainingFiles =
-        document.querySelectorAll(
+      const container =
+        document.getElementById(
+          "floImportedJsonFiles"
+        );
+
+      const remaining =
+        container?.querySelectorAll(
           ".flo-imported-file-wrap"
         );
 
-      if(!remainingFiles.length){
+      if(
+        container &&
+        (!remaining || !remaining.length)
+      ){
 
-        const container =
-          document.getElementById(
-            "floImportedJsonFiles"
-          );
-
-        if(container){
-
-          container.innerHTML = `
-            <div
-              class="small"
-              style="
-                padding:12px 0;
-                opacity:.7;
-              "
-            >
-              No imported JSON files yet.
-            </div>
-          `;
-
-        }
+        container.innerHTML = `
+          <div
+            class="small"
+            style="
+              padding:12px 0;
+              opacity:.7;
+            "
+          >
+            No imported JSON files yet.
+          </div>
+        `;
 
       }
 

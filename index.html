@@ -19188,6 +19188,1239 @@ async function ensureUsername() {
 })();
 </script>
 
+
+<script>
+/* =========================================================
+   FLO UNIFIED SIX-MODE QUIZ ENGINE
+   Uses the same full-page quiz shell as MCQ.
+   MCQ itself is left untouched.
+   ========================================================= */
+
+(function(){
+
+  const FLO_MODES = [
+    "fill_in_the_blanks",
+    "questions",
+    "case_based",
+    "match_the_column",
+    "map"
+  ];
+
+  function floMain(){
+    return document.querySelector("main");
+  }
+
+  function floEscape(value){
+    if(typeof escapeHTML === "function"){
+      return escapeHTML(String(value ?? ""));
+    }
+
+    return String(value ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function floNormalize(value){
+    return String(value ?? "")
+      .toLowerCase()
+      .replace(/\s+/g," ")
+      .trim();
+  }
+
+  function floRecord(q, choice, result){
+
+    try{
+      if(typeof recordAnswer === "function"){
+        recordAnswer(q, choice, result);
+      }
+    }catch(error){
+      console.warn(
+        "Could not record AI-mode answer:",
+        error
+      );
+    }
+  }
+
+  function floExit(){
+
+    if(typeof selectedSubject !== "undefined" &&
+       selectedSubject &&
+       typeof renderSubject === "function"){
+
+      renderSubject(
+        selectedSubject,
+        "topics"
+      );
+
+      return;
+    }
+
+    if(typeof navigate === "function"){
+      navigate("home");
+    }
+  }
+
+  function floProgress(index,total){
+
+    const percent =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          ((index + 1) / Math.max(1,total)) * 100
+        )
+      );
+
+    return `
+      <div class="quiz-progress">
+        <div
+          class="fill"
+          style="width:${percent}%"
+        ></div>
+      </div>
+    `;
+  }
+
+  function floShell({
+    mode,
+    eyebrow,
+    questionNumber,
+    total,
+    questionBody,
+    interaction,
+    feedback = "",
+    nextButton = ""
+  }){
+
+    const main = floMain();
+
+    if(!main){
+      return;
+    }
+
+    const modeLabels = {
+      fill_in_the_blanks: "FILL IN THE BLANKS",
+      questions: "SHORT ANSWER",
+      case_based: "CASE BASED",
+      match_the_column: "MATCH THE COLUMN",
+      map: "MAP"
+    };
+
+    main.innerHTML = `
+
+      <div class="quiz-shell">
+
+        <div class="quiz-top">
+
+          <button
+            class="btn light"
+            type="button"
+            onclick="window.__floUnifiedExit()"
+          >
+            ← Exit Quiz
+          </button>
+
+          <div class="quiz-count">
+            Question ${questionNumber} / ${total}
+          </div>
+
+        </div>
+
+        ${floProgress(questionNumber - 1,total)}
+
+        <div class="question-card">
+
+          <div
+            style="
+              font-size:11px;
+              letter-spacing:.1em;
+              text-transform:uppercase;
+              color:var(--muted);
+              margin-bottom:12px;
+            "
+          >
+            ${modeLabels[mode] || mode}
+          </div>
+
+          ${questionBody}
+
+          ${interaction}
+
+          <div
+            id="floUnifiedFeedback"
+            style="margin-top:18px;"
+          >
+            ${feedback}
+          </div>
+
+          <div
+            id="floUnifiedNext"
+            class="quiz-actions"
+            style="margin-top:18px;"
+          >
+            ${nextButton}
+          </div>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  function floComplete(){
+
+    const quiz = window.__floUnifiedQuiz;
+
+    if(!quiz){
+      return;
+    }
+
+    const total = quiz.questions.length;
+
+    const correct = quiz.results.filter(
+      x => x === "correct"
+    ).length;
+
+    const wrong = quiz.results.filter(
+      x => x === "wrong"
+    ).length;
+
+    const unknown = quiz.results.filter(
+      x => x === "unknown"
+    ).length;
+
+    const accuracy = Math.round(
+      correct / Math.max(1,total) * 100
+    );
+
+    const main = floMain();
+
+    if(!main){
+      return;
+    }
+
+    main.innerHTML = `
+
+      <div class="quiz-shell">
+
+        <div class="quiz-top">
+
+          <button
+            class="btn light"
+            type="button"
+            onclick="window.__floUnifiedExit()"
+          >
+            ← Back
+          </button>
+
+          <div class="quiz-count">
+            Quiz Complete
+          </div>
+
+        </div>
+
+        <div class="quiz-progress">
+          <div
+            class="fill"
+            style="width:100%"
+          ></div>
+        </div>
+
+        <div class="question-card">
+
+          <h3>
+            ${accuracy}% Accuracy
+          </h3>
+
+          <p>
+            You completed all ${total} questions.
+          </p>
+
+          <div
+            style="
+              margin-top:22px;
+              padding:24px;
+              border:1px solid var(--line);
+              border-radius:16px;
+              background:var(--card);
+              display:grid;
+              grid-template-columns:repeat(3,1fr);
+              gap:12px;
+              text-align:center;
+            "
+          >
+
+            <div>
+              <strong style="font-size:26px;">
+                ${correct}
+              </strong>
+              <div class="small">Correct</div>
+            </div>
+
+            <div>
+              <strong style="font-size:26px;">
+                ${wrong}
+              </strong>
+              <div class="small">Wrong</div>
+            </div>
+
+            <div>
+              <strong style="font-size:26px;">
+                ${unknown}
+              </strong>
+              <div class="small">Not learnt</div>
+            </div>
+
+          </div>
+
+          <div
+            style="
+              display:flex;
+              justify-content:flex-end;
+              margin-top:24px;
+            "
+          >
+
+            <button
+              class="btn"
+              type="button"
+              onclick="window.__floUnifiedExit()"
+            >
+              Back to Topics
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+    window.__floUnifiedQuiz = null;
+  }
+
+
+  /* =======================================================
+     START
+     ======================================================= */
+
+  window.__floUnifiedStart = function(mode, questions){
+
+    const usable =
+      Array.isArray(questions)
+        ? questions.filter(Boolean)
+        : [];
+
+    if(!usable.length){
+      if(typeof toast === "function"){
+        toast("No questions are loaded for this mode yet.");
+      }
+      return;
+    }
+
+    window.__floUnifiedQuiz = {
+      mode,
+      questions: usable,
+      index: 0,
+      results: [],
+      answered: false
+    };
+
+    window.__floUnifiedRender();
+  };
+
+
+  /* =======================================================
+     RENDER
+     ======================================================= */
+
+  window.__floUnifiedRender = function(){
+
+    const quiz = window.__floUnifiedQuiz;
+
+    if(!quiz){
+      return;
+    }
+
+    if(
+      quiz.index >=
+      quiz.questions.length
+    ){
+      floComplete();
+      return;
+    }
+
+    const q =
+      quiz.questions[quiz.index];
+
+    quiz.answered = false;
+
+    const number = quiz.index + 1;
+    const total = quiz.questions.length;
+
+    let questionBody = "";
+    let interaction = "";
+
+    /* -------------------------------------------------------
+       FILL IN THE BLANKS
+       ------------------------------------------------------- */
+
+    if(quiz.mode === "fill_in_the_blanks"){
+
+      questionBody = `
+        <h3>
+          ${floEscape(q.question)}
+        </h3>
+      `;
+
+      interaction = `
+
+        <input
+          id="floUnifiedAnswer"
+          type="text"
+          autocomplete="off"
+          placeholder="Type your answer..."
+          style="
+            width:100%;
+            box-sizing:border-box;
+            margin-top:22px;
+            padding:16px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:var(--bg);
+            color:var(--ink);
+            font:inherit;
+            outline:none;
+          "
+          onkeydown="
+            if(event.key === 'Enter'){
+              event.preventDefault();
+              window.__floUnifiedSubmit();
+            }
+          "
+        />
+
+        <div
+          style="
+            margin-top:10px;
+            color:var(--muted);
+            font-size:12px;
+          "
+        >
+          Type the missing information as accurately as you can.
+        </div>
+      `;
+    }
+
+
+    /* -------------------------------------------------------
+       SHORT ANSWER
+       ------------------------------------------------------- */
+
+    else if(quiz.mode === "questions"){
+
+      questionBody = `
+        <h3>
+          ${floEscape(q.question)}
+        </h3>
+      `;
+
+      interaction = `
+
+        <textarea
+          id="floUnifiedAnswer"
+          rows="6"
+          placeholder="Write your answer..."
+          style="
+            width:100%;
+            box-sizing:border-box;
+            margin-top:22px;
+            padding:16px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:var(--bg);
+            color:var(--ink);
+            font:inherit;
+            resize:vertical;
+            outline:none;
+          "
+        ></textarea>
+      `;
+    }
+
+
+    /* -------------------------------------------------------
+       CASE BASED
+       ------------------------------------------------------- */
+
+    else if(quiz.mode === "case_based"){
+
+      questionBody = `
+
+        <div
+          style="
+            padding:22px;
+            margin-bottom:20px;
+            border:1px solid var(--line);
+            border-radius:16px;
+            background:var(--card);
+          "
+        >
+
+          <div
+            style="
+              font-size:11px;
+              text-transform:uppercase;
+              letter-spacing:.08em;
+              color:var(--muted);
+              margin-bottom:10px;
+            "
+          >
+            Case
+          </div>
+
+          <div
+            style="
+              font:17px Georgia,serif;
+              line-height:1.7;
+            "
+          >
+            ${floEscape(q.case)}
+          </div>
+
+        </div>
+
+        <h3>
+          ${floEscape(q.question)}
+        </h3>
+      `;
+
+      interaction = `
+
+        <textarea
+          id="floUnifiedAnswer"
+          rows="6"
+          placeholder="Apply the information from the case and write your answer..."
+          style="
+            width:100%;
+            box-sizing:border-box;
+            margin-top:22px;
+            padding:16px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:var(--bg);
+            color:var(--ink);
+            font:inherit;
+            resize:vertical;
+            outline:none;
+          "
+        ></textarea>
+      `;
+    }
+
+
+    /* -------------------------------------------------------
+       MATCH THE COLUMN
+       ------------------------------------------------------- */
+
+    else if(quiz.mode === "match_the_column"){
+
+      questionBody = `
+        <h3>
+          ${floEscape(q.question)}
+        </h3>
+      `;
+
+      const columnA =
+        Array.isArray(q.column_a)
+          ? q.column_a
+          : [];
+
+      const columnB =
+        Array.isArray(q.column_b)
+          ? q.column_b
+          : [];
+
+      interaction = `
+
+        <div
+          style="
+            margin-top:22px;
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:18px;
+          "
+        >
+
+          <div>
+
+            <div
+              style="
+                font-size:11px;
+                text-transform:uppercase;
+                letter-spacing:.08em;
+                color:var(--muted);
+                margin-bottom:10px;
+              "
+            >
+              Column A
+            </div>
+
+            ${columnA.map((item,i)=>`
+
+              <div
+                style="
+                  padding:14px;
+                  margin-bottom:10px;
+                  border:1px solid var(--line);
+                  border-radius:12px;
+                  background:var(--card);
+                "
+              >
+                <strong>${i + 1}.</strong>
+                ${floEscape(item)}
+              </div>
+
+            `).join("")}
+
+          </div>
+
+
+          <div>
+
+            <div
+              style="
+                font-size:11px;
+                text-transform:uppercase;
+                letter-spacing:.08em;
+                color:var(--muted);
+                margin-bottom:10px;
+              "
+            >
+              Column B
+            </div>
+
+            ${columnB.map((item,i)=>`
+
+              <label
+                style="
+                  display:flex;
+                  align-items:flex-start;
+                  gap:10px;
+                  padding:14px;
+                  margin-bottom:10px;
+                  border:1px solid var(--line);
+                  border-radius:12px;
+                  background:var(--card);
+                  cursor:pointer;
+                "
+              >
+
+                <strong>${String.fromCharCode(65+i)}.</strong>
+
+                <span>
+                  ${floEscape(item)}
+                </span>
+
+                <input
+                  type="radio"
+                  name="floMatch_${i}"
+                  value="${i}"
+                  style="margin-left:auto;"
+                />
+
+              </label>
+
+            `).join("")}
+
+          </div>
+
+        </div>
+
+        <div
+          style="
+            margin-top:12px;
+            font-size:12px;
+            color:var(--muted);
+          "
+        >
+          Select the matching item in Column B for each item in Column A.
+        </div>
+      `;
+    }
+
+
+    /* -------------------------------------------------------
+       MAP
+       ------------------------------------------------------- */
+
+    else if(quiz.mode === "map"){
+
+      questionBody = `
+        <h3>
+          ${floEscape(q.question)}
+        </h3>
+
+        ${
+          q.region
+            ? `
+              <div
+                style="
+                  margin-top:10px;
+                  color:var(--muted);
+                "
+              >
+                Region: ${floEscape(q.region)}
+              </div>
+            `
+            : ""
+        }
+      `;
+
+      interaction = `
+
+        <input
+          id="floUnifiedAnswer"
+          type="text"
+          autocomplete="off"
+          placeholder="Enter the location..."
+          style="
+            width:100%;
+            box-sizing:border-box;
+            margin-top:22px;
+            padding:16px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:var(--bg);
+            color:var(--ink);
+            font:inherit;
+            outline:none;
+          "
+          onkeydown="
+            if(event.key === 'Enter'){
+              event.preventDefault();
+              window.__floUnifiedSubmit();
+            }
+          "
+        />
+
+        <div
+          style="
+            margin-top:14px;
+            padding:16px;
+            border:1px dashed var(--line);
+            border-radius:12px;
+            color:var(--muted);
+            font-size:13px;
+          "
+        >
+          ${
+            q.latitude !== null &&
+            q.longitude !== null
+              ? "Location coordinates are available for this question."
+              : "Enter the location represented by the source material."
+          }
+        </div>
+      `;
+    }
+
+
+    const submitLabel =
+      quiz.mode === "match_the_column"
+        ? "Check Matches"
+        : "Check Answer";
+
+    floShell({
+      mode: quiz.mode,
+      questionNumber: number,
+      total,
+      eyebrow: "",
+      questionBody,
+      interaction,
+      nextButton: `
+
+        <button
+          class="unknown"
+          type="button"
+          onclick="window.__floUnifiedUnknown()"
+        >
+          I don't know
+        </button>
+
+        <div class="quiz-next">
+
+          <button
+            class="btn"
+            type="button"
+            onclick="window.__floUnifiedSubmit()"
+          >
+            ${submitLabel}
+          </button>
+
+        </div>
+
+      `
+    });
+  };
+
+
+  /* =======================================================
+     SUBMIT
+     ======================================================= */
+
+  window.__floUnifiedSubmit = function(){
+
+    const quiz = window.__floUnifiedQuiz;
+
+    if(!quiz || quiz.answered){
+      return;
+    }
+
+    const q =
+      quiz.questions[quiz.index];
+
+    let result = "wrong";
+    let userAnswer = "";
+
+    /* FIB / QUESTIONS / CASE / MAP */
+
+    if(
+      [
+        "fill_in_the_blanks",
+        "questions",
+        "case_based",
+        "map"
+      ].includes(quiz.mode)
+    ){
+
+      const input =
+        document.getElementById(
+          "floUnifiedAnswer"
+        );
+
+      userAnswer =
+        input
+          ? input.value.trim()
+          : "";
+
+      if(!userAnswer){
+        if(typeof toast === "function"){
+          toast("Please enter an answer first.");
+        }
+        return;
+      }
+
+      const accepted = [];
+
+      if(q.answer){
+        accepted.push(q.answer);
+      }
+
+      if(Array.isArray(q.accepted_answers)){
+        accepted.push(...q.accepted_answers);
+      }
+
+      if(
+        quiz.mode === "map" &&
+        Array.isArray(q.acceptable_locations)
+      ){
+        accepted.push(...q.acceptable_locations);
+      }
+
+      const normalizedUser =
+        floNormalize(userAnswer);
+
+      result =
+        accepted.some(
+          answer =>
+            floNormalize(answer) === normalizedUser
+        )
+          ? "correct"
+          : "wrong";
+    }
+
+
+    /* MATCH */
+
+    else if(
+      quiz.mode === "match_the_column"
+    ){
+
+      const matches =
+        Array.isArray(q.matches)
+          ? q.matches
+          : [];
+
+      const selected = [];
+
+      for(
+        let i = 0;
+        i < (q.column_a || []).length;
+        i++
+      ){
+
+        const selectedRadio =
+          document.querySelector(
+            `input[name="floMatch_${i}"]:checked`
+          );
+
+        if(!selectedRadio){
+          if(typeof toast === "function"){
+            toast("Please complete all matches.");
+          }
+          return;
+        }
+
+        selected.push({
+          a: i,
+          b: Number(selectedRadio.value)
+        });
+      }
+
+      const correct =
+        matches.length === selected.length &&
+        matches.every(
+          expected =>
+            selected.some(
+              actual =>
+                actual.a === expected.a &&
+                actual.b === expected.b
+            )
+        );
+
+      userAnswer =
+        JSON.stringify(selected);
+
+      result =
+        correct
+          ? "correct"
+          : "wrong";
+    }
+
+    floUnifiedApplyResult(
+      result,
+      userAnswer
+    );
+  };
+
+
+  /* =======================================================
+     I DON'T KNOW
+     ======================================================= */
+
+  window.__floUnifiedUnknown = function(){
+
+    const quiz = window.__floUnifiedQuiz;
+
+    if(!quiz || quiz.answered){
+      return;
+    }
+
+    floUnifiedApplyResult(
+      "unknown",
+      "UNKNOWN"
+    );
+  };
+
+
+  /* =======================================================
+     APPLY RESULT + NEXT BUTTON
+     ======================================================= */
+
+  function floUnifiedApplyResult(
+    result,
+    userAnswer
+  ){
+
+    const quiz = window.__floUnifiedQuiz;
+
+    if(!quiz || quiz.answered){
+      return;
+    }
+
+    const q =
+      quiz.questions[quiz.index];
+
+    quiz.answered = true;
+
+    quiz.results.push(result);
+
+    floRecord(
+      q,
+      userAnswer,
+      result
+    );
+
+    const feedback =
+      document.getElementById(
+        "floUnifiedFeedback"
+      );
+
+    if(feedback){
+
+      const correctAnswer =
+        q.answer ||
+        "";
+
+      feedback.innerHTML = `
+
+        <div
+          class="explanation"
+          style="
+            padding:16px;
+            border-radius:12px;
+          "
+        >
+
+          <strong>
+            ${
+              result === "correct"
+                ? "Correct"
+                : result === "unknown"
+                  ? "Not learnt"
+                  : "Incorrect"
+            }
+          </strong>
+
+          ${
+            result !== "correct" &&
+            correctAnswer
+              ? `
+                <div style="margin-top:7px;">
+                  Correct answer:
+                  <strong>
+                    ${floEscape(correctAnswer)}
+                  </strong>
+                </div>
+              `
+              : ""
+          }
+
+          ${
+            q.explanation
+              ? `
+                <div style="margin-top:8px;">
+                  ${floEscape(q.explanation)}
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+      `;
+    }
+
+    const next =
+      document.getElementById(
+        "floUnifiedNext"
+      );
+
+    if(next){
+
+      next.innerHTML = `
+
+        <button
+          class="btn"
+          type="button"
+          onclick="window.__floUnifiedNext()"
+        >
+          ${
+            quiz.index <
+            quiz.questions.length - 1
+              ? "Next Question →"
+              : "Finish Quiz"
+          }
+        </button>
+
+      `;
+    }
+
+    const inputs =
+      document.querySelectorAll(
+        "#floUnifiedAnswer"
+      );
+
+    inputs.forEach(
+      input => {
+        input.disabled = true;
+      }
+    );
+
+    document
+      .querySelectorAll(
+        'input[type="radio"]'
+      )
+      .forEach(
+        input => {
+          input.disabled = true;
+        }
+      );
+  }
+
+
+  /* =======================================================
+     NEXT
+     ======================================================= */
+
+  window.__floUnifiedNext = function(){
+
+    const quiz = window.__floUnifiedQuiz;
+
+    if(!quiz || !quiz.answered){
+      return;
+    }
+
+    if(
+      quiz.index <
+      quiz.questions.length - 1
+    ){
+
+      quiz.index++;
+
+      window.__floUnifiedRender();
+
+    }else{
+
+      floComplete();
+
+    }
+  };
+
+
+  window.__floUnifiedExit = function(){
+
+    window.__floUnifiedQuiz = null;
+
+    floExit();
+  };
+
+
+  /* =======================================================
+     REPLACE THE OLD NON-MCQ RENDERER
+     ======================================================= */
+
+  window.__floRenderQuizModePage =
+    function(type){
+
+      const modeMap = {
+        fill: "fill_in_the_blanks",
+        fill_in_the_blanks: "fill_in_the_blanks",
+        questions: "questions",
+        case: "case_based",
+        case_based: "case_based",
+        match: "match_the_column",
+        match_the_column: "match_the_column",
+        map: "map"
+      };
+
+      const mode =
+        modeMap[type];
+
+      if(!mode){
+        if(typeof toast === "function"){
+          toast("This quiz type is not available.");
+        }
+        return;
+      }
+
+      const questions =
+        window.__floQuizQuestions || [];
+
+      if(!questions.length){
+        if(typeof toast === "function"){
+          toast("No questions are loaded for this topic.");
+        }
+        return;
+      }
+
+      window.__floUnifiedStart(
+        mode,
+        questions
+      );
+    };
+
+
+  /* Keep the existing Fill entry point working. */
+
+  window.__floStartFillInTheBlanks =
+    function(questions){
+
+      window.__floUnifiedStart(
+        "fill_in_the_blanks",
+        questions
+      );
+    };
+
+
+})();
+</script>
+
+
+<script>
+/* =========================================================
+   FLO MCQ START FIX
+   Keeps the existing MCQ engine/appearance intact.
+   ========================================================= */
+(function(){
+
+  window.__floSelectQuizTypeMCQFix = function(){
+    const questions = window.__floQuizQuestions || [];
+
+    if(!questions.length){
+      if(typeof toast === "function"){
+        toast("No questions loaded for this topic.");
+      }
+      return;
+    }
+
+    /* Close any quiz-type/modal layer if present */
+    const modal = document.getElementById("floQuizModeModal");
+    if(modal){
+      modal.classList.remove("open");
+      modal.style.display = "none";
+    }
+
+    /* Use the original MCQ engine */
+    if(typeof window.startQuiz === "function"){
+      window.startQuiz(questions);
+      return;
+    }
+
+    if(typeof startQuiz === "function"){
+      startQuiz(questions);
+      return;
+    }
+
+    console.error("FLO: existing startQuiz() function was not found.");
+    if(typeof toast === "function"){
+      toast("Unable to start the MCQ quiz.");
+    }
+  };
+
+  /* Override only the MCQ selection route.
+     All other five modes remain unchanged. */
+  const previousSelectQuizType = window.__floSelectQuizType;
+
+  window.__floSelectQuizType = function(type){
+
+    if(type === "mcq"){
+      window.__floSelectQuizTypeMCQFix();
+      return;
+    }
+
+    if(typeof previousSelectQuizType === "function"){
+      return previousSelectQuizType(type);
+    }
+
+    console.warn("FLO: previous quiz-type selector unavailable.");
+  };
+
+})();
+</script>
+
 </body>
 </html>
 

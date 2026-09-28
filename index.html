@@ -21149,6 +21149,118 @@ window.selectQuizMode =
 
 </script>
 
+
+<script>
+/* FLO CHALLENGE ROOM ROUTING FIX */
+
+(function(){
+
+  /*
+   * Challenge Mode must use the existing
+   * room/lobby system.
+   *
+   * Do NOT open the question-count selector here.
+   * The question-count selector is opened later by
+   * __floStartChallenge() after both players are ready.
+   */
+
+  window.__floSelectQuizMode = async function(mode){
+
+    window.__floCloseQuizMode();
+
+    const questions =
+      window.__floQuizQuestions || [];
+
+    if(!questions.length){
+      toast("No questions are loaded for this topic.");
+      return;
+    }
+
+    /* SOLO */
+    if(mode === "solo"){
+
+      const subject =
+        SUBJECT_CATALOG.find(
+          s =>
+            normalize(
+              s.questionSubject ||
+              s.name
+            ) ===
+            normalize(
+              window.pendingQuizSubject
+            )
+        );
+
+      selectedSubject =
+        subject ||
+        selectedSubject;
+
+      window.__floOpenQuestionCountSelector(
+        "solo",
+        questions
+      );
+
+      return;
+    }
+
+    /* CHALLENGE */
+    if(mode === "challenge"){
+
+      const username =
+        await window.__floRequireUsername();
+
+      if(!username){
+        return;
+      }
+
+      challenge.username =
+        username;
+
+      challenge.subjectName =
+        window.pendingQuizSubject || "";
+
+      challenge.topic =
+        window.pendingQuizTopic || "";
+
+      /*
+       * IMPORTANT:
+       * Open the actual Challenge Room chooser.
+       * This contains Create Room / Join Room.
+       */
+      if(
+        typeof window.__floOpenChallengeChoice ===
+        "function"
+      ){
+
+        window.__floOpenChallengeChoice();
+
+        return;
+      }
+
+      console.error(
+        "__floOpenChallengeChoice is unavailable."
+      );
+
+      toast(
+        "Challenge rooms are temporarily unavailable."
+      );
+
+      return;
+    }
+
+  };
+
+  /*
+   * Keep compatibility with any older code
+   * that calls selectQuizMode().
+   */
+  window.selectQuizMode =
+    window.__floSelectQuizMode;
+
+})();
+
+</script>
+
 </body>
 </html>
 

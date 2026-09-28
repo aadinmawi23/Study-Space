@@ -8172,8 +8172,23 @@ function startQuizFor(
     subject ||
     selectedSubject;
 
+  /*
+   * Normalize imported MCQs BEFORE the quiz-mode modal.
+   * This is the actual path used by the Study button.
+   */
+  const quizQuestions =
+    typeof window.__floNormalizeMCQs === "function"
+      ? window.__floNormalizeMCQs(questions)
+      : [...questions];
+
+  console.log(
+    "FLO MCQ LOAD:",
+    quizQuestions.length,
+    quizQuestions[0]
+  );
+
   window.__floQuizQuestions =
-    [...questions];
+    [...quizQuestions];
 
   window.openQuizTypeModal();
 }
@@ -8269,6 +8284,14 @@ function getSavedQuiz(){
 }
 
 function startQuiz(questions){
+
+  /*
+   * Final safety normalization for ALL MCQ quiz starts.
+   */
+  questions =
+    typeof window.__floNormalizeMCQs === "function"
+      ? window.__floNormalizeMCQs(questions)
+      : questions;
 
   const incomingIds =
     questions.map(q => q.id);
@@ -21673,6 +21696,144 @@ window.selectQuizMode =
   );
 
 })();
+</script>
+
+
+<script>
+/* =========================================================
+   FLO REAL MCQ NORMALIZER
+   Normalizes imported JSON MCQs BEFORE they enter the
+   existing quiz engine.
+   ========================================================= */
+
+window.__floNormalizeMCQ = function(q){
+
+  if(!q || typeof q !== "object"){
+    return q;
+  }
+
+  const rawOptions = q.options;
+
+  let options = {
+    A:"",
+    B:"",
+    C:"",
+    D:""
+  };
+
+  /* New JSON format: options is an array */
+  if(Array.isArray(rawOptions)){
+
+    options.A = String(rawOptions[0] ?? "");
+    options.B = String(rawOptions[1] ?? "");
+    options.C = String(rawOptions[2] ?? "");
+    options.D = String(rawOptions[3] ?? "");
+
+  }
+
+  /* Existing website format: options is A/B/C/D */
+  else if(
+    rawOptions &&
+    typeof rawOptions === "object"
+  ){
+
+    options.A =
+      String(rawOptions.A ?? "");
+
+    options.B =
+      String(rawOptions.B ?? "");
+
+    options.C =
+      String(rawOptions.C ?? "");
+
+    options.D =
+      String(rawOptions.D ?? "");
+  }
+
+  let answer =
+    typeof q.answer === "string"
+      ? q.answer.trim()
+      : "";
+
+  /* Convert full answer text into A/B/C/D */
+  if(!["A","B","C","D"].includes(answer.toUpperCase())){
+
+    const letters = ["A","B","C","D"];
+
+    const found =
+      letters.find(letter =>
+        options[letter].trim().toLowerCase() ===
+        answer.toLowerCase()
+      );
+
+    if(found){
+      answer = found;
+    }
+  }
+  else{
+    answer = answer.toUpperCase();
+  }
+
+  return {
+    ...q,
+    mode:"mcq",
+    options,
+    answer
+  };
+};
+
+window.__floNormalizeMCQs = function(questions){
+
+  if(!Array.isArray(questions)){
+    return [];
+  }
+
+  return questions.map(
+    window.__floNormalizeMCQ
+  );
+};
+
+console.log(
+  "FLO REAL MCQ NORMALIZER loaded."
+);
+</script>
+
+
+<script>
+/* =========================================================
+   FLO MCQ DEBUG HELPER
+   ========================================================= */
+
+window.__floDebugCurrentQuiz = function(){
+
+  const qs =
+    window.__floQuizQuestions || [];
+
+  console.log(
+    "FLO DEBUG — question count:",
+    qs.length
+  );
+
+  if(qs.length){
+
+    console.log(
+      "FLO DEBUG — first question:",
+      qs[0]
+    );
+
+    console.log(
+      "FLO DEBUG — options:",
+      qs[0].options
+    );
+
+    console.log(
+      "FLO DEBUG — answer:",
+      qs[0].answer
+    );
+  }
+
+  return qs;
+};
 </script>
 
 </body>

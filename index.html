@@ -21261,6 +21261,106 @@ window.selectQuizMode =
 
 </script>
 
+
+<script>
+/* =========================================================
+   FLO DIRECT CHALLENGE ROOM FIX
+   ========================================================= */
+
+(function(){
+
+  window.__floSelectQuizMode = async function(mode){
+
+    /*
+     * SOLO
+     * Keep the existing question-count flow.
+     */
+    if(mode === "solo"){
+
+      if(typeof window.__floCloseQuizMode === "function"){
+        window.__floCloseQuizMode();
+      }
+
+      const questions =
+        window.__floQuizQuestions || [];
+
+      if(!questions.length){
+        toast("No questions are loaded for this topic.");
+        return;
+      }
+
+      if(typeof window.__floOpenQuestionCountSelector === "function"){
+        window.__floOpenQuestionCountSelector(
+          "solo",
+          questions
+        );
+      }
+
+      return;
+    }
+
+
+    /*
+     * CHALLENGE
+     *
+     * IMPORTANT:
+     * Do NOT open the question-count selector here.
+     * Do NOT require the username here.
+     *
+     * Go directly to the existing
+     * CREATE ROOM / JOIN ROOM popup.
+     */
+    if(mode === "challenge"){
+
+      if(typeof window.__floCloseQuizMode === "function"){
+        window.__floCloseQuizMode();
+      }
+
+      challenge.subjectName =
+        window.pendingQuizSubject || "";
+
+      challenge.topic =
+        window.pendingQuizTopic || "";
+
+      challenge.username =
+        (typeof currentUsername !== "undefined" &&
+         currentUsername)
+          ? currentUsername
+          : "Player";
+
+      if(
+        typeof window.__floOpenChallengeChoice ===
+        "function"
+      ){
+
+        window.__floOpenChallengeChoice();
+
+        return;
+      }
+
+      console.error(
+        "Challenge room chooser is missing."
+      );
+
+      toast(
+        "Challenge rooms could not be opened."
+      );
+
+      return;
+    }
+
+  };
+
+  /*
+   * Keep old code compatible.
+   */
+  window.selectQuizMode =
+    window.__floSelectQuizMode;
+
+})();
+
+</script>
+
 </body>
 </html>
 

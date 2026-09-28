@@ -6774,8 +6774,8 @@ function openTopicAIImportModal(
 
         <textarea
           id="floTopicAIPrompt"
-          rows="5"
-          placeholder="Optional. For example: Make the questions difficult, focus on concepts and distinctions, and use longer sentence-completion blanks where appropriate."
+          rows="3"
+          placeholder=""
           style="
             width:100%;
             box-sizing:border-box;
@@ -20359,64 +20359,305 @@ async function ensureUsername() {
 </script>
 
 
-<script>
-/* =========================================================
-   FLO MCQ START FIX
-   Keeps the existing MCQ engine/appearance intact.
-   ========================================================= */
+
+
+
+<script id="flo-unified-question-count-fix">
 (function(){
 
-  window.__floSelectQuizTypeMCQFix = function(){
-    const questions = window.__floQuizQuestions || [];
+  /*
+   * FLO — Unified Question Count
+   *
+   * Every study mode uses the same question-count selector.
+   * The existing MCQ engine and challenge engine remain intact.
+   */
+
+  window.__floStartSelectedMode = function(mode){
+
+    const questions =
+      window.__floQuizQuestions || [];
 
     if(!questions.length){
       if(typeof toast === "function"){
-        toast("No questions loaded for this topic.");
+        toast("No questions are loaded for this topic.");
       }
       return;
     }
 
-    /* Close any quiz-type/modal layer if present */
-    const modal = document.getElementById("floQuizModeModal");
-    if(modal){
-      modal.classList.remove("open");
-      modal.style.display = "none";
-    }
-
-    /* Use the original MCQ engine */
-    if(typeof window.startQuiz === "function"){
-      window.startQuiz(questions);
-      return;
-    }
-
-    if(typeof startQuiz === "function"){
-      startQuiz(questions);
-      return;
-    }
-
-    console.error("FLO: existing startQuiz() function was not found.");
-    if(typeof toast === "function"){
-      toast("Unable to start the MCQ quiz.");
-    }
+    window.__floOpenQuestionCountSelector(
+      mode,
+      questions
+    );
   };
 
-  /* Override only the MCQ selection route.
-     All other five modes remain unchanged. */
-  const previousSelectQuizType = window.__floSelectQuizType;
 
+  /*
+   * When the user chooses a study mode,
+   * show the question-count slider instead of
+   * immediately starting the quiz.
+   */
   window.__floSelectQuizType = function(type){
 
-    if(type === "mcq"){
-      window.__floSelectQuizTypeMCQFix();
+    const questions =
+      window.__floQuizQuestions || [];
+
+    if(!questions.length){
+      if(typeof toast === "function"){
+        toast("No questions are loaded for this topic.");
+      }
       return;
     }
 
-    if(typeof previousSelectQuizType === "function"){
-      return previousSelectQuizType(type);
+    if(type === "mcq"){
+      window.__floStartSelectedMode("solo");
+      return;
     }
 
-    console.warn("FLO: previous quiz-type selector unavailable.");
+    if(type === "fill"){
+      window.__floStartSelectedMode("fill");
+      return;
+    }
+
+    if(type === "questions"){
+      window.__floStartSelectedMode("questions");
+      return;
+    }
+
+    if(type === "case"){
+      window.__floStartSelectedMode("case");
+      return;
+    }
+
+    if(type === "match"){
+      window.__floStartSelectedMode("match");
+      return;
+    }
+
+    if(type === "map"){
+      window.__floStartSelectedMode("map");
+      return;
+    }
+
+    if(typeof toast === "function"){
+      toast("This quiz type is not available.");
+    }
   };
+
+
+  /*
+   * Preserve the existing mode-selection modal.
+   *
+   * Solo:
+   *   question-count slider → existing MCQ engine
+   *
+   * Challenge:
+   *   existing challenge setup → question-count slider
+   */
+  const originalSelectQuizMode =
+    window.__floSelectQuizMode;
+
+  window.__floSelectQuizMode =
+    async function(mode){
+
+      const questions =
+        window.__floQuizQuestions || [];
+
+      if(!questions.length){
+        if(typeof toast === "function"){
+          toast("No questions are loaded for this topic.");
+        }
+        return;
+      }
+
+      if(mode === "solo"){
+
+        const subject =
+          typeof SUBJECT_CATALOG !== "undefined"
+            ? SUBJECT_CATALOG.find(
+                s =>
+                  normalize(
+                    s.questionSubject ||
+                    s.name
+                  ) ===
+                  normalize(
+                    window.pendingQuizSubject
+                  )
+              )
+            : null;
+
+        if(typeof selectedSubject !== "undefined"){
+          selectedSubject =
+            subject || selectedSubject;
+        }
+
+        window.__floOpenQuestionCountSelector(
+          "solo",
+          questions
+        );
+
+        return;
+      }
+
+      if(mode === "challenge"){
+
+        if(typeof window.__floRequireUsername === "function"){
+
+          const username =
+            await window.__floRequireUsername();
+
+          if(!username){
+            return;
+          }
+
+          if(typeof challenge !== "undefined"){
+            challenge.username = username;
+            challenge.subjectName =
+              window.pendingQuizSubject;
+            challenge.topic =
+              window.pendingQuizTopic;
+          }
+
+          /*
+           * Existing challenge choice screen remains.
+           * Its eventual Start Challenge action uses
+           * the same question-count selector.
+           */
+          if(
+            typeof window.__floOpenChallengeChoice ===
+            "function"
+          ){
+            window.__floOpenChallengeChoice();
+            return;
+          }
+        }
+
+        /*
+         * Fallback if challenge choice is unavailable.
+         */
+        window.__floOpenQuestionCountSelector(
+          "challenge",
+          questions
+        );
+
+        return;
+      }
+
+      /*
+       * Preserve any other existing mode behavior.
+       */
+      if(typeof originalSelectQuizMode === "function"){
+        return originalSelectQuizMode(mode);
+      }
+    };
+
+
+  /*
+   * Generic slider styling.
+   * Uses the site's existing variables.
+   */
+  if(!document.getElementById("flo-question-count-style")){
+
+    const style =
+      document.createElement("style");
+
+    style.id =
+      "flo-question-count-style";
+
+    style.textContent = `
+      .flo-question-count-wrap{
+        margin:24px 0;
+        padding:22px;
+        border:1px solid var(--line);
+        border-radius:18px;
+        background:var(--card);
+      }
+
+      .flo-question-count-header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:16px;
+        margin-bottom:16px;
+      }
+
+      .flo-question-count-number{
+        font:600 28px Georgia,serif;
+        white-space:nowrap;
+      }
+
+      .flo-question-count-slider{
+        width:100%;
+        cursor:pointer;
+        accent-color:var(--accent);
+      }
+
+      .flo-question-count-range{
+        display:flex;
+        justify-content:space-between;
+        margin-top:8px;
+        color:var(--muted);
+        font-size:13px;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
+  /*
+   * Upgrade the existing question-count selector
+   * with a proper live slider if the selector is rendered.
+   */
+  const originalCountSelector =
+    window.__floOpenQuestionCountSelector;
+
+  window.__floOpenQuestionCountSelector =
+    function(mode, questions){
+
+      if(
+        typeof originalCountSelector !==
+        "function"
+      ){
+        return;
+      }
+
+      originalCountSelector(
+        mode,
+        questions
+      );
+
+      setTimeout(function(){
+
+        const slider =
+          document.getElementById(
+            "floQuestionCount"
+          );
+
+        const value =
+          document.getElementById(
+            "floQuestionCountValue"
+          );
+
+        if(!slider || !value){
+          return;
+        }
+
+        function update(){
+
+          value.textContent =
+            slider.value;
+
+        }
+
+        slider.addEventListener(
+          "input",
+          update
+        );
+
+        update();
+
+      }, 0);
+    };
 
 })();
 </script>

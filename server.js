@@ -26,8 +26,17 @@ const PERFORMANCE_FILE = path.join(DATA_DIR, "performance.json");
    AI CONFIGURATION
    ========================================================= */
 
+const AI_PROVIDER =
+  (process.env.AI_PROVIDER || "gemini").trim().toLowerCase();
+
 const GEMINI_MODEL =
   process.env.GEMINI_MODEL || "gemini-3.8-flash";
+
+const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL || "openrouter/auto-beta";
+
+const OPENROUTER_URL =
+  "https://openrouter.ai/api/v1/messages";
 
 const AI_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
 
@@ -618,7 +627,227 @@ Return ONLY the requested structured JSON.
    GEMINI PDF STUDY-MATERIAL GENERATION
    ========================================================= */
 
+
+async function generateStudyBankFromPdfOpenRouter({
+  pdfBuffer,
+  originalFilename,
+  subject,
+  topic,
+  mode,
+  count,
+  difficulty,
+  customPrompt = ""
+}) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "OPENROUTER_API_KEY is not configured."
+    );
+  }
+
+  const prompt = buildStudyGenerationPrompt({
+    subject,
+    topic,
+    mode,
+    count,
+    difficulty,
+    customPrompt
+  });
+
+  const pdfBase64 =
+    Buffer.from(pdfBuffer).toString("base64");
+
+  console.log(
+    `OpenRouter generation using ${OPENROUTER_MODEL}`
+  );
+
+  const response = await fetch(
+    OPENROUTER_URL,
+    {
+      method: "POST",
+
+      headers: {
+        "Authorization":
+          `Bearer ${apiKey}`,
+
+        "Content-Type":
+          "application/json",
+
+        "HTTP-Referer":
+          process.env.OPENROUTER_SITE_URL ||
+          "https://study-space-0ybp.onrender.com",
+
+        "X-Title":
+          "Flo's Study Space"
+      },
+
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+
+        max_tokens:
+          Math.min(
+            30000,
+            Math.max(
+              6000,
+              count * 500
+            )
+          ),
+
+        messages: [
+          {
+            role: "user",
+
+            content: [
+              {
+                type: "document",
+
+                source: {
+                  type: "base64",
+
+                  media_type:
+                    "application/pdf",
+
+                  data:
+                    pdfBase64
+                }
+              },
+
+              {
+                type: "text",
+
+                text: prompt
+              }
+            ]
+          }
+        ]
+      })
+    }
+  );
+
+  const responseText =
+    await response.text();
+
+  if (!response.ok) {
+    console.error(
+      "OpenRouter HTTP error:",
+      response.status,
+      responseText
+    );
+
+    throw new Error(
+      `OpenRouter generation failed (${response.status}): ${responseText}`
+    );
+  }
+
+  let data;
+
+  try {
+    data =
+      JSON.parse(responseText);
+  } catch {
+    throw new Error(
+      "OpenRouter returned invalid API JSON."
+    );
+  }
+
+  const rawText =
+    data?.content
+      ?.filter(
+        part =>
+          part?.type === "text"
+      )
+      ?.map(
+        part =>
+          part.text || ""
+      )
+      ?.join("") ||
+    "";
+
+  if (!rawText.trim()) {
+    throw new Error(
+      "OpenRouter returned an empty response."
+    );
+  }
+
+  let parsed;
+
+  try {
+    parsed =
+      JSON.parse(rawText);
+  } catch (error) {
+    console.error(
+      "OpenRouter JSON parsing failed."
+    );
+
+    console.error(
+      rawText
+    );
+
+    throw new Error(
+      "OpenRouter returned invalid study-material JSON."
+    );
+  }
+
+  if (
+    !parsed ||
+    !Array.isArray(
+      parsed.questions
+    )
+  ) {
+    throw new Error(
+      "OpenRouter response did not contain a valid questions array."
+    );
+  }
+
+  return parsed.questions;
+}
+
+
+/*
+ * Provider switch.
+ *
+ * Gemini remains available, but OpenRouter
+ * can be selected through AI_PROVIDER.
+ */
 async function generateStudyBankFromPdf({
+  pdfBuffer,
+  originalFilename,
+  subject,
+  topic,
+  mode,
+  count,
+  difficulty,
+  customPrompt = ""
+}) {
+  if (
+    AI_PROVIDER === "openrouter"
+  ) {
+    return generateStudyBankFromPdfOpenRouter({
+      pdfBuffer,
+      originalFilename,
+      subject,
+      topic,
+      mode,
+      count,
+      difficulty,
+      customPrompt
+    });
+  }
+
+  return generateStudyBankFromPdfGemini({
+    pdfBuffer,
+    originalFilename,
+    subject,
+    topic,
+    mode,
+    count,
+    difficulty,
+    customPrompt
+  });
+}
+
+async function generateStudyBankFromPdfGemini({
   pdfBuffer,
   originalFilename,
   subject,
@@ -1916,7 +2145,9 @@ app.post(
 
 
         generated_by:
-          "gemini",
+          AI_PROVIDER === "openrouter"
+            ? "openrouter"
+            : "gemini",
 
         source:
           req.file.originalname,
@@ -1956,7 +2187,7 @@ app.post(
       );
 
       console.log(
-        `AI FIB generation complete: ${filename}`
+        `AI ${mode} generation complete: ${filename} using ${AI_PROVIDER}`
       );
 
       res.json({

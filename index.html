@@ -19119,6 +19119,75 @@ async function ensureUsername() {
 })();
 </script>
 
+
+<script id="__floAuthDebugPatch">
+(function(){
+
+  const original = window.signInWithGoogle;
+
+  window.signInWithGoogle = async function(){
+
+    console.log("[Flo Auth] Sign-in button clicked.");
+    console.log("[Flo Auth] Supabase client:", window.supabaseClient || "not exposed");
+
+    if(typeof supabaseClient === "undefined" || !supabaseClient){
+      console.error("[Flo Auth] Supabase client is NOT initialized.");
+
+      if(typeof showAuthStatusToast === "function"){
+        showAuthStatusToast("Sign-in service is not ready. Refresh and try again.");
+      }else if(typeof toast === "function"){
+        toast("Sign-in service is not ready. Refresh and try again.");
+      }
+
+      return;
+    }
+
+    try{
+
+      console.log("[Flo Auth] Starting Google OAuth...");
+
+      const { data, error } =
+        await supabaseClient.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+            queryParams: {
+              prompt: "select_account"
+            }
+          }
+        });
+
+      if(error){
+        console.error("[Flo Auth] Google OAuth error:", error);
+
+        if(typeof showAuthStatusToast === "function"){
+          showAuthStatusToast("Google sign-in failed: " + error.message);
+        }else if(typeof toast === "function"){
+          toast("Google sign-in failed: " + error.message);
+        }
+
+        return;
+      }
+
+      console.log("[Flo Auth] OAuth request accepted:", data);
+
+    }catch(error){
+
+      console.error("[Flo Auth] Unexpected sign-in error:", error);
+
+      if(typeof showAuthStatusToast === "function"){
+        showAuthStatusToast("Sign-in error: " + (error?.message || error));
+      }else if(typeof toast === "function"){
+        toast("Sign-in error: " + (error?.message || error));
+      }
+
+    }
+
+  };
+
+})();
+</script>
+
 </body>
 </html>
 

@@ -20809,6 +20809,346 @@ window.selectQuizMode =
 
 </script>
 
+
+<script id="flo-final-quiz-routing-fix">
+/* ============================================================
+   FINAL QUIZ ROUTING
+   Start Quiz
+      -> Quiz Type
+         -> MCQ -> Solo / Challenge -> Question Count
+         -> Other modes -> Question Count
+   ============================================================ */
+
+window.openQuizTypeModal = function(){
+
+  const questions = window.__floQuizQuestions || [];
+
+  const modal = document.getElementById("floQuizModeModal");
+  const content = document.getElementById("floQuizModeContent");
+
+  if(!modal || !content){
+    console.error("Quiz type modal elements not found.");
+    return;
+  }
+
+  if(!questions.length){
+    toast("No questions are loaded for this topic.");
+    return;
+  }
+
+  const modes = [
+    {
+      key:"mcq",
+      title:"MCQ",
+      description:"Multiple-choice questions with options and instant feedback."
+    },
+    {
+      key:"fill",
+      title:"Fill in the Blanks",
+      description:"Complete the missing word or phrase."
+    },
+    {
+      key:"questions",
+      title:"Questions",
+      description:"Answer questions in your own words."
+    },
+    {
+      key:"case",
+      title:"Case Based Qs",
+      description:"Apply your knowledge to case-based scenarios."
+    },
+    {
+      key:"match",
+      title:"Match the Column",
+      description:"Match related items from two columns."
+    },
+    {
+      key:"map",
+      title:"Map",
+      description:"Identify and work with locations on a map."
+    }
+  ];
+
+  content.innerHTML = `
+    <div class="flo-quiz-eyebrow">
+      QUIZ TYPE
+    </div>
+
+    <h2 class="flo-quiz-title">
+      How do you want to study?
+    </h2>
+
+    <p class="flo-quiz-subtitle">
+      Choose a question format for this topic.
+    </p>
+
+    <div
+      style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:11px;
+        margin-top:18px;
+      "
+    >
+
+      ${modes.map(mode => `
+        <button
+          type="button"
+          class="flo-quiz-choice"
+          onclick="window.__floSelectQuizType('${mode.key}')"
+        >
+          <strong>
+            ${mode.title}
+          </strong>
+
+          <span>
+            ${mode.description}
+          </span>
+        </button>
+      `).join("")}
+
+    </div>
+
+    <div class="flo-quiz-actions">
+
+      <button
+        class="btn light"
+        type="button"
+        onclick="window.__floCloseQuizMode()"
+      >
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+};
+
+
+/* ============================================================
+   QUIZ TYPE -> NEXT STEP
+   ============================================================ */
+
+window.__floSelectQuizType = function(type){
+
+  const questions = window.__floQuizQuestions || [];
+
+  if(!questions.length){
+    toast("No questions are loaded for this topic.");
+    return;
+  }
+
+
+  /* ----------------------------------------------------------
+     MCQ
+     Keep the existing MCQ engine.
+     First choose Solo / Challenge.
+     ---------------------------------------------------------- */
+
+  if(type === "mcq"){
+
+    window.openQuizModeModalFinal();
+
+    return;
+  }
+
+
+  /* ----------------------------------------------------------
+     ALL OTHER MODES
+     Go directly to question count.
+     ---------------------------------------------------------- */
+
+  if([
+    "fill",
+    "questions",
+    "case",
+    "match",
+    "map"
+  ].includes(type)){
+
+    window.__floQuestionCountMode = type;
+
+    window.__floQuestionCountQuestions = [...questions];
+
+    window.__floOpenQuestionCountSelector(
+      type,
+      questions
+    );
+
+    return;
+  }
+
+
+  toast("This quiz type is not available.");
+};
+
+
+/* ============================================================
+   SOLO / CHALLENGE SCREEN
+   ============================================================ */
+
+window.openQuizModeModalFinal = function(){
+
+  const questions = window.__floQuizQuestions || [];
+
+  const modal = document.getElementById("floQuizModeModal");
+  const content = document.getElementById("floQuizModeContent");
+
+  if(!modal || !content){
+    console.error("Quiz mode modal elements not found.");
+    return;
+  }
+
+  if(!questions.length){
+    toast("No questions are loaded for this topic.");
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="flo-quiz-eyebrow">
+      START QUIZ
+    </div>
+
+    <h2 class="flo-quiz-title">
+      How would you like to play?
+    </h2>
+
+    <p class="flo-quiz-subtitle">
+      Choose Solo Study for your normal quiz,
+      or Challenge Mode to compete with another player.
+    </p>
+
+    <button
+      type="button"
+      class="flo-quiz-choice"
+      onclick="window.__floSelectQuizMode('solo')"
+    >
+      <strong>
+        Solo Study
+      </strong>
+
+      <span>
+        Practice at your own pace using the normal
+        quiz, scoring and review system.
+      </span>
+    </button>
+
+    <button
+      type="button"
+      class="flo-quiz-choice"
+      onclick="window.__floSelectQuizMode('challenge')"
+    >
+      <strong>
+        Challenge Mode
+      </strong>
+
+      <span>
+        Create a room or join another player
+        for a live two-player quiz.
+      </span>
+    </button>
+
+    <div class="flo-quiz-actions">
+
+      <button
+        class="btn light"
+        type="button"
+        onclick="window.__floCloseQuizMode()"
+      >
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+};
+
+
+/* ============================================================
+   SOLO / CHALLENGE -> NEXT STEP
+   ============================================================ */
+
+window.__floSelectQuizMode = async function(mode){
+
+  const questions = window.__floQuizQuestions || [];
+
+  if(!questions.length){
+    toast("No questions are loaded for this topic.");
+    return;
+  }
+
+
+  /* ----------------------------------------------------------
+     SOLO
+     Existing question-count selector -> existing MCQ engine.
+     ---------------------------------------------------------- */
+
+  if(mode === "solo"){
+
+    const subject =
+      SUBJECT_CATALOG.find(
+        s =>
+          normalize(
+            s.questionSubject || s.name
+          ) ===
+          normalize(
+            window.pendingQuizSubject
+          )
+      );
+
+    selectedSubject =
+      subject || selectedSubject;
+
+    window.__floOpenQuestionCountSelector(
+      "solo",
+      questions
+    );
+
+    return;
+  }
+
+
+  /* ----------------------------------------------------------
+     CHALLENGE
+     Existing username + challenge room system.
+     ---------------------------------------------------------- */
+
+  if(mode === "challenge"){
+
+    const username =
+      await window.__floRequireUsername();
+
+    if(!username){
+      return;
+    }
+
+    challenge.username = username;
+
+    challenge.subjectName =
+      window.pendingQuizSubject;
+
+    challenge.topic =
+      window.pendingQuizTopic;
+
+    window.__floCloseQuizMode();
+
+    window.__floOpenChallengeChoice();
+
+    return;
+  }
+};
+
+
+/* Compatibility */
+window.selectQuizMode =
+  window.__floSelectQuizMode;
+
+</script>
+
 </body>
 </html>
 

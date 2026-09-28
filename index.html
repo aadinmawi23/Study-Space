@@ -3585,7 +3585,44 @@ async function signOutFromGoogle() {
 }
 </style>
 
-</head>
+<style id="flo-topic-button-style">
+.topic-actions .btn:not(.light){
+  background:transparent !important;
+  border:1px solid #d8cec3 !important;
+  color:#514a42 !important;
+  box-shadow:none !important;
+}
+.topic-actions .btn:not(.light):hover{
+  background:#f7f1e8 !important;
+  border-color:#cbbeb1 !important;
+}
+.topic-actions .btn.light{
+  background:#e8ddd2 !important;
+  border:0 !important;
+  color:#514a42 !important;
+  box-shadow:none !important;
+}
+.topic-actions .btn.light:hover{
+  background:#dfd1c4 !important;
+}
+button[onclick*="toggleSubjectTopicMenu"]{
+  border:0 !important;
+  outline:none !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+button[onclick*="toggleSubjectTopicMenu"]:hover{
+  border:0 !important;
+  box-shadow:none !important;
+  background:rgba(0,0,0,.04) !important;
+}
+button[onclick*="toggleSubjectTopicMenu"]:focus,
+button[onclick*="toggleSubjectTopicMenu"]:focus-visible{
+  border:0 !important;
+  outline:none !important;
+  box-shadow:none !important;
+}
+</style>\n</head>
 
 <div id="usernameSetupModal" class="username-modal-overlay">
   <div class="username-modal">

@@ -81,6 +81,35 @@ h2{font:42px Georgia,serif;margin:0 0 30px;letter-spacing:-1px}
 .topic-card .topic-meta{font-size:13px;color:var(--muted);margin-bottom:14px}
 .topic-actions{display:flex;gap:8px;margin-top:15px}
 .topic-actions button{font-size:13px}
+.flo-ai-file-input{
+  width:100%;
+  box-sizing:border-box;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--bg);
+  color:var(--muted);
+  font:inherit;
+  cursor:pointer;
+}
+
+.flo-ai-file-input::file-selector-button{
+  border:0;
+  border-radius:9px;
+  background:#403a35;
+  color:white;
+  padding:10px 16px;
+  margin-right:12px;
+  font:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.flo-ai-file-input::file-selector-button:hover{
+  background:#2f2a26;
+}
+
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:28px}
 .tabs button{border:0;background:transparent;padding:13px 17px;cursor:pointer;color:var(--muted)}
 .tabs button.active{color:var(--ink);font-weight:700;border-bottom:2px solid var(--ink)}
@@ -6456,18 +6485,43 @@ function renderSubjectTopics(
 
                   </div>
 
-                  <div class="topic-actions">
+                  <div
+                    class="topic-actions"
+                    style="
+                      display:flex;
+                      gap:8px;
+                      margin-top:14px;
+                    "
+                  >
 
                     <button
                       class="btn"
-                      onclick='startQuizFor(
+                      type="button"
+                      onclick='event.stopPropagation();openTopicAIImportModal(
+                        ${JSON.stringify(subject.key)},
                         ${JSON.stringify(subject.name)},
                         ${JSON.stringify(topic)}
                       )'
-                      ${stats.questions ? "" : "disabled"}
                     >
-                      Start Quiz
+                      Import
                     </button>
+
+                    ${
+                      stats.questions
+                        ? `
+                          <button
+                            class="btn light"
+                            type="button"
+                            onclick='event.stopPropagation();startQuizFor(
+                              ${JSON.stringify(subject.name)},
+                              ${JSON.stringify(topic)}
+                            )'
+                          >
+                            Study
+                          </button>
+                        `
+                        : ""
+                    }
 
                   </div>
 
@@ -6566,6 +6620,856 @@ document.addEventListener(
 
   }
 );
+
+
+
+
+/* =========================================================
+   TOPIC AI IMPORT MODAL
+   ========================================================= */
+
+function openTopicAIImportModal(
+  subjectKey,
+  subjectName,
+  topic
+){
+
+  const safeSubject =
+    String(subjectName || "");
+
+  const safeTopic =
+    String(topic || "");
+
+  document.getElementById("modalBox").innerHTML = `
+
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:20px;
+      margin-bottom:22px;
+    ">
+
+      <div>
+
+        <div style="
+          font-size:11px;
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+          color:var(--muted);
+          margin-bottom:6px;
+        ">
+          AI Study Material
+        </div>
+
+        <h2 style="
+          font:28px Georgia,serif;
+          margin:0;
+        ">
+          Import PDF
+        </h2>
+
+        <div style="
+          margin-top:7px;
+          font-size:13px;
+          color:var(--muted);
+        ">
+          ${safeSubject} · ${safeTopic}
+        </div>
+
+      </div>
+
+      <button
+        class="btn light"
+        type="button"
+        onclick="closeModal()"
+      >
+        Close
+      </button>
+
+    </div>
+
+
+    <div style="
+      display:flex;
+      flex-direction:column;
+      gap:17px;
+    ">
+
+      <div>
+
+        <label style="
+          display:block;
+          font-size:12px;
+          font-weight:700;
+          margin-bottom:7px;
+        ">
+          PDF
+        </label>
+
+        <input
+          id="floTopicAIPdf"
+          class="flo-ai-file-input"
+          type="file"
+          accept="application/pdf,.pdf"
+          onchange="updateTopicAIFileName()"
+        />
+
+        <div
+          id="floTopicAIFileName"
+          style="
+            display:none;
+          "
+        ></div>
+
+      </div>
+
+
+      <div>
+
+        <label style="
+          display:block;
+          font-size:12px;
+          font-weight:700;
+          margin-bottom:7px;
+        ">
+          Study mode
+        </label>
+
+        <select
+          id="floTopicAIMode"
+          style="
+            width:100%;
+            box-sizing:border-box;
+            padding:11px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:var(--bg);
+            color:var(--ink);
+            font:inherit;
+          "
+        >
+          <option value="mcq">MCQ</option>
+          <option value="fill_in_the_blanks" selected>Fill in the Blanks</option>
+          <option value="questions">Questions</option>
+          <option value="case_based">Case Based</option>
+          <option value="match_the_column">Match the Column</option>
+          <option value="map">Map</option>
+        </select>
+
+      </div>
+
+
+      <div>
+
+        <label style="
+          display:block;
+          font-size:12px;
+          font-weight:700;
+          margin-bottom:7px;
+        ">
+          Custom prompt
+        </label>
+
+        <textarea
+          id="floTopicAIPrompt"
+          rows="5"
+          placeholder="Optional. For example: Make the questions difficult, focus on concepts and distinctions, and use longer sentence-completion blanks where appropriate."
+          style="
+            width:100%;
+            box-sizing:border-box;
+            resize:vertical;
+            padding:11px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:var(--bg);
+            color:var(--ink);
+            font:inherit;
+            line-height:1.5;
+          "
+        ></textarea>
+
+
+
+      </div>
+
+
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+      ">
+
+        <div>
+
+          <label style="
+            display:block;
+            font-size:12px;
+            font-weight:700;
+            margin-bottom:7px;
+          ">
+            Number of questions
+          </label>
+
+          <input
+            id="floTopicAICount"
+            type="number"
+            min="5"
+            max="100"
+            value="30"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:11px;
+              border:1px solid var(--line);
+              border-radius:12px;
+              background:var(--bg);
+              color:var(--ink);
+              font:inherit;
+            "
+          />
+
+        </div>
+
+
+        <div>
+
+          <label style="
+            display:block;
+            font-size:12px;
+            font-weight:700;
+            margin-bottom:7px;
+          ">
+            Difficulty
+          </label>
+
+          <select
+            id="floTopicAIDifficulty"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:11px;
+              border:1px solid var(--line);
+              border-radius:12px;
+              background:var(--bg);
+              color:var(--ink);
+              font:inherit;
+            "
+          >
+
+            <option value="mixed">Mixed</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="difficult">Difficult</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="floTopicAIStatus"
+        style="
+          display:none;
+          padding:11px 13px;
+          border-radius:12px;
+          background:var(--bg);
+          color:var(--muted);
+          font-size:12px;
+          line-height:1.5;
+        "
+      ></div>
+
+
+      <button
+        id="floTopicAIGenerateButton"
+        class="btn"
+        type="button"
+        onclick='generateTopicAIQuiz(
+          ${JSON.stringify(subjectKey)},
+          ${JSON.stringify(subjectName)},
+          ${JSON.stringify(topic)}
+        )'
+        style="
+          width:100%;
+        "
+      >
+        Generate Quiz with AI
+      </button>
+
+    </div>
+  `;
+
+  document.getElementById("modal").style.display = "flex";
+}
+
+
+function updateTopicAIFileName(){
+
+  const input =
+    document.getElementById(
+      "floTopicAIPdf"
+    );
+
+  const label =
+    document.getElementById(
+      "floTopicAIFileName"
+    );
+
+  if(!input || !label){
+    return;
+  }
+
+  const file =
+    input.files?.[0];
+
+  label.textContent =
+    file
+      ? file.name
+      : "Select the PDF containing the study material for this topic.";
+}
+
+
+async function generateTopicAIQuiz(
+  subjectKey,
+  subjectName,
+  topic
+){
+
+  const pdfInput =
+    document.getElementById(
+      "floTopicAIPdf"
+    );
+
+  const promptInput =
+    document.getElementById(
+      "floTopicAIPrompt"
+    );
+
+  const countInput =
+    document.getElementById(
+      "floTopicAICount"
+    );
+
+  const difficultyInput =
+    document.getElementById(
+      "floTopicAIDifficulty"
+    );
+
+  const button =
+    document.getElementById(
+      "floTopicAIGenerateButton"
+    );
+
+  const status =
+    document.getElementById(
+      "floTopicAIStatus"
+    );
+
+  const file =
+    pdfInput?.files?.[0];
+
+  if(!file){
+
+    toast(
+      "Choose the PDF for this topic first."
+    );
+
+    return;
+  }
+
+  if(
+    file.type !== "application/pdf" &&
+    !file.name.toLowerCase().endsWith(".pdf")
+  ){
+
+    toast(
+      "Please choose a PDF file."
+    );
+
+    return;
+  }
+
+  let count =
+    Number(
+      countInput?.value || 30
+    );
+
+  count =
+    Math.max(
+      5,
+      Math.min(
+        100,
+        Math.round(count)
+      )
+    );
+
+  const difficulty =
+    difficultyInput?.value ||
+    "mixed";
+
+  const customPrompt =
+    promptInput?.value?.trim() ||
+    "";
+
+  const modeInput =
+    document.getElementById(
+      "floTopicAIMode"
+    );
+
+  const mode =
+    modeInput?.value ||
+    "fill_in_the_blanks";
+
+
+  if(!supabaseSession?.access_token){
+
+    toast(
+      "Please sign in before generating a quiz."
+    );
+
+    return;
+  }
+
+
+  if(status){
+
+    status.style.display =
+      "block";
+
+    status.textContent =
+      "Uploading PDF and generating questions with AI…";
+
+  }
+
+
+  if(button){
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Generating…";
+
+  }
+
+
+  try{
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "pdf",
+      file
+    );
+
+    formData.append(
+      "subject",
+      subjectName
+    );
+
+    formData.append(
+      "topic",
+      topic
+    );
+
+    formData.append(
+      "count",
+      String(count)
+    );
+
+    formData.append(
+      "difficulty",
+      difficulty
+    );
+
+    formData.append(
+      "mode",
+      mode
+    );
+
+    formData.append(
+      "prompt",
+      customPrompt
+    );
+
+
+    const response =
+      await fetch(
+        "/api/ai/generate-fib",
+        {
+          method:"POST",
+
+          headers:{
+            Authorization:
+              `Bearer ${supabaseSession.access_token}`
+          },
+
+          body:formData
+        }
+      );
+
+
+    let data = null;
+
+    try{
+
+      data =
+        await response.json();
+
+    }catch(_){}
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data?.error ||
+        `AI generation failed (${response.status}).`
+      );
+
+    }
+
+
+    if(
+      !Array.isArray(data?.questions) ||
+      !data.questions.length
+    ){
+
+      throw new Error(
+        "The AI did not generate any questions."
+      );
+
+    }
+
+
+    await loadBanks();
+
+
+    const subject =
+      getSubject(subjectKey);
+
+    if(subject){
+
+      renderSubject(
+        subject,
+        "topics"
+      );
+
+    }
+
+
+    closeModal();
+
+
+    toast(
+      `${data.questions.length} questions generated for ${topic}.`
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "Topic AI generation failed:",
+      error
+    );
+
+
+    if(status){
+
+      status.style.display =
+        "block";
+
+      status.textContent =
+        error?.message ||
+        "Could not generate the quiz.";
+
+    }
+
+
+    if(button){
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Generate Quiz with AI";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   TOPIC-SPECIFIC AI QUIZ GENERATOR
+   PDF → GEMINI → THIS TOPIC ONLY
+   ========================================================= */
+
+async function generateAIFibForTopic(
+  subjectKey,
+  topic,
+  pdfInputId,
+  countInputId,
+  difficultyInputId,
+  buttonId
+){
+
+  const subject =
+    getSubject(subjectKey);
+
+  if(!subject){
+    toast("Subject could not be found.");
+    return;
+  }
+
+  const pdfInput =
+    document.getElementById(
+      pdfInputId
+    );
+
+  const countInput =
+    document.getElementById(
+      countInputId
+    );
+
+  const difficultyInput =
+    document.getElementById(
+      difficultyInputId
+    );
+
+  const button =
+    document.getElementById(
+      buttonId
+    );
+
+  const statusId =
+    buttonId.replace(
+      "floTopicGenerate_",
+      "floTopicStatus_"
+    );
+
+  const status =
+    document.getElementById(
+      statusId
+    );
+
+  const file =
+    pdfInput?.files?.[0];
+
+  if(!file){
+
+    toast(
+      "Choose the PDF for this topic first."
+    );
+
+    return;
+  }
+
+  if(
+    file.type !== "application/pdf" &&
+    !file.name.toLowerCase().endsWith(".pdf")
+  ){
+
+    toast(
+      "Please choose a PDF file."
+    );
+
+    return;
+  }
+
+  let count =
+    Number(
+      countInput?.value || 30
+    );
+
+  count =
+    Math.max(
+      5,
+      Math.min(
+        100,
+        Math.round(count)
+      )
+    );
+
+  const difficulty =
+    difficultyInput?.value ||
+    "mixed";
+
+
+  if(!supabaseSession?.access_token){
+
+    toast(
+      "Please sign in before generating a quiz."
+    );
+
+    return;
+  }
+
+
+  if(status){
+
+    status.style.display =
+      "block";
+
+    status.textContent =
+      "Uploading PDF and generating this topic's quiz…";
+
+  }
+
+
+  if(button){
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Generating…";
+
+  }
+
+
+  try{
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "pdf",
+      file
+    );
+
+    /*
+     * These two values are critical.
+     * The generated bank is tagged with
+     * THIS exact subject and THIS exact topic.
+     */
+    formData.append(
+      "subject",
+      subject.name
+    );
+
+    formData.append(
+      "topic",
+      topic
+    );
+
+    formData.append(
+      "count",
+      String(count)
+    );
+
+    formData.append(
+      "difficulty",
+      difficulty
+    );
+
+
+    const response =
+      await fetch(
+        "/api/ai/generate-fib",
+        {
+          method:"POST",
+
+          headers:{
+            Authorization:
+              `Bearer ${supabaseSession.access_token}`
+          },
+
+          body:formData
+        }
+      );
+
+
+    let data = null;
+
+    try{
+      data =
+        await response.json();
+    }catch(_){}
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data?.error ||
+        `AI generation failed (${response.status}).`
+      );
+
+    }
+
+
+    if(
+      !Array.isArray(data?.questions) ||
+      !data.questions.length
+    ){
+
+      throw new Error(
+        "The AI did not generate any questions."
+      );
+
+    }
+
+
+    /*
+     * Reload the server's question banks.
+     */
+    await loadBanks();
+
+
+    /*
+     * The question bank has subject + topic
+     * metadata, so topicStats() will now
+     * count ONLY this topic's questions.
+     */
+    renderSubject(
+      subject,
+      "topics"
+    );
+
+
+    toast(
+      `${data.questions.length} questions generated for ${topic}.`
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "Topic AI generation failed:",
+      error
+    );
+
+
+    if(status){
+
+      status.style.display =
+        "block";
+
+      status.textContent =
+        error?.message ||
+        "Could not generate the quiz.";
+
+    }
+
+
+    if(button){
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Generate Quiz with AI";
+
+    }
+
+  }
+
+}
 
 
 /* =========================================================
@@ -17339,6 +18243,880 @@ async function ensureUsername() {
 
 })();
 
+</script>
+
+
+<script id="__floAIStudyModesPatch">
+/*
+ * FLO STUDY SPACE — ADDITIVE AI STUDY MODE PATCH
+ * Adds functionality for:
+ * Questions / Case Based / Match the Column / Map
+ * without replacing the existing MCQ or FIB engines.
+ */
+(function(){
+
+  const MODE_MAP = {
+    mcq: "mcq",
+    fill: "fill_in_the_blanks",
+    fill_in_the_blanks: "fill_in_the_blanks",
+    questions: "questions",
+    case: "case_based",
+    case_based: "case_based",
+    match: "match_the_column",
+    match_the_column: "match_the_column",
+    map: "map"
+  };
+
+  function aiMode(mode){
+    return MODE_MAP[mode] || mode;
+  }
+
+  function currentQuestions(mode){
+    const wanted = aiMode(mode);
+    return (window.__floQuizQuestions || []).filter(q => {
+      return aiMode(q?.mode || "") === wanted;
+    });
+  }
+
+  function cleanText(value){
+    return String(value ?? "")
+      .trim()
+      .replace(/\s+/g," ")
+      .toLowerCase();
+  }
+
+  function closeModeModal(){
+    const modal = document.getElementById("floQuizModeModal");
+    if(!modal) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+  }
+
+  function showModeModal(html){
+    const modal = document.getElementById("floQuizModeModal");
+    const content = document.getElementById("floQuizModeContent");
+    if(!modal || !content) return false;
+
+    content.innerHTML = html;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+    return true;
+  }
+
+  /*
+   * --------------------------------------------------------
+   * QUIZ TYPE SELECTOR
+   * --------------------------------------------------------
+   */
+
+  const originalOpenQuizTypeModal = window.openQuizTypeModal;
+
+  window.openQuizTypeModal = function(){
+
+    const questions = window.__floQuizQuestions || [];
+    const modal = document.getElementById("floQuizModeModal");
+    const content = document.getElementById("floQuizModeContent");
+
+    if(!modal || !content){
+      if(typeof originalOpenQuizTypeModal === "function"){
+        return originalOpenQuizTypeModal();
+      }
+      return;
+    }
+
+    const modes = [
+      {
+        key:"mcq",
+        title:"MCQ",
+        description:"Multiple-choice questions with options and instant feedback."
+      },
+      {
+        key:"fill",
+        title:"Fill in the Blanks",
+        description:"Complete the missing word or phrase."
+      },
+      {
+        key:"questions",
+        title:"Questions",
+        description:"Answer questions in your own words."
+      },
+      {
+        key:"case",
+        title:"Case Based Qs",
+        description:"Apply your knowledge to case-based scenarios."
+      },
+      {
+        key:"match",
+        title:"Match the Column",
+        description:"Match related items from two columns."
+      },
+      {
+        key:"map",
+        title:"Map",
+        description:"Identify and work with locations on a map."
+      }
+    ];
+
+    content.innerHTML = `
+      <div class="flo-quiz-eyebrow">QUIZ TYPE</div>
+
+      <h2 class="flo-quiz-title">
+        How do you want to study?
+      </h2>
+
+      <p class="flo-quiz-subtitle">
+        Choose a question format for this topic.
+      </p>
+
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:11px;
+        margin-top:18px;
+      ">
+        ${modes.map(mode => `
+          <button
+            type="button"
+            class="flo-quiz-choice"
+            onclick="window.__floSelectQuizType('${mode.key}')"
+            style="margin-top:0;"
+          >
+            <strong>${mode.title}</strong>
+            <span>${mode.description}</span>
+          </button>
+        `).join("")}
+      </div>
+
+      <div class="flo-quiz-actions">
+        <button
+          class="btn light"
+          type="button"
+          onclick="window.__floCloseQuizMode()"
+        >
+          Cancel
+        </button>
+      </div>
+    `;
+
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+  };
+
+
+  /*
+   * --------------------------------------------------------
+   * SHARED NEW-STYLE QUIZ STATE
+   * --------------------------------------------------------
+   */
+
+  window.__floNewModeState = {
+    type:null,
+    questions:[],
+    index:0,
+    results:[],
+    answered:false
+  };
+
+  function beginNewMode(type){
+
+    const questions = currentQuestions(type);
+
+    if(!questions.length){
+      if(typeof toast === "function"){
+        toast("No AI-generated questions of this type were found for this topic.");
+      }
+      return;
+    }
+
+    window.__floNewModeState = {
+      type,
+      questions:[...questions],
+      index:0,
+      results:[],
+      answered:false
+    };
+
+    closeModeModal();
+    renderNewModeQuestion();
+  }
+
+  function renderNewModeQuestion(){
+
+    const state = window.__floNewModeState;
+    const q = state.questions[state.index];
+
+    if(!q){
+      finishNewMode();
+      return;
+    }
+
+    const modal = document.getElementById("floQuizModeModal");
+    const content = document.getElementById("floQuizModeContent");
+
+    if(!modal || !content) return;
+
+    const total = state.questions.length;
+    const number = state.index + 1;
+
+    let body = "";
+
+    if(state.type === "questions"){
+      body = `
+        <div style="
+          margin-top:20px;
+          padding:24px;
+          border:1px solid var(--line);
+          border-radius:18px;
+          background:var(--card);
+        ">
+          <div style="
+            font-size:13px;
+            color:var(--muted);
+            margin-bottom:12px;
+          ">
+            QUESTION ${number} OF ${total}
+          </div>
+
+          <div style="
+            font-size:20px;
+            line-height:1.55;
+            font-weight:600;
+          ">
+            ${escapeHTML(q.question)}
+          </div>
+
+          <textarea
+            id="__floNewModeAnswer"
+            placeholder="Write your answer..."
+            style="
+              width:100%;
+              min-height:150px;
+              margin-top:20px;
+              resize:vertical;
+              box-sizing:border-box;
+            "
+          ></textarea>
+        </div>
+
+        <div id="__floNewModeFeedback"></div>
+
+        <div class="flo-quiz-actions">
+          <button
+            class="btn"
+            type="button"
+            onclick="window.__floSubmitNewModeAnswer()"
+          >
+            Submit Answer
+          </button>
+        </div>
+      `;
+    }
+
+    else if(state.type === "case"){
+      body = `
+        <div style="
+          margin-top:20px;
+          padding:22px;
+          border:1px solid var(--line);
+          border-radius:18px;
+          background:var(--card);
+        ">
+          <div style="
+            font-size:13px;
+            color:var(--muted);
+            margin-bottom:10px;
+          ">
+            CASE VIGNETTE
+          </div>
+
+          <div style="
+            line-height:1.65;
+            white-space:pre-wrap;
+          ">
+            ${escapeHTML(q.case || "")}
+          </div>
+        </div>
+
+        <div style="
+          margin-top:14px;
+          padding:22px;
+          border:1px solid var(--line);
+          border-radius:18px;
+          background:var(--card);
+        ">
+          <div style="
+            font-size:13px;
+            color:var(--muted);
+            margin-bottom:10px;
+          ">
+            QUESTION ${number} OF ${total}
+          </div>
+
+          <div style="
+            font-size:19px;
+            line-height:1.5;
+            font-weight:600;
+          ">
+            ${escapeHTML(q.question)}
+          </div>
+
+          <textarea
+            id="__floNewModeAnswer"
+            placeholder="Write your answer..."
+            style="
+              width:100%;
+              min-height:140px;
+              margin-top:18px;
+              resize:vertical;
+              box-sizing:border-box;
+            "
+          ></textarea>
+        </div>
+
+        <div id="__floNewModeFeedback"></div>
+
+        <div class="flo-quiz-actions">
+          <button
+            class="btn"
+            type="button"
+            onclick="window.__floSubmitNewModeAnswer()"
+          >
+            Submit Answer
+          </button>
+        </div>
+      `;
+    }
+
+    else if(state.type === "match"){
+      const a = Array.isArray(q.column_a) ? q.column_a : [];
+      const b = Array.isArray(q.column_b) ? q.column_b : [];
+
+      body = `
+        <div style="
+          margin-top:20px;
+          padding:22px;
+          border:1px solid var(--line);
+          border-radius:18px;
+          background:var(--card);
+        ">
+          <div style="
+            font-size:13px;
+            color:var(--muted);
+            margin-bottom:10px;
+          ">
+            QUESTION ${number} OF ${total}
+          </div>
+
+          <div style="
+            font-size:19px;
+            line-height:1.5;
+            font-weight:600;
+            margin-bottom:18px;
+          ">
+            ${escapeHTML(q.question || "Match the following")}
+          </div>
+
+          <div style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:20px;
+          ">
+            <div>
+              <div style="font-weight:700;margin-bottom:10px;">
+                Column A
+              </div>
+              ${a.map((item,i)=>`
+                <div style="
+                  padding:12px;
+                  margin-bottom:8px;
+                  border:1px solid var(--line);
+                  border-radius:10px;
+                ">
+                  <strong>${i+1}.</strong>
+                  ${escapeHTML(item)}
+                </div>
+              `).join("")}
+            </div>
+
+            <div>
+              <div style="font-weight:700;margin-bottom:10px;">
+                Column B
+              </div>
+
+              ${a.map((_,i)=>`
+                <div style="
+                  display:flex;
+                  align-items:center;
+                  gap:8px;
+                  margin-bottom:8px;
+                ">
+                  <span style="min-width:25px;">
+                    ${i+1}.
+                  </span>
+
+                  <select
+                    class="__floMatchSelect"
+                    data-index="${i}"
+                    style="
+                      width:100%;
+                      padding:10px;
+                      border-radius:9px;
+                    "
+                  >
+                    <option value="">Select...</option>
+                    ${b.map((item,j)=>`
+                      <option value="${j}">
+                        ${escapeHTML(item)}
+                      </option>
+                    `).join("")}
+                  </select>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+
+        <div id="__floNewModeFeedback"></div>
+
+        <div class="flo-quiz-actions">
+          <button
+            class="btn"
+            type="button"
+            onclick="window.__floSubmitMatchAnswer()"
+          >
+            Submit Matches
+          </button>
+        </div>
+      `;
+    }
+
+    else if(state.type === "map"){
+      const location = q.location || q.answer || "";
+      const region = q.region || "";
+
+      body = `
+        <div style="
+          margin-top:20px;
+          padding:24px;
+          border:1px solid var(--line);
+          border-radius:18px;
+          background:var(--card);
+        ">
+          <div style="
+            font-size:13px;
+            color:var(--muted);
+            margin-bottom:12px;
+          ">
+            MAP QUESTION ${number} OF ${total}
+          </div>
+
+          <div style="
+            font-size:20px;
+            line-height:1.5;
+            font-weight:600;
+          ">
+            ${escapeHTML(q.question)}
+          </div>
+
+          ${region ? `
+            <div style="
+              margin-top:9px;
+              color:var(--muted);
+            ">
+              Region: ${escapeHTML(region)}
+            </div>
+          ` : ""}
+
+          <input
+            id="__floMapAnswer"
+            type="text"
+            placeholder="Enter the location..."
+            style="
+              width:100%;
+              box-sizing:border-box;
+              margin-top:20px;
+              padding:13px;
+              border-radius:10px;
+            "
+          />
+
+          <div style="
+            margin-top:9px;
+            color:var(--muted);
+            font-size:13px;
+          ">
+            Type the location shown or described by the question.
+          </div>
+        </div>
+
+        <div id="__floNewModeFeedback"></div>
+
+        <div class="flo-quiz-actions">
+          <button
+            class="btn"
+            type="button"
+            onclick="window.__floSubmitMapAnswer()"
+          >
+            Submit Answer
+          </button>
+        </div>
+      `;
+    }
+
+    content.innerHTML = `
+      <div class="flo-quiz-eyebrow">
+        ${state.type === "questions"
+          ? "QUESTIONS"
+          : state.type === "case"
+          ? "CASE BASED"
+          : state.type === "match"
+          ? "MATCH THE COLUMN"
+          : "MAP"
+        }
+      </div>
+
+      <h2 class="flo-quiz-title">
+        ${state.type === "questions"
+          ? "Answer the question"
+          : state.type === "case"
+          ? "Apply what you know"
+          : state.type === "match"
+          ? "Match the pairs"
+          : "Identify the location"
+        }
+      </h2>
+
+      <p class="flo-quiz-subtitle">
+        ${escapeHTML(q.subtopic || window.pendingQuizTopic || "")}
+      </p>
+
+      ${body}
+    `;
+
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+  }
+
+  function escapeHTML(value){
+    return String(value ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function acceptableTextAnswers(q){
+    const answers = [];
+
+    if(q.answer) answers.push(q.answer);
+
+    if(Array.isArray(q.accepted_answers)){
+      answers.push(...q.accepted_answers);
+    }
+
+    if(Array.isArray(q.acceptable_locations)){
+      answers.push(...q.acceptable_locations);
+    }
+
+    return [...new Set(
+      answers
+        .map(cleanText)
+        .filter(Boolean)
+    )];
+  }
+
+  function textAnswerCorrect(q, value){
+    const given = cleanText(value);
+    if(!given) return false;
+
+    return acceptableTextAnswers(q).some(answer => {
+      return given === answer ||
+        given.includes(answer) ||
+        answer.includes(given);
+    });
+  }
+
+  function recordNewModeResult(q, given, result){
+    const state = window.__floNewModeState;
+
+    state.results.push({
+      questionId:q.id,
+      choice:given,
+      result
+    });
+
+    try{
+      if(typeof recordAnswer === "function"){
+        recordAnswer(q, given, result);
+      }
+    }catch(error){
+      console.warn("Could not record AI mode answer:",error);
+    }
+  }
+
+  function showFeedback(correct,q){
+    const feedback = document.getElementById("__floNewModeFeedback");
+    if(!feedback) return;
+
+    feedback.innerHTML = `
+      <div style="
+        margin-top:16px;
+        padding:16px;
+        border-radius:14px;
+        border:1px solid var(--line);
+        background:var(--card);
+      ">
+        <strong>
+          ${correct ? "Correct" : "Incorrect"}
+        </strong>
+
+        <div style="margin-top:8px;line-height:1.55;">
+          ${correct
+            ? "Your answer matches the expected answer."
+            : `Expected answer: <strong>${escapeHTML(
+                q.answer || q.location || ""
+              )}</strong>`
+          }
+        </div>
+
+        ${q.explanation ? `
+          <div style="
+            margin-top:10px;
+            color:var(--muted);
+            line-height:1.55;
+          ">
+            ${escapeHTML(q.explanation)}
+          </div>
+        ` : ""}
+
+        <button
+          class="btn"
+          type="button"
+          style="margin-top:14px;"
+          onclick="window.__floNextNewModeQuestion()"
+        >
+          ${window.__floNewModeState.index + 1 <
+          window.__floNewModeState.questions.length
+            ? "Next Question"
+            : "Finish"
+          }
+        </button>
+      </div>
+    `;
+  }
+
+  window.__floSubmitNewModeAnswer = function(){
+
+    const state = window.__floNewModeState;
+    if(state.answered) return;
+
+    const q = state.questions[state.index];
+    const input = document.getElementById("__floNewModeAnswer");
+
+    if(!input) return;
+
+    const value = input.value.trim();
+
+    if(!value){
+      if(typeof toast === "function") toast("Write an answer first.");
+      return;
+    }
+
+    state.answered = true;
+
+    const correct = textAnswerCorrect(q,value);
+    const result = correct ? "correct" : "wrong";
+
+    recordNewModeResult(q,value,result);
+    showFeedback(correct,q);
+  };
+
+  window.__floSubmitMatchAnswer = function(){
+
+    const state = window.__floNewModeState;
+    if(state.answered) return;
+
+    const q = state.questions[state.index];
+    const selects = [...document.querySelectorAll(".__floMatchSelect")];
+
+    const matches = Array.isArray(q.matches) ? q.matches : [];
+
+    if(selects.some(select => select.value === "")){
+      if(typeof toast === "function") toast("Match every item before submitting.");
+      return;
+    }
+
+    const userMatches = selects.map((select,i)=>({
+      a:i,
+      b:Number(select.value)
+    }));
+
+    const correct =
+      matches.length === userMatches.length &&
+      matches.every(expected =>
+        userMatches.some(actual =>
+          actual.a === expected.a &&
+          actual.b === expected.b
+        )
+      );
+
+    state.answered = true;
+
+    recordNewModeResult(q,JSON.stringify(userMatches),correct ? "correct" : "wrong");
+    showFeedback(correct,{
+      ...q,
+      answer:"the correct column matches"
+    });
+  };
+
+  window.__floSubmitMapAnswer = function(){
+
+    const state = window.__floNewModeState;
+    if(state.answered) return;
+
+    const q = state.questions[state.index];
+    const input = document.getElementById("__floMapAnswer");
+
+    if(!input) return;
+
+    const value = input.value.trim();
+
+    if(!value){
+      if(typeof toast === "function") toast("Enter a location first.");
+      return;
+    }
+
+    state.answered = true;
+
+    const correct = textAnswerCorrect(q,value);
+
+    recordNewModeResult(q,value,correct ? "correct" : "wrong");
+    showFeedback(correct,q);
+  };
+
+  window.__floNextNewModeQuestion = function(){
+
+    const state = window.__floNewModeState;
+
+    state.index += 1;
+    state.answered = false;
+
+    if(state.index >= state.questions.length){
+      finishNewMode();
+      return;
+    }
+
+    renderNewModeQuestion();
+  };
+
+  function finishNewMode(){
+
+    const state = window.__floNewModeState;
+    const total = state.questions.length;
+    const correct = state.results.filter(r => r.result === "correct").length;
+    const percentage = total ? Math.round((correct / total) * 100) : 0;
+
+    showModeModal(`
+      <div class="flo-quiz-eyebrow">QUIZ COMPLETE</div>
+
+      <h2 class="flo-quiz-title">
+        Well done
+      </h2>
+
+      <p class="flo-quiz-subtitle">
+        You completed all ${total} questions.
+      </p>
+
+      <div style="
+        padding:28px;
+        margin:18px 0;
+        border:1px solid var(--line);
+        border-radius:18px;
+        background:var(--card);
+        text-align:center;
+      ">
+        <div style="
+          font:42px Georgia,serif;
+          line-height:1;
+        ">
+          ${correct}/${total}
+        </div>
+
+        <div style="
+          margin-top:9px;
+          color:var(--muted);
+        ">
+          ${percentage}% correct
+        </div>
+      </div>
+
+      <div class="flo-quiz-actions">
+
+        <button
+          class="btn light"
+          type="button"
+          onclick="window.openQuizTypeModal()"
+        >
+          Quiz Types
+        </button>
+
+        <button
+          class="btn"
+          type="button"
+          onclick="window.__floStartNewModeAgain()"
+        >
+          Try Again
+        </button>
+
+      </div>
+    `);
+  }
+
+  window.__floStartNewModeAgain = function(){
+    const state = window.__floNewModeState;
+    state.index = 0;
+    state.results = [];
+    state.answered = false;
+    renderNewModeQuestion();
+  };
+
+
+  /*
+   * --------------------------------------------------------
+   * SELECTOR ROUTING
+   * --------------------------------------------------------
+   */
+
+  window.__floSelectQuizType = function(type){
+
+    if(type === "mcq"){
+      if(typeof window.openQuizModeModalFinal === "function"){
+        window.openQuizModeModalFinal();
+      }
+      return;
+    }
+
+    if(type === "fill"){
+      if(typeof window.__floStartFillInTheBlanks === "function"){
+        window.__floStartFillInTheBlanks(
+          currentQuestions("fill_in_the_blanks")
+        );
+      }
+      return;
+    }
+
+    if(["questions","case","match","map"].includes(type)){
+      beginNewMode(type);
+      return;
+    }
+
+    if(typeof toast === "function"){
+      toast("Unknown quiz type.");
+    }
+  };
+
+})();
 </script>
 
 </body>

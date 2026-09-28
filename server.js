@@ -1,263 +1,84 @@
-/**
- * Flo's Study Space — server.js
- *
- * Responsibilities:
- * 1. Serve index.html and static assets.
- * 2. Automatically scan /question-banks for every .json MCQ bank.
- * 3. Validate and normalize MCQ JSON files.
- * 4. Expose the question database through API endpoints.
- * 5. Allow new JSON banks to be imported from the Settings page.
- * 6. Persist study performance in /data/performance.json.
- */
-
-import "dotenv/config";
-import { createClient } from "@supabase/supabase-js";
 import express from "express";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import multer from "multer";
 import { fileURLToPath } from "url";
+import { createClient } from "@supabase/supabase-js";
+import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = process.env.PORT || 3000;
 
 const ROOT = __dirname;
+
 const QUESTION_BANK_DIR = path.join(ROOT, "question-banks");
 const DATA_DIR = path.join(ROOT, "data");
 const PERFORMANCE_FILE = path.join(DATA_DIR, "performance.json");
 
-app.use(express.json({ limit: "20mb" }));
+/* =========================================================
+   AI CONFIGURATION
+   ========================================================= */
 
-async function getAuthenticatedUser(req) {
-  const authHeader = req.headers.authorization || "";
+const GEMINI_MODEL =
+  process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
-  if (!authHeader.startsWith("Bearer ")) {
-    return null;
+const AI_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
+
+const aiUpload = multer({
+  storage: multer.memoryStorage(),
+
+  limits: {
+    fileSize: AI_UPLOAD_MAX_BYTES,
+    files: 1
+  },
+
+  fileFilter: (_req, file, callback) => {
+    const isPdf =
+      file.mimetype === "application/pdf" ||
+      file.originalname.toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+      return callback(
+        new Error(
+          "Only PDF files are supported for AI study generation."
+        )
+      );
+    }
+
+    callback(null, true);
   }
-
-  const accessToken = authHeader.slice(7);
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase configuration is missing.");
-  }
-
-  const supabase = createClient(
-    supabaseUrl,
-    supabaseKey
-  );
-
-  const {
-    data: { user },
-    error
-  } = await supabase.auth.getUser(accessToken);
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
-}
-
-async function getUserSupabaseClient(req) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      "Supabase service-role configuration is missing."
-    );
-  }
-
-  return createClient(
-    supabaseUrl,
-    supabaseKey
-  );
-}
-
-function requireAuthenticatedUser(user, res) {
-  if (!user) {
-    res.status(401).json({
-      error: "Authentication required."
-    });
-    return false;
-  }
-
-  return true;
-}
-
-
-
-app.get("/api/supabase-config", (_req, res) => {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    return res.status(500).json({
-      error: "Supabase configuration is missing."
-    });
-  }
-
-  res.json({
-    url,
-    key
-  });
 });
 
+/* =========================================================
+   SUPABASE
+   ========================================================= */
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+/* =========================================================
+   MIDDLEWARE
+   ========================================================= */
+
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-/* =======================================================
-   GOOGLE OAUTH DISCONNECT
-   Revokes the Google provider token before Supabase logout.
-======================================================= */
+app.use(express.static(ROOT));
 
-app.post("/api/google/revoke", async (req, res) => {
-
-  try {
-
-    const providerToken =
-      String(req.body?.providerToken || "").trim();
-
-    if (!providerToken) {
-      return res.json({
-        ok: true,
-        revoked: false,
-        message: "No Google provider token was available."
-      });
-    }
-
-    const revokeResponse =
-      await fetch(
-        "https://oauth2.googleapis.com/revoke",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded"
-          },
-
-          body:
-            `token=${encodeURIComponent(providerToken)}`
-        }
-      );
-
-    /*
-      Google normally returns HTTP 200 after a successful
-      revocation. A 400 can also mean that the token has
-      already been revoked or is no longer valid.
-    */
-
-    if (
-      !revokeResponse.ok &&
-      revokeResponse.status !== 400
-    ) {
-
-      const details =
-        await revokeResponse.text();
-
-      console.error(
-        "Google token revocation failed:",
-        details
-      );
-
-      return res.status(502).json({
-        ok: false,
-        revoked: false,
-        error:
-          "Google token could not be revoked."
-      });
-
-    }
-
-    return res.json({
-      ok: true,
-      revoked: true
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Google revoke error:",
-      error
-    );
-
-    /*
-      Logout should still be allowed even if Google's
-      revoke endpoint is temporarily unavailable.
-    */
-
-    return res.status(200).json({
-      ok: false,
-      revoked: false,
-      error:
-        error.message ||
-        "Google revoke request failed."
-    });
-
-  }
-
-});
-
-
-
-/* =======================================================
+/* =========================================================
    BASIC HELPERS
-======================================================= */
-
-const today = () => new Date().toISOString().slice(0, 10);
-
-function normalizeText(value) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function normalizeKey(value) {
-  return normalizeText(value).toLowerCase();
-}
-
-function safeFilename(filename) {
-  const cleaned = path
-    .basename(String(filename || "question-bank.json"))
-    .replace(/[^\w.\- ]+/g, "")
-    .replace(/\s+/g, "-");
-
-  return cleaned.toLowerCase().endsWith(".json")
-    ? cleaned
-    : `${cleaned || "question-bank"}.json`;
-}
-
-function slugify(value) {
-  return normalizeText(value)
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
-
-function makeQuestionId(fileName, index, questionText) {
-  const base = `${fileName}:${index}:${questionText}`;
-
-  const hash = crypto
-    .createHash("sha1")
-    .update(base)
-    .digest("hex")
-    .slice(0, 10);
-
-  return `q_${hash}`;
-}
-
-/* =======================================================
-   DIRECTORIES + PERFORMANCE STORAGE
-======================================================= */
+   ========================================================= */
 
 async function ensureDirectories() {
   await fs.mkdir(QUESTION_BANK_DIR, { recursive: true });
@@ -268,2909 +89,2067 @@ async function ensureDirectories() {
   } catch {
     await fs.writeFile(
       PERFORMANCE_FILE,
-      "{}\n",
+      JSON.stringify({}, null, 2),
       "utf8"
     );
   }
 }
 
-async function readPerformance() {
-  try {
-    const raw = await fs.readFile(
-      PERFORMANCE_FILE,
-      "utf8"
-    );
-
-    const parsed = JSON.parse(raw || "{}");
-
-    return parsed && typeof parsed === "object"
-      ? parsed
-      : {};
-  } catch {
-    return {};
+function cleanString(value) {
+  if (value === undefined || value === null) {
+    return "";
   }
+
+  return String(value).trim();
 }
 
-async function writePerformance(performance) {
-  const temp = `${PERFORMANCE_FILE}.tmp`;
+function makeQuestionId(filename, index, question) {
+  return crypto
+    .createHash("sha1")
+    .update(
+      `${filename}:${index}:${cleanString(question)}`
+    )
+    .digest("hex");
+}
 
-  await fs.writeFile(
-    temp,
-    JSON.stringify(performance, null, 2),
-    "utf8"
-  );
+function safeAiBankFilename(subject, topic) {
+  const base = `${subject}-${topic}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
 
-  await fs.rename(
-    temp,
-    PERFORMANCE_FILE
+  return `ai-${base || "generated"}-${Date.now()}.json`;
+}
+
+/* =========================================================
+   SUPABASE AUTH
+   ========================================================= */
+
+async function getAuthenticatedUser(req) {
+  if (!supabase) {
+    return null;
+  }
+
+  const authHeader = req.headers.authorization || "";
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.substring(7).trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data?.user) {
+    return null;
+  }
+
+  return data.user;
+}
+
+async function getUserSupabaseClient(req) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return null;
+  }
+
+  const authHeader = req.headers.authorization || "";
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.substring(7).trim();
+
+  if (!token) {
+    return null;
+  }
+
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    }
   );
 }
 
-/* =======================================================
-   MCQ VALIDATION
-======================================================= */
+/* =========================================================
+   GEMINI CLIENT
+   ========================================================= */
 
-function validateQuestion(rawQuestion, index, fileName) {
-  const errors = [];
+function getGeminiClient() {
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  if (
-    !rawQuestion ||
-    typeof rawQuestion !== "object" ||
-    Array.isArray(rawQuestion)
-  ) {
-    return {
-      valid: false,
-      errors: [
-        `Question ${index + 1}: question must be an object.`
-      ]
-    };
-  }
-
-  const question = normalizeText(
-    rawQuestion.question
-  );
-
-  if (!question) {
-    errors.push(
-      `Question ${index + 1}: missing "question".`
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured in .env"
     );
   }
 
-  const rawOptions = rawQuestion.options;
+  return new GoogleGenAI({
+    apiKey
+  });
+}
 
-  if (
-    !rawOptions ||
-    typeof rawOptions !== "object" ||
-    Array.isArray(rawOptions)
-  ) {
-    errors.push(
-      `Question ${index + 1}: "options" must contain A, B, C and D.`
-    );
-  }
+/* =========================================================
+   AI STUDY-MODE RESPONSE SCHEMAS
+   ========================================================= */
 
-  const options = {
-    A: normalizeText(rawOptions?.A),
-    B: normalizeText(rawOptions?.B),
-    C: normalizeText(rawOptions?.C),
-    D: normalizeText(rawOptions?.D)
+const AI_MODES = [
+  "mcq",
+  "fill_in_the_blanks",
+  "questions",
+  "case_based",
+  "match_the_column",
+  "map"
+];
+
+const AI_STUDY_RESPONSE_SCHEMA = {
+  type: "object",
+
+  properties: {
+    questions: {
+      type: "array",
+
+      items: {
+        type: "object",
+
+        properties: {
+          question: {
+            type: "string"
+          },
+
+          options: {
+            type: "array",
+            items: {
+              type: "string"
+            }
+          },
+
+          answer: {
+            type: "string"
+          },
+
+          accepted_answers: {
+            type: "array",
+            items: {
+              type: "string"
+            }
+          },
+
+          case: {
+            type: "string"
+          },
+
+          column_a: {
+            type: "array",
+            items: {
+              type: "string"
+            }
+          },
+
+          column_b: {
+            type: "array",
+            items: {
+              type: "string"
+            }
+          },
+
+          matches: {
+            type: "array",
+
+            items: {
+              type: "object",
+
+              properties: {
+                a: {
+                  type: "integer"
+                },
+
+                b: {
+                  type: "integer"
+                }
+              },
+
+              required: [
+                "a",
+                "b"
+              ]
+            }
+          },
+
+          location: {
+            type: "string"
+          },
+
+          region: {
+            type: "string"
+          },
+
+          latitude: {
+            type: "number"
+          },
+
+          longitude: {
+            type: "number"
+          },
+
+          acceptable_locations: {
+            type: "array",
+
+            items: {
+              type: "string"
+            }
+          },
+
+          difficulty: {
+            type: "string",
+
+            enum: [
+              "easy",
+              "medium",
+              "difficult"
+            ]
+          },
+
+          explanation: {
+            type: "string"
+          },
+
+          subtopic: {
+            type: "string"
+          }
+        },
+
+        required: [
+          "question",
+          "answer",
+          "difficulty",
+          "explanation",
+          "subtopic"
+        ]
+      }
+    }
+  },
+
+  required: [
+    "questions"
+  ]
+};
+
+/* =========================================================
+   AI STUDY-MODE PROMPT
+   ========================================================= */
+
+function buildStudyGenerationPrompt({
+  subject,
+  topic,
+  mode,
+  count,
+  difficulty,
+  customPrompt = ""
+}) {
+  const modeInstructions = {
+
+    mcq: `
+QUESTION TYPE: MULTIPLE-CHOICE QUESTIONS.
+
+Generate MCQs.
+
+Each question MUST contain:
+- question
+- exactly 4 options
+- one correct answer
+- explanation
+- difficulty
+- subtopic
+
+The four options should be plausible and reasonably similar in
+structure so that the correct answer cannot be identified merely
+because it is longer, more detailed, or differently worded.
+
+The answer field must contain the complete correct option.
+
+Do not create "all of the above" or "none of the above" options
+unless that exact structure is explicitly supported by the PDF.
+`,
+
+    fill_in_the_blanks: `
+QUESTION TYPE: FILL-IN-THE-BLANKS.
+
+Every question MUST contain:
+_____
+
+The blank should test meaningful recall.
+
+Use a mixture of short answers, phrases, and longer answers where
+the source material requires them.
+
+Do not make every answer a single word.
+
+Each question must contain:
+- question
+- answer
+- accepted_answers
+- explanation
+- difficulty
+- subtopic
+`,
+
+    questions: `
+QUESTION TYPE: SHORT-ANSWER QUESTIONS.
+
+Generate questions that require the learner to retrieve and explain
+information from the PDF in their own words.
+
+Each question MUST contain:
+- question
+- answer
+- explanation
+- difficulty
+- subtopic
+
+Answers may be a word, phrase, sentence, or longer explanation,
+depending on the information being tested.
+
+Prefer questions that test concepts, distinctions, mechanisms,
+classifications, characteristics, relationships, criteria,
+sequences, and important details rather than only definitions.
+`,
+
+    case_based: `
+QUESTION TYPE: CASE-BASED QUESTIONS.
+
+Create a short case or scenario based ONLY on situations,
+concepts, characteristics, criteria, mechanisms, or examples
+explicitly supported by the PDF.
+
+Each item MUST contain:
+- case
+- question
+- answer
+- explanation
+- difficulty
+- subtopic
+
+The learner should have to apply information from the PDF to the
+case.
+
+Do not introduce diagnoses, symptoms, facts, terminology, or
+clinical information that the PDF does not support.
+`,
+
+    match_the_column: `
+QUESTION TYPE: MATCH THE COLUMN.
+
+Create matching exercises based ONLY on relationships explicitly
+supported by the PDF.
+
+Each item should contain:
+- column_a
+- column_b
+- matches
+- question
+- explanation
+- difficulty
+- subtopic
+
+Use approximately 4–6 entries per matching exercise.
+
+The "matches" array MUST use ZERO-BASED indexes:
+a = index of the item in column_a
+b = index of the corresponding item in column_b.
+
+The two columns should contain related concepts such as terms and
+definitions, theories and characteristics, categories and examples,
+or other relationships actually present in the PDF.
+
+Do not invent relationships.
+`,
+
+    map: `
+QUESTION TYPE: MAP / LOCATION QUESTIONS.
+
+Generate map-based questions ONLY when the uploaded PDF explicitly
+contains geographic, spatial, regional, location-based, historical
+place, or other information that can legitimately be represented
+as a location.
+
+Each item should contain:
+- question
+- location
+- region when supported
+- latitude and longitude only when they are explicitly available
+  or directly represented in the PDF
+- acceptable_locations when appropriate
+- answer
+- explanation
+- difficulty
+- subtopic
+
+Do NOT invent geographic coordinates.
+
+If the PDF does not contain meaningful location-based information,
+return an empty questions array rather than inventing map content.
+`
   };
 
-  for (const letter of ["A", "B", "C", "D"]) {
-    if (!options[letter]) {
-      errors.push(
-        `Question ${index + 1}: option ${letter} is missing.`
+  return `
+You are the study-material generation engine for a psychology
+student's study website.
+
+SOURCE MATERIAL:
+You will receive ONE uploaded PDF.
+
+The uploaded PDF is the ONLY authoritative source.
+
+SUBJECT:
+${subject}
+
+TOPIC:
+${topic}
+
+STUDY MODE:
+${mode}
+
+NUMBER OF ITEMS:
+Generate approximately ${count} high-quality items.
+
+TARGET DIFFICULTY:
+${difficulty}
+
+USER CUSTOM INSTRUCTIONS:
+${customPrompt
+  ? customPrompt
+  : "No additional custom instructions were provided."}
+
+IMPORTANT SOURCE RULE:
+
+Use ONLY information explicitly contained in the uploaded PDF.
+
+Do NOT introduce facts from your own knowledge.
+
+Do NOT add information that is not supported by the PDF.
+
+Do NOT silently correct, update, reinterpret, or replace
+information contained in the PDF.
+
+Custom instructions may influence presentation and emphasis,
+but they MUST NOT override the source-material rule.
+
+If the requested mode cannot legitimately be generated from the
+PDF, do not invent information. Return an empty questions array
+when necessary.
+
+${modeInstructions[mode] || ""}
+
+GENERAL QUALITY REQUIREMENTS:
+
+1. Cover important information from the PDF.
+2. Do not focus only on headings and obvious definitions.
+3. Include concepts, terminology, definitions, distinctions,
+   mechanisms, relationships, classifications, examples,
+   sequences, characteristics, criteria, and important details
+   when they appear in the PDF.
+4. Avoid unnecessary repetition.
+5. Do not generate duplicate questions.
+6. Questions should test meaningful retrieval.
+7. Preserve terminology used in the source.
+8. Make questions clear and unambiguous.
+9. Match the requested difficulty.
+10. Use varied question structures.
+11. Prioritize retention and active recall.
+12. Do not use outside knowledge to fill gaps.
+
+DIFFICULTY:
+
+Easy:
+Basic factual retrieval, terminology, and straightforward
+definitions.
+
+Medium:
+Requires remembering relationships, distinctions,
+characteristics, classifications, sequences, or explanations.
+
+Difficult:
+Requires meaningful retrieval and discrimination between closely
+related concepts, mechanisms, categories, criteria, or details.
+
+If difficulty is "mixed", create a mixture of easy, medium, and
+difficult items.
+
+EXPLANATIONS:
+
+Every generated item must contain a concise explanation based
+ONLY on the PDF.
+
+The explanation should reinforce the information being tested.
+
+SUBTOPIC:
+
+Identify the specific concept or subtopic tested.
+
+FINAL CHECK:
+
+Before returning each item, verify:
+
+- It is supported by the PDF.
+- It follows the requested study mode.
+- It is not a duplicate.
+- It contributes useful retention practice.
+- Its difficulty is appropriate.
+- Its explanation is supported by the PDF.
+- No outside information has been introduced.
+
+Return ONLY the requested structured JSON.
+`;
+}
+
+/* =========================================================
+   GEMINI PDF STUDY-MATERIAL GENERATION
+   ========================================================= */
+
+async function generateStudyBankFromPdf({
+  pdfBuffer,
+  originalFilename,
+  subject,
+  topic,
+  mode,
+  count,
+  difficulty,
+  customPrompt = ""
+}) {
+  const ai = getGeminiClient();
+
+  if (!AI_MODES.includes(mode)) {
+    throw new Error(
+      `Unsupported AI study mode: ${mode}`
+    );
+  }
+
+  let uploadedFile = null;
+
+  try {
+    uploadedFile = await ai.files.upload({
+      file: new Blob(
+        [pdfBuffer],
+        {
+          type: "application/pdf"
+        }
+      ),
+
+      config: {
+        displayName: originalFilename,
+        mimeType: "application/pdf"
+      }
+    });
+
+    if (!uploadedFile?.name) {
+      throw new Error(
+        "Gemini did not return a valid uploaded file."
       );
     }
-  }
 
-  let answer = normalizeText(
-    rawQuestion.answer
-  ).toUpperCase();
+    let processedFile = uploadedFile;
+    let fileReady = false;
 
-  if (
-    !answer &&
-    rawQuestion.correctAnswer
-  ) {
-    answer = normalizeText(
-      rawQuestion.correctAnswer
-    ).toUpperCase();
-  }
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const currentFile = await ai.files.get({
+        name: uploadedFile.name
+      });
 
-  if (!["A", "B", "C", "D"].includes(answer)) {
-    errors.push(
-      `Question ${index + 1}: answer must be A, B, C or D.`
-    );
-  }
+      processedFile = currentFile;
 
-  if (errors.length) {
-    return {
-      valid: false,
-      errors
-    };
-  }
+      const state =
+        currentFile.state?.name ||
+        currentFile.state ||
+        "";
 
-  const id =
-    normalizeText(rawQuestion.id) ||
-    makeQuestionId(
-      fileName,
-      index,
-      question
-    );
+      console.log(
+        `Gemini PDF processing attempt ${attempt + 1}/30: ${state}`
+      );
 
-  return {
-    valid: true,
+      if (state === "ACTIVE") {
+        fileReady = true;
+        break;
+      }
 
-    question: {
-      id,
+      if (
+        state === "FAILED" ||
+        state === "PROCESSING_FAILED"
+      ) {
+        throw new Error(
+          "Gemini failed to process the uploaded PDF."
+        );
+      }
 
-      question,
-
-      options,
-
-      answer,
-
-      explanation:
-        normalizeText(
-          rawQuestion.explanation
-        ),
-
-      subtopic:
-        normalizeText(
-          rawQuestion.subtopic
-        ),
-
-      difficulty:
-        normalizeText(
-          rawQuestion.difficulty
-        ),
-
-      source:
-        normalizeText(
-          rawQuestion.source
-        ) || fileName
+      await new Promise(resolve =>
+        setTimeout(resolve, 2000)
+      );
     }
-  };
+
+    if (!fileReady) {
+      throw new Error(
+        "Gemini PDF processing timed out before the file became ACTIVE."
+      );
+    }
+
+    let response;
+
+    try {
+      response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+
+        contents: [
+          {
+            role: "user",
+
+            parts: [
+              {
+                fileData: {
+                  fileUri:
+                    processedFile.uri ||
+                    uploadedFile.uri,
+
+                  mimeType:
+                    processedFile.mimeType ||
+                    "application/pdf"
+                }
+              },
+
+              {
+                text: buildStudyGenerationPrompt({
+                  subject,
+                  topic,
+                  mode,
+                  count,
+                  difficulty,
+                  customPrompt
+                })
+              }
+            ]
+          }
+        ],
+
+        config: {
+          responseMimeType: "application/json",
+
+          responseSchema:
+            AI_STUDY_RESPONSE_SCHEMA,
+
+          maxOutputTokens: Math.min(
+            30000,
+            Math.max(
+              6000,
+              count * 500
+            )
+          )
+        }
+      });
+
+    } catch (error) {
+      console.error(
+        "\n===== GEMINI GENERATION ERROR ====="
+      );
+
+      console.error("Name:", error?.name);
+      console.error("Message:", error?.message);
+      console.error("Status:", error?.status);
+      console.error("Code:", error?.code);
+      console.error("Details:", error?.details);
+      console.error("Full error:", error);
+
+      console.error(
+        "===================================\n"
+      );
+
+      throw new Error(
+        `Gemini generation failed: ${
+          error?.message ||
+          "Unknown Gemini API error"
+        }`
+      );
+    }
+
+    const rawText =
+      response?.text ||
+      response?.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || "")
+        .join("") ||
+      "";
+
+    if (!rawText.trim()) {
+      throw new Error(
+        "Gemini returned an empty response."
+      );
+    }
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (error) {
+      console.error(
+        "Gemini JSON parsing failed:",
+        rawText
+      );
+
+      throw new Error(
+        "Gemini returned invalid JSON."
+      );
+    }
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.questions)
+    ) {
+      throw new Error(
+        "Gemini response did not contain a valid questions array."
+      );
+    }
+
+    return parsed.questions;
+
+  } finally {
+    if (uploadedFile?.name) {
+      try {
+        await ai.files.delete({
+          name: uploadedFile.name
+        });
+      } catch (deleteError) {
+        console.warn(
+          "Could not delete temporary Gemini file:",
+          deleteError?.message ||
+          deleteError
+        );
+      }
+    }
+  }
 }
 
-
-/* =======================================================
-   FILL IN THE BLANKS VALIDATION
-======================================================= */
-
-function validateFillInTheBlank(
-  rawQuestion,
-  index,
-  fileName
+function normalizeFillInTheBlankQuestion(
+  question,
+  {
+    subject = "",
+    topic = "",
+    source = "",
+    index = 0,
+    filename = ""
+  } = {}
 ) {
-  const errors = [];
-
-  if (
-    !rawQuestion ||
-    typeof rawQuestion !== "object" ||
-    Array.isArray(rawQuestion)
-  ) {
-    return {
-      valid: false,
-      errors: [
-        `Question ${index + 1}: question must be an object.`
-      ]
-    };
+  if (!question || typeof question !== "object") {
+    return null;
   }
 
-  const question =
-    normalizeText(
-      rawQuestion.question
-    );
+  const text = cleanString(question.question);
+  const answer = cleanString(question.answer);
 
-  if (!question) {
-    errors.push(
-      `Question ${index + 1}: missing "question".`
-    );
+  if (!text || !answer) {
+    return null;
   }
 
-  const answer =
-    normalizeText(
-      rawQuestion.answer
-    );
-
-  if (!answer) {
-    errors.push(
-      `Question ${index + 1}: missing "answer".`
-    );
+  if (!text.includes("_____")) {
+    return null;
   }
 
-  const acceptedAnswers =
-    Array.isArray(
-      rawQuestion.accepted_answers
-    )
-      ? rawQuestion.accepted_answers
-          .map(answer =>
-            normalizeText(answer)
-          )
+  let acceptedAnswers =
+    Array.isArray(question.accepted_answers)
+      ? question.accepted_answers
+          .map(cleanString)
           .filter(Boolean)
       : [];
 
-  if (
-    answer &&
-    !acceptedAnswers.includes(answer)
-  ) {
+  if (!acceptedAnswers.includes(answer)) {
     acceptedAnswers.unshift(answer);
   }
 
-  if (!acceptedAnswers.length) {
-    errors.push(
-      `Question ${index + 1}: "accepted_answers" must contain at least one valid answer.`
-    );
+  const difficulty =
+    ["easy", "medium", "difficult"].includes(
+      cleanString(question.difficulty).toLowerCase()
+    )
+      ? cleanString(question.difficulty).toLowerCase()
+      : "medium";
+
+  return {
+    id:
+      question.id ||
+      makeQuestionId(
+        filename || source || "ai-generated",
+        index,
+        text
+      ),
+
+    mode: "fill_in_the_blanks",
+
+    subject:
+      cleanString(question.subject) ||
+      subject,
+
+    topic:
+      cleanString(question.topic) ||
+      topic,
+
+    subtopic:
+      cleanString(question.subtopic),
+
+    question: text,
+
+    answer,
+
+    accepted_answers:
+      [...new Set(acceptedAnswers)],
+
+    explanation:
+      cleanString(question.explanation),
+
+    difficulty,
+
+    source:
+      cleanString(question.source) ||
+      source
+  };
+}
+
+/* =========================================================
+   AI QUESTION NORMALIZATION
+   ========================================================= */
+
+function normalizeAiQuestion(
+  question,
+  {
+    mode,
+    subject = "",
+    topic = "",
+    source = "",
+    index = 0,
+    filename = ""
+  } = {}
+) {
+  if (!question || typeof question !== "object") {
+    return null;
   }
 
-  if (errors.length) {
+  const clean = value =>
+    typeof value === "string"
+      ? value.trim()
+      : "";
+
+  const difficultyValue =
+    clean(question.difficulty).toLowerCase();
+
+  const difficulty =
+    [
+      "easy",
+      "medium",
+      "difficult"
+    ].includes(difficultyValue)
+      ? difficultyValue
+      : "medium";
+
+  const base = {
+    id:
+      question.id ||
+      makeQuestionId(
+        filename || source || "ai-generated",
+        index,
+        clean(question.question) ||
+          `${mode}-${index}`
+      ),
+
+    mode,
+
+    subject:
+      clean(question.subject) ||
+      subject,
+
+    topic:
+      clean(question.topic) ||
+      topic,
+
+    subtopic:
+      clean(question.subtopic),
+
+    question:
+      clean(question.question),
+
+    explanation:
+      clean(question.explanation),
+
+    difficulty,
+
+    source:
+      clean(question.source) ||
+      source
+  };
+
+  /*
+   * MCQ
+   */
+  if (mode === "mcq") {
+    const options =
+      Array.isArray(question.options)
+        ? question.options
+            .map(clean)
+            .filter(Boolean)
+        : [];
+
+    const answer =
+      clean(question.answer);
+
+    if (
+      !base.question ||
+      options.length !== 4 ||
+      !answer ||
+      !options.includes(answer)
+    ) {
+      return null;
+    }
+
     return {
-      valid: false,
-      errors
+      ...base,
+
+      options,
+
+      answer
     };
   }
 
-  const id =
-    normalizeText(rawQuestion.id) ||
-    makeQuestionId(
-      fileName,
-      index,
-      question
-    );
+  /*
+   * Fill in the Blanks
+   */
+  if (mode === "fill_in_the_blanks") {
+    const answer =
+      clean(question.answer);
 
-  return {
-    valid: true,
+    if (
+      !base.question ||
+      !base.question.includes("_____") ||
+      !answer
+    ) {
+      return null;
+    }
 
-    question: {
-      id,
+    let acceptedAnswers =
+      Array.isArray(
+        question.accepted_answers
+      )
+        ? question.accepted_answers
+            .map(clean)
+            .filter(Boolean)
+        : [];
 
-      question,
+    if (
+      !acceptedAnswers.includes(answer)
+    ) {
+      acceptedAnswers.unshift(answer);
+    }
+
+    return {
+      ...base,
 
       answer,
 
       accepted_answers:
-        acceptedAnswers,
+        [...new Set(acceptedAnswers)]
+    };
+  }
 
-      explanation:
-        normalizeText(
-          rawQuestion.explanation
-        ),
+  /*
+   * Short-answer Questions
+   */
+  if (mode === "questions") {
+    const answer =
+      clean(question.answer);
 
-      subtopic:
-        normalizeText(
-          rawQuestion.subtopic
-        ),
-
-      difficulty:
-        normalizeText(
-          rawQuestion.difficulty
-        ),
-
-      mode:
-        "fill_in_the_blanks",
-
-      source:
-        normalizeText(
-          rawQuestion.source
-        ) || fileName
+    if (
+      !base.question ||
+      !answer
+    ) {
+      return null;
     }
-  };
+
+    return {
+      ...base,
+
+      answer
+    };
+  }
+
+  /*
+   * Case Based
+   */
+  if (mode === "case_based") {
+    const caseText =
+      clean(question.case);
+
+    const answer =
+      clean(question.answer);
+
+    if (
+      !caseText ||
+      !base.question ||
+      !answer
+    ) {
+      return null;
+    }
+
+    return {
+      ...base,
+
+      case:
+        caseText,
+
+      answer
+    };
+  }
+
+  /*
+   * Match the Column
+   */
+  if (mode === "match_the_column") {
+    const columnA =
+      Array.isArray(question.column_a)
+        ? question.column_a
+            .map(clean)
+            .filter(Boolean)
+        : [];
+
+    const columnB =
+      Array.isArray(question.column_b)
+        ? question.column_b
+            .map(clean)
+            .filter(Boolean)
+        : [];
+
+    const matches =
+      Array.isArray(question.matches)
+        ? question.matches
+            .filter(
+              match =>
+                Number.isInteger(match?.a) &&
+                Number.isInteger(match?.b)
+            )
+            .map(match => ({
+              a: match.a,
+              b: match.b
+            }))
+        : [];
+
+    if (
+      !base.question ||
+      columnA.length < 2 ||
+      columnB.length < 2 ||
+      !matches.length
+    ) {
+      return null;
+    }
+
+    const validMatches =
+      matches.every(
+        match =>
+          match.a >= 0 &&
+          match.a < columnA.length &&
+          match.b >= 0 &&
+          match.b < columnB.length
+      );
+
+    if (!validMatches) {
+      return null;
+    }
+
+    return {
+      ...base,
+
+      column_a:
+        columnA,
+
+      column_b:
+        columnB,
+
+      matches
+    };
+  }
+
+  /*
+   * Map
+   */
+  if (mode === "map") {
+    const location =
+      clean(question.location);
+
+    const answer =
+      clean(question.answer);
+
+    if (
+      !base.question ||
+      !location ||
+      !answer
+    ) {
+      return null;
+    }
+
+    const region =
+      clean(question.region);
+
+    const acceptableLocations =
+      Array.isArray(
+        question.acceptable_locations
+      )
+        ? question.acceptable_locations
+            .map(clean)
+            .filter(Boolean)
+        : [];
+
+    return {
+      ...base,
+
+      location,
+
+      region,
+
+      latitude:
+        typeof question.latitude === "number"
+          ? question.latitude
+          : null,
+
+      longitude:
+        typeof question.longitude === "number"
+          ? question.longitude
+          : null,
+
+      acceptable_locations:
+        acceptableLocations,
+
+      answer
+    };
+  }
+
+  return null;
 }
 
+/* =========================================================
+   GENERIC BANK NORMALIZATION
+   ========================================================= */
 
-/* =======================================================
-   QUESTION BANK NORMALIZATION
-
-   Supported formats:
-
-   MCQ:
-   {
-     "subject": "...",
-     "topic": "...",
-     "questions": [...]
-   }
-
-   Fill in the Blanks:
-   {
-     "subject": "...",
-     "topic": "...",
-     "mode": "fill_in_the_blanks",
-     "questions": [...]
-   }
-
-   OR an array of question objects.
-======================================================= */
-
-function normalizeBank(raw, fileName) {
-  const errors = [];
-
-  let subject = "";
-  let topic = "";
-  let subtopic = "";
-  let mode = "";
+function normalizeBank(
+  bank,
+  filename = "unknown.json"
+) {
+  if (!bank) {
+    return null;
+  }
 
   let questions = [];
 
-  /* -----------------------------------------------
-     Array format
-  ------------------------------------------------ */
+  let subject = "";
+  let topic = "";
+  let bankMode = "";
 
-  if (Array.isArray(raw)) {
-    questions = raw;
-  }
-
-  /* -----------------------------------------------
-     Object format
-  ------------------------------------------------ */
-
-  else if (
-    raw &&
-    typeof raw === "object"
+  if (Array.isArray(bank)) {
+    questions = bank;
+  } else if (
+    typeof bank === "object"
   ) {
     subject =
-      normalizeText(raw.subject);
+      cleanString(bank.subject);
 
     topic =
-      normalizeText(raw.topic);
+      cleanString(bank.topic);
 
-    subtopic =
-      normalizeText(raw.subtopic);
+    bankMode =
+      cleanString(bank.mode);
 
-    mode =
-      normalizeText(raw.mode)
-        .toLowerCase();
-
-    if (Array.isArray(raw.questions)) {
-      questions = raw.questions;
-    }
-
-    else if (Array.isArray(raw.mcqs)) {
-      questions = raw.mcqs;
-    }
-
-    else if (Array.isArray(raw.data)) {
-      questions = raw.data;
-    }
-
-    else {
-      errors.push(
-        `"${fileName}": no "questions" array was found.`
-      );
+    if (Array.isArray(bank.questions)) {
+      questions = bank.questions;
     }
   }
 
-  else {
-    errors.push(
-      `"${fileName}": JSON must contain an object or array.`
-    );
+  if (!questions.length) {
+    return null;
   }
 
-  /* -----------------------------------------------
-     Allow first question to provide classification
-  ------------------------------------------------ */
+  /*
+   * Normalize each question according
+   * to the bank/question study mode.
+   */
+  const normalizedQuestions =
+    questions
+      .map((question, index) => {
+        if (
+          !question ||
+          typeof question !== "object"
+        ) {
+          return null;
+        }
 
-  if (
-    !subject &&
-    questions[0]?.subject
-  ) {
-    subject =
-      normalizeText(
-        questions[0].subject
-      );
-  }
+        let detectedMode =
+          cleanString(question.mode) ||
+          bankMode;
 
-  if (
-    !topic &&
-    questions[0]?.topic
-  ) {
-    topic =
-      normalizeText(
-        questions[0].topic
-      );
-  }
-
-  /* -----------------------------------------------
-     Detect FIB mode from questions if necessary
-  ------------------------------------------------ */
-
-  if (
-    !mode &&
-    questions.some(
-      question =>
-        question?.mode ===
-        "fill_in_the_blanks"
-    )
-  ) {
-    mode =
-      "fill_in_the_blanks";
-  }
-
-  if (!subject) {
-    errors.push(
-      `"${fileName}": missing subject.`
-    );
-  }
-
-  if (!topic) {
-    errors.push(
-      `"${fileName}": missing topic.`
-    );
-  }
-
-  const validQuestions = [];
-
-  /* -----------------------------------------------
-     Validate every question
-  ------------------------------------------------ */
-
-  questions.forEach(
-    (rawQuestion, index) => {
-
-      const isFillInTheBlank =
-        mode ===
-          "fill_in_the_blanks" ||
-        rawQuestion?.mode ===
-          "fill_in_the_blanks";
-
-      const result =
-        isFillInTheBlank
-          ? validateFillInTheBlank(
-              rawQuestion,
-              index,
-              fileName
+        /*
+         * Legacy Fill-in-the-Blanks banks
+         * may not explicitly contain a mode.
+         */
+        if (!detectedMode) {
+          if (
+            Array.isArray(
+              question.accepted_answers
+            ) ||
+            (
+              cleanString(question.question)
+                .includes("_____") &&
+              cleanString(question.answer)
             )
-          : validateQuestion(
-              rawQuestion,
+          ) {
+            detectedMode =
+              "fill_in_the_blanks";
+          }
+        }
+
+        /*
+         * Normalize the mode aliases that
+         * may exist in older banks.
+         */
+        if (detectedMode === "fill") {
+          detectedMode =
+            "fill_in_the_blanks";
+        }
+
+        if (detectedMode === "case") {
+          detectedMode =
+            "case_based";
+        }
+
+        if (detectedMode === "match") {
+          detectedMode =
+            "match_the_column";
+        }
+
+        /*
+         * AI-generated / six-mode banks.
+         */
+        if (
+          AI_MODES.includes(
+            detectedMode
+          )
+        ) {
+          return normalizeAiQuestion(
+            question,
+            {
+              mode:
+                detectedMode,
+
+              subject,
+
+              topic,
+
+              source:
+                filename,
+
               index,
-              fileName
-            );
 
-      if (!result.valid) {
-        errors.push(
-          ...result.errors
-        );
+              filename
+            }
+          );
+        }
 
-        return;
-      }
+        /*
+         * Preserve unknown/legacy question
+         * formats exactly as they were.
+         */
+        return question;
+      })
+      .filter(Boolean);
 
-      const normalized =
-        result.question;
+  if (!normalizedQuestions.length) {
+    return null;
+  }
 
-      /* Question-level metadata
-         overrides bank metadata */
+  /*
+   * Determine the bank mode from the
+   * normalized questions when possible.
+   */
+  const normalizedModes =
+    [
+      ...new Set(
+        normalizedQuestions
+          .map(
+            question =>
+              cleanString(
+                question?.mode
+              )
+          )
+          .filter(Boolean)
+      )
+    ];
 
-      normalized.subject =
-        normalizeText(
-          rawQuestion.subject
-        ) || subject;
-
-      normalized.topic =
-        normalizeText(
-          rawQuestion.topic
-        ) || topic;
-
-      normalized.subtopic =
-        normalizeText(
-          rawQuestion.subtopic
-        ) || subtopic;
-
-      if (!normalized.subject) {
-        errors.push(
-          `Question ${index + 1}: missing subject.`
-        );
-
-        return;
-      }
-
-      if (!normalized.topic) {
-        errors.push(
-          `Question ${index + 1}: missing topic.`
-        );
-
-        return;
-      }
-
-      validQuestions.push(
-        normalized
-      );
-    }
-  );
+  const detectedMode =
+    normalizedModes.length === 1
+      ? normalizedModes[0]
+      : bankMode;
 
   return {
-    valid:
-      errors.length === 0 &&
-      validQuestions.length > 0,
+    subject,
 
-    bank: {
-      subject,
+    topic,
 
-      topic,
+    mode:
+      detectedMode,
 
-      subtopic,
+    source:
+      filename,
 
-      mode,
-
-      source: fileName,
-
-      file: fileName,
-
-      questions:
-        validQuestions
-    },
-
-    errors,
-
-    questionCount:
-      validQuestions.length
+    questions:
+      normalizedQuestions
   };
 }
 
-/* =======================================================
-   LOAD EVERY JSON FILE AUTOMATICALLY
-======================================================= */
+/* =========================================================
+   QUESTION BANK LOADING
+   ========================================================= */
 
 async function loadQuestionBanks() {
   await ensureDirectories();
 
   const files =
-    (
-      await fs.readdir(
-        QUESTION_BANK_DIR
-      )
-    )
-      .filter(
-        file =>
-          file
-            .toLowerCase()
-            .endsWith(".json")
-      )
-      .sort(
-        (a, b) =>
-          a.localeCompare(b)
-      );
+    await fs.readdir(
+      QUESTION_BANK_DIR
+    );
+
+  const jsonFiles =
+    files.filter(
+      filename =>
+        filename.toLowerCase().endsWith(".json")
+    );
 
   const banks = [];
 
-  const errors = [];
-
-  const seenIds = new Map();
-
-  for (
-    const fileName of files
-  ) {
-
+  for (const filename of jsonFiles) {
     const fullPath =
       path.join(
         QUESTION_BANK_DIR,
-        fileName
+        filename
       );
 
     try {
-
-      const rawText =
+      const raw =
         await fs.readFile(
           fullPath,
           "utf8"
         );
 
-      const raw =
-        JSON.parse(rawText);
+      const parsed =
+        JSON.parse(raw);
 
-      const result =
+      const bank =
         normalizeBank(
-          raw,
-          fileName
+          parsed,
+          filename
         );
 
-      if (
-        result.bank.questions.length
-      ) {
-
-        for (
-          const question
-          of result.bank.questions
-        ) {
-
-          if (
-            seenIds.has(
-              question.id
-            )
-          ) {
-
-            const previous =
-              seenIds.get(
-                question.id
-              );
-
-            errors.push(
-              `Duplicate question ID "${question.id}" in ${fileName}; already used by ${previous}.`
-            );
-
-          }
-
-          else {
-
-            seenIds.set(
-              question.id,
-              fileName
-            );
-          }
-        }
-
-        banks.push(
-          result.bank
-        );
+      if (bank) {
+        banks.push(bank);
       }
 
-      if (
-        result.errors.length
-      ) {
-        errors.push(
-          ...result.errors
-        );
-      }
-
-    }
-
-    catch (error) {
-
-      errors.push(
-        `${fileName}: ${error.message}`
+    } catch (error) {
+      console.error(
+        `Failed to load ${filename}:`,
+        error?.message || error
       );
-
     }
   }
 
-  return {
-
-    banks,
-
-    errors,
-
-    files,
-
-    totalQuestions:
-      banks.reduce(
-        (total, bank) =>
-          total +
-          bank.questions.length,
-        0
-      )
-  };
+  return banks;
 }
 
-/* =======================================================
-   FLATTEN QUESTION BANKS
-======================================================= */
+/* =========================================================
+   FLATTEN QUESTIONS
+   ========================================================= */
 
-function flattenBanks(database) {
+function flattenQuestionBanks(
+  banks
+) {
+  const questions = [];
 
-  return database.banks.flatMap(
-    bank =>
+  const seenIds =
+    new Set();
 
-      bank.questions.map(
-        question => ({
-
-          ...question,
-
-          subject:
-            question.subject ||
-            bank.subject,
-
-          topic:
-            question.topic ||
-            bank.topic,
-
-          subtopic:
-            question.subtopic ||
-            bank.subtopic ||
-            "",
-
-          source:
-            question.source ||
-            bank.source
-
-        })
-      )
-  );
-}
-
-/* =======================================================
-   HEALTH
-======================================================= */
-
-app.get(
-  "/api/health",
-  async (_req, res) => {
-
-    const database =
-      await loadQuestionBanks();
-
-    res.json({
-
-      ok: true,
-
-      app:
-        "Flo's Study Space",
-
-      questionBanks:
-        database.files.length,
-
-      questions:
-        database.totalQuestions,
-
-      date:
-        today()
-
-    });
-  }
-);
-
-/* =======================================================
-   TWO-PLAYER CHALLENGE ROOM API
-======================================================= */
-
-app.get(
-  "/api/challenge-rooms",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("challenge_rooms")
-        .select("*")
-        .or(
-          `host_user_id.eq.${user.id},guest_user_id.eq.${user.id}`
-        )
-        .neq("status", "completed")
-        .order(
-          "updated_at",
-          {
-            ascending: false
-          }
+  for (const bank of banks) {
+    for (
+      const question of
+      bank.questions || []
+    ) {
+      const id =
+        question.id ||
+        makeQuestionId(
+          bank.source || "bank",
+          questions.length,
+          question.question
         );
 
-      if (error) {
-        throw error;
+      if (seenIds.has(id)) {
+        continue;
       }
 
-      res.json(data || []);
+      seenIds.add(id);
 
-    }
+      questions.push({
+        ...question,
 
-    catch (error) {
+        id,
 
-      console.error(
-        "Challenge rooms load error:",
-        error
-      );
+        subject:
+          question.subject ||
+          bank.subject,
 
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not load challenge rooms."
-        });
+        topic:
+          question.topic ||
+          bank.topic,
 
-    }
+        mode:
+          question.mode ||
+          bank.mode,
 
-  }
-);
-
-
-app.get(
-  "/api/challenge-rooms/:roomCode",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const roomCode =
-        String(
-          req.params.roomCode || ""
-        )
-        .trim()
-        .toUpperCase();
-
-      if (!roomCode) {
-
-        return res
-          .status(400)
-          .json({
-            error:
-              "roomCode is required."
-          });
-
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("challenge_rooms")
-        .select("*")
-        .eq("room_code", roomCode)
-        .or(
-          `host_user_id.eq.${user.id},guest_user_id.eq.${user.id}`
-        )
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data) {
-
-        return res
-          .status(404)
-          .json({
-            error:
-              "Challenge room not found."
-          });
-
-      }
-
-      res.json(data);
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Challenge room load error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not load challenge room."
-        });
-
-    }
-
-  }
-);
-
-
-app.post(
-  "/api/challenge-rooms",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const {
-        roomCode,
-        hostUsername,
-        subjectName,
-        topic,
-        questionIds
-      } = req.body || {};
-
-      if (
-        !roomCode ||
-        !hostUsername ||
-        !subjectName ||
-        !topic ||
-        !Array.isArray(questionIds) ||
-        !questionIds.length
-      ) {
-
-        return res
-          .status(400)
-          .json({
-            error:
-              "roomCode, hostUsername, subjectName, topic and questionIds are required."
-          });
-
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("challenge_rooms")
-        .insert({
-
-          room_code:
-            String(roomCode)
-              .trim()
-              .toUpperCase(),
-
-          host_user_id:
-            user.id,
-
-          host_username:
-            String(hostUsername)
-              .trim(),
-
-          subject_name:
-            String(subjectName),
-
-          topic:
-            String(topic),
-
-          question_ids:
-            questionIds,
-
-          status:
-            "waiting",
-
-          last_host_seen_at:
-            new Date().toISOString()
-
-        })
-        .select("*")
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      res
-        .status(201)
-        .json(data);
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Challenge room creation error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not create challenge room."
-        });
-
-    }
-
-  }
-);
-
-
-app.post(
-  "/api/challenge-rooms/:roomCode/join",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const roomCode =
-        String(
-          req.params.roomCode || ""
-        )
-        .trim()
-        .toUpperCase();
-
-      const {
-        guestUsername
-      } = req.body || {};
-
-      if (!roomCode || !guestUsername) {
-
-        return res
-          .status(400)
-          .json({
-            error:
-              "roomCode and guestUsername are required."
-          });
-
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data: room,
-        error: loadError
-      } = await supabase
-        .from("challenge_rooms")
-        .select("*")
-        .eq("room_code", roomCode)
-        .maybeSingle();
-
-      if (loadError) {
-        throw loadError;
-      }
-
-      if (!room) {
-
-        return res
-          .status(404)
-          .json({
-            error:
-              "Challenge room not found."
-          });
-
-      }
-
-      if (room.host_user_id === user.id) {
-
-        return res
-          .status(400)
-          .json({
-            error:
-              "You cannot join your own room as the second player."
-          });
-
-      }
-
-      if (
-        room.guest_user_id &&
-        room.guest_user_id !== user.id
-      ) {
-
-        return res
-          .status(409)
-          .json({
-            error:
-              "This room already has two players."
-          });
-
-      }
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("challenge_rooms")
-        .update({
-
-          guest_user_id:
-            user.id,
-
-          guest_username:
-            String(guestUsername)
-              .trim(),
-
-          last_guest_seen_at:
-            new Date().toISOString(),
-
-          updated_at:
-            new Date().toISOString()
-
-        })
-        .eq(
-          "room_code",
-          roomCode
-        )
-        .select("*")
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      res.json({
-        room: data
+        source:
+          question.source ||
+          bank.source
       });
-
     }
-
-    catch (error) {
-
-      console.error(
-        "Challenge room join error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not join challenge room."
-        });
-
-    }
-
   }
-);
 
+  return questions;
+}
 
-app.put(
-  "/api/challenge-rooms/:roomCode",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const roomCode =
-        String(
-          req.params.roomCode || ""
-        )
-        .trim()
-        .toUpperCase();
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data: existingRoom,
-        error: loadError
-      } = await supabase
-        .from("challenge_rooms")
-        .select("*")
-        .eq("room_code", roomCode)
-        .or(
-          `host_user_id.eq.${user.id},guest_user_id.eq.${user.id}`
-        )
-        .maybeSingle();
-
-      if (loadError) {
-        throw loadError;
-      }
-
-      if (!existingRoom) {
-
-        return res
-          .status(404)
-          .json({
-            error:
-              "Challenge room not found."
-          });
-
-      }
-
-      const body =
-        req.body || {};
-
-      const isHost =
-        existingRoom.host_user_id === user.id;
-
-      const updates = {
-
-        status:
-          body.status ??
-          existingRoom.status,
-
-        current_index:
-          Number.isInteger(body.currentIndex)
-            ? body.currentIndex
-            : existingRoom.current_index,
-
-        host_ready:
-          typeof body.hostReady === "boolean"
-            ? body.hostReady
-            : existingRoom.host_ready,
-
-        guest_ready:
-          typeof body.guestReady === "boolean"
-            ? body.guestReady
-            : existingRoom.guest_ready,
-
-        question_ids:
-          Array.isArray(body.questionIds)
-            ? body.questionIds
-            : existingRoom.question_ids,
-
-        host_answers:
-          body.hostAnswers ??
-          existingRoom.host_answers,
-
-        guest_answers:
-          body.guestAnswers ??
-          existingRoom.guest_answers,
-
-        host_score:
-          Number.isFinite(body.hostScore)
-            ? body.hostScore
-            : existingRoom.host_score,
-
-        guest_score:
-          Number.isFinite(body.guestScore)
-            ? body.guestScore
-            : existingRoom.guest_score,
-
-        host_correct:
-          Number.isFinite(body.hostCorrect)
-            ? body.hostCorrect
-            : existingRoom.host_correct,
-
-        guest_correct:
-          Number.isFinite(body.guestCorrect)
-            ? body.guestCorrect
-            : existingRoom.guest_correct,
-
-        updated_at:
-          new Date().toISOString()
-
-      };
-
-      if (isHost) {
-
-        updates.last_host_seen_at =
-          new Date().toISOString();
-
-      } else {
-
-        updates.last_guest_seen_at =
-          new Date().toISOString();
-
-      }
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("challenge_rooms")
-        .update(updates)
-        .eq(
-          "room_code",
-          roomCode
-        )
-        .select("*")
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      res.json(data);
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Challenge room save error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not save challenge room."
-        });
-
-    }
-
-  }
-);
-
-
-app.post(
-  "/api/challenge-rooms/:roomCode/leave",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const roomCode =
-        String(
-          req.params.roomCode || ""
-        )
-        .trim()
-        .toUpperCase();
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data: room,
-        error: loadError
-      } = await supabase
-        .from("challenge_rooms")
-        .select("*")
-        .eq("room_code", roomCode)
-        .or(
-          `host_user_id.eq.${user.id},guest_user_id.eq.${user.id}`
-        )
-        .maybeSingle();
-
-      if (loadError) {
-        throw loadError;
-      }
-
-      if (!room) {
-
-        return res
-          .status(404)
-          .json({
-            error:
-              "Challenge room not found."
-          });
-
-      }
-
-      const isHost =
-        room.host_user_id === user.id;
-
-      const updates = {
-
-        updated_at:
-          new Date().toISOString()
-
-      };
-
-      if (isHost) {
-
-        updates.host_ready = false;
-        updates.last_host_seen_at =
-          new Date().toISOString();
-
-      } else {
-
-        updates.guest_ready = false;
-        updates.last_guest_seen_at =
-          new Date().toISOString();
-
-      }
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("challenge_rooms")
-        .update(updates)
-        .eq(
-          "room_code",
-          roomCode
-        )
-        .select("*")
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      res.json(data);
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Challenge room leave error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not leave challenge room."
-        });
-
-    }
-
-  }
-);
-
-
-/* =======================================================
-   DELETE TWO-PLAYER CHALLENGE ROOM
-======================================================= */
-
-app.delete(
-  "/api/challenge-rooms/:roomCode",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const roomCode =
-        String(
-          req.params.roomCode || ""
-        )
-        .trim()
-        .toUpperCase();
-
-      if (!roomCode) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "roomCode is required."
-          });
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data: room,
-        error: loadError
-      } = await supabase
-        .from("challenge_rooms")
-        .select("id,host_user_id,guest_user_id")
-        .eq("room_code", roomCode)
-        .or(
-          `host_user_id.eq.${user.id},guest_user_id.eq.${user.id}`
-        )
-        .maybeSingle();
-
-      if (loadError) {
-        throw loadError;
-      }
-
-      if (!room) {
-        return res
-          .status(404)
-          .json({
-            error:
-              "Challenge room not found."
-          });
-      }
-
-      const {
-        error: deleteError
-      } = await supabase
-        .from("challenge_rooms")
-        .delete()
-        .eq("id", room.id);
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      res.json({
-        success: true,
-        roomCode
-      });
-
-    }
-    catch (error) {
-
-      console.error(
-        "Challenge room delete error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not delete challenge room."
-        });
-
-    }
-
-  }
-);
-
-
-/* =======================================================
+/* =========================================================
    QUESTION BANK API
-======================================================= */
+   ========================================================= */
 
 app.get(
   "/api/question-banks",
   async (_req, res) => {
-
-    const database =
-      await loadQuestionBanks();
-
-    res.json({
-
-      banks:
-        database.banks,
-
-      errors:
-        database.errors,
-
-      files:
-        database.files,
-
-      totalQuestions:
-        database.totalQuestions
-
-    });
-  }
-);
-
-/* =======================================================
-   DELETE IMPORTED QUESTION BANK
-======================================================= */
-
-app.delete(
-  "/api/question-banks/:filename",
-  async (req, res) => {
-
     try {
-
-      await ensureDirectories();
-
-      const filename =
-        safeFilename(
-          req.params?.filename
-        );
-
-      if (
-        !filename ||
-        !filename.toLowerCase().endsWith(".json")
-      ) {
-
-        return res
-          .status(400)
-          .json({
-            error:
-              "A valid JSON filename is required."
-          });
-
-      }
-
-      const destination =
-        path.join(
-          QUESTION_BANK_DIR,
-          filename
-        );
-
-      try {
-
-        await fs.access(
-          destination
-        );
-
-      }
-      catch {
-
-        return res
-          .status(404)
-          .json({
-            error:
-              "Question bank file not found."
-          });
-
-      }
-
-      await fs.unlink(
-        destination
-      );
-
-      const database =
+      const banks =
         await loadQuestionBanks();
 
       res.json({
-
-        ok: true,
-
-        filename,
-
-        totalQuestions:
-          database.totalQuestions
-
+        banks
       });
 
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          "Failed to load question banks."
+      });
     }
-    catch (error) {
-
-      console.error(
-        "Question bank delete error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-
-          error:
-            error.message ||
-            "Could not delete question bank."
-
-        });
-
-    }
-
   }
 );
-
-
-/* =======================================================
-   ALL QUESTIONS
-======================================================= */
 
 app.get(
   "/api/questions",
-  async (req, res) => {
+  async (_req, res) => {
+    try {
+      const banks =
+        await loadQuestionBanks();
 
-    const database =
-      await loadQuestionBanks();
-
-    let questions =
-      flattenBanks(
-        database
-      );
-
-    const subject =
-      normalizeKey(
-        req.query.subject
-      );
-
-    const topic =
-      normalizeKey(
-        req.query.topic
-      );
-
-    const subtopic =
-      normalizeKey(
-        req.query.subtopic
-      );
-
-    if (subject) {
-
-      questions =
-        questions.filter(
-          q =>
-            normalizeKey(
-              q.subject
-            ) === subject
+      const questions =
+        flattenQuestionBanks(
+          banks
         );
 
+      res.json({
+        questions
+      });
+
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          "Failed to load questions."
+      });
     }
+  }
+);
 
-    if (topic) {
+/* =========================================================
+   AI STATUS
+   ========================================================= */
 
-      questions =
-        questions.filter(
-          q =>
-            normalizeKey(
-              q.topic
-            ) === topic
-        );
-
-    }
-
-    if (subtopic) {
-
-      questions =
-        questions.filter(
-          q =>
-            normalizeKey(
-              q.subtopic
-            ) === subtopic
-        );
-
-    }
-
+app.get(
+  "/api/ai/status",
+  (_req, res) => {
     res.json({
+      configured:
+        Boolean(
+          process.env.GEMINI_API_KEY
+        ),
 
-      questions,
+      model:
+        GEMINI_MODEL,
 
-      count:
-        questions.length,
-
-      errors:
-        database.errors
-
+      maxPdfSizeMB:
+        AI_UPLOAD_MAX_BYTES /
+        (1024 * 1024)
     });
   }
 );
 
-/* =======================================================
-   SUBJECT + TOPIC SUMMARY
-======================================================= */
+/* =========================================================
+   AI GENERATE FILL-IN-THE-BLANKS
+   ========================================================= */
 
-app.get(
-  "/api/subjects",
-  async (_req, res) => {
+app.post(
+  "/api/ai/generate-fib",
 
-    const database =
-      await loadQuestionBanks();
+  aiUpload.single("pdf"),
 
-    const questions =
-      flattenBanks(
-        database
-      );
+  async (req, res) => {
+    try {
+      /*
+       * Require authentication when Supabase
+       * is configured.
+       */
+      if (supabase) {
+        const user =
+          await getAuthenticatedUser(
+            req
+          );
 
-    const subjectMap =
-      new Map();
+        if (!user) {
+          return res.status(401).json({
+            error:
+              "Authentication required."
+          });
+        }
+      }
 
-    for (
-      const q of questions
-    ) {
-
-      const subjectKey =
-        normalizeKey(
-          q.subject
-        );
-
-      if (
-        !subjectMap.has(
-          subjectKey
-        )
-      ) {
-
-        subjectMap.set(
-          subjectKey,
-          {
-
-            subject:
-              q.subject,
-
-            questions:
-              0,
-
-            topics:
-              new Map()
-
-          }
-        );
-
+      if (!req.file) {
+        return res.status(400).json({
+          error:
+            "Please upload a PDF."
+        });
       }
 
       const subject =
-        subjectMap.get(
-          subjectKey
+        cleanString(
+          req.body.subject
         );
 
-      subject.questions++;
+      const topic =
+        cleanString(
+          req.body.topic
+        );
 
-      const topicKey =
-        normalizeKey(
-          q.topic
+      if (!subject) {
+        return res.status(400).json({
+          error:
+            "Subject is required."
+        });
+      }
+
+      if (!topic) {
+        return res.status(400).json({
+          error:
+            "Topic is required."
+        });
+      }
+
+      let count =
+        Number(
+          req.body.count
         );
 
       if (
-        !subject.topics.has(
-          topicKey
+        !Number.isFinite(count)
+      ) {
+        count = 30;
+      }
+
+      count =
+        Math.max(
+          5,
+          Math.min(
+            100,
+            Math.round(count)
+          )
+        );
+
+      const requestedDifficulty =
+        cleanString(
+          req.body.difficulty
+        ).toLowerCase();
+
+      const difficulty =
+        [
+          "mixed",
+          "easy",
+          "medium",
+          "difficult"
+        ].includes(
+          requestedDifficulty
         )
-      ) {
+          ? requestedDifficulty
+          : "mixed";
 
-        subject.topics.set(
-          topicKey,
-          {
-
-            topic:
-              q.topic,
-
-            questions:
-              0
-
-          }
+      const customPrompt =
+        cleanString(
+          req.body.prompt
         );
 
+      const requestedMode =
+        cleanString(
+          req.body.mode
+        ).toLowerCase();
+
+      const mode =
+        requestedMode ||
+        "fill_in_the_blanks";
+
+      if (!AI_MODES.includes(mode)) {
+        return res.status(400).json({
+          error:
+            `Unsupported study mode: "${mode}".`
+        });
       }
 
-      subject.topics.get(
-        topicKey
-      ).questions++;
+      console.log(
+        `AI ${mode} generation started: ${req.file.originalname}`
+      );
 
-    }
+      console.log(
+        `Subject: ${subject}`
+      );
 
-    const subjects =
-      [...subjectMap.values()]
-        .map(
-          subject => ({
+      console.log(
+        `Topic: ${topic}`
+      );
 
-            subject:
-              subject.subject,
+      console.log(
+        `Questions: ${count}`
+      );
 
-            questions:
-              subject.questions,
+      const generatedQuestions =
+        await generateStudyBankFromPdf({
+          pdfBuffer:
+            req.file.buffer,
 
-            topics:
-              [
-                ...subject
-                  .topics
-                  .values()
-              ]
+          originalFilename:
+            req.file.originalname,
 
-          })
+          subject,
+
+          topic,
+
+          mode,
+
+          count,
+
+          difficulty,
+
+          customPrompt
+        });
+
+      /*
+       * Convert AI output into the exact
+       * structure used by the existing
+       * question-bank system.
+       */
+      const normalizedQuestions =
+        generatedQuestions
+          .map(
+            (
+              question,
+              index
+            ) =>
+              normalizeAiQuestion(
+                question,
+                {
+                  mode,
+
+                  subject,
+
+                  topic,
+
+                  source:
+                    req.file.originalname,
+
+                  index,
+
+                  filename:
+                    req.file.originalname
+                }
+              )
+          )
+          .filter(Boolean);
+
+      if (
+        !normalizedQuestions.length
+      ) {
+        throw new Error(
+          `AI generated no valid ${mode} questions.`
         );
+      }
 
-    res.json({
+      /*
+       * Remove duplicates by question text.
+       */
+      const uniqueQuestions = [];
 
-      subjects,
+      const seenQuestions =
+        new Set();
 
-      errors:
-        database.errors
+      for (
+        const question
+        of normalizedQuestions
+      ) {
+        const key =
+          question.question
+            .toLowerCase()
+            .replace(/\s+/g, " ")
+            .trim();
 
-    });
-  }
-);
+        if (
+          seenQuestions.has(key)
+        ) {
+          continue;
+        }
 
-/* =======================================================
-   IMPORT JSON FROM SETTINGS
-======================================================= */
+        seenQuestions.add(key);
 
-app.post(
-  "/api/question-banks/import",
-  async (req, res) => {
+        uniqueQuestions.push(
+          question
+        );
+      }
 
-    try {
+      const bank = {
+        subject,
 
-      await ensureDirectories();
+        topic,
 
+        mode,
+
+
+
+        generated_by:
+          "gemini",
+
+        source:
+          req.file.originalname,
+
+        generated_at:
+          new Date().toISOString(),
+
+        questions:
+          uniqueQuestions
+      };
+
+      /*
+       * Save the generated bank so the
+       * existing question-bank loader can
+       * immediately use it.
+       */
       const filename =
-        safeFilename(
-          req.body?.filename
+        safeAiBankFilename(
+          subject,
+          topic
         );
 
-      const data =
-        req.body?.data;
-
-      if (
-        !data ||
-        typeof data !== "object"
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            error:
-              "No valid JSON data was supplied."
-
-          });
-
-      }
-
-      const result =
-        normalizeBank(
-          data,
-          filename
-        );
-
-      if (
-        !result.bank.questions.length
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            error:
-              "The JSON does not contain any valid MCQ questions.",
-
-            details:
-              result.errors
-
-          });
-
-      }
-
-      if (
-        result.errors.length
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            error:
-              "The JSON contains validation errors.",
-
-            details:
-              result.errors
-
-          });
-
-      }
-
-      const destination =
+      const outputPath =
         path.join(
           QUESTION_BANK_DIR,
           filename
         );
 
       await fs.writeFile(
-
-        destination,
-
+        outputPath,
         JSON.stringify(
-          data,
+          bank,
           null,
           2
-        ) + "\n",
-
+        ),
         "utf8"
-
       );
 
-      const database =
-        await loadQuestionBanks();
+      console.log(
+        `AI FIB generation complete: ${filename}`
+      );
 
       res.json({
-
-        ok: true,
+        success: true,
 
         filename,
 
-        questionCount:
-          result.questionCount,
+        subject,
 
-        totalQuestions:
-          database.totalQuestions
+        topic,
 
+        mode:
+          "fill_in_the_blanks",
+
+        count:
+          uniqueQuestions.length,
+
+        questions:
+          uniqueQuestions
       });
 
-    }
-
-    catch (error) {
-
+    } catch (error) {
       console.error(
-        "Import error:",
+        "AI FIB generation error:",
         error
       );
 
-      res
-        .status(500)
-        .json({
-
-          error:
-            error.message ||
-            "Could not import question bank."
-
-        });
-
-    }
-
-  }
-);
-
-/* =======================================================
-   PERFORMANCE API
-======================================================= */
-
-app.get(
-  "/api/performance",
-  async (req, res) => {
-
-    try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const performance = {};
-
-      (data || []).forEach(row => {
-
-        performance[row.question_id] = {
-
-          attempts: row.attempts,
-          correct: row.correct,
-          wrong: row.wrong,
-          unknown: row.unknown,
-          streak: row.streak,
-          mastery: row.mastery,
-          lastAttempted: row.last_attempted,
-          nextReview: row.next_review,
-          interval: row.interval,
-          normalInterval: row.normal_interval,
-          normalNextReview: row.normal_next_review,
-          recovery: row.recovery,
-          history: row.history || []
-
-        };
-
+      res.status(500).json({
+        error:
+          error?.message ||
+          "Failed to generate fill-in-the-blank questions."
       });
-
-      res.json(performance);
-
     }
-
-    catch (error) {
-
-      console.error(
-        "Performance load error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not load performance."
-        });
-
-    }
-
   }
 );
 
-app.put(
-  "/api/performance",
-  async (req, res) => {
-
-    try {
-
-      if (
-        !req.body ||
-        typeof req.body !== "object" ||
-        Array.isArray(req.body)
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            error:
-              "Performance payload must be an object."
-
-          });
-
-      }
-
-      await writePerformance(
-        req.body
-      );
-
-      res.json({
-
-        ok: true
-
-      });
-
-    }
-
-    catch (error) {
-
-      res
-        .status(500)
-        .json({
-
-          error:
-            error.message
-
-        });
-
-    }
-
-  }
-);
-
-/* =======================================================
-   RECORD ONE ANSWER
-======================================================= */
+/* =========================================================
+   JSON BANK IMPORT
+   ========================================================= */
 
 app.post(
-  "/api/performance/answer",
+  "/api/question-banks/import",
   async (req, res) => {
-
     try {
-
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
       const {
-        questionId,
-        answer,
-        result,
-        timestamp
+        filename,
+        bank
       } = req.body || {};
 
-      if (!questionId) {
-
-        return res
-          .status(400)
-          .json({
-
-            error:
-              "questionId is required."
-
-          });
-
-      }
-
       if (
-        ![
-          "correct",
-          "wrong",
-          "unknown"
-        ].includes(result)
+        !filename ||
+        !bank
       ) {
-
-        return res
-          .status(400)
-          .json({
-
-            error:
-              "result must be correct, wrong or unknown."
-
-          });
-
-      }
-
-      const database =
-        await loadQuestionBanks();
-
-      const question =
-        flattenBanks(
-          database
-        ).find(
-          q =>
-            q.id === questionId
-        );
-
-      if (!question) {
-
-        return res
-          .status(404)
-          .json({
-
-            error:
-              `Question "${questionId}" was not found.`
-
-          });
-
-      }
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data: existingRow,
-        error: loadError
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("question_id", questionId)
-        .maybeSingle();
-
-      if (loadError) {
-        throw loadError;
-      }
-
-      const performance = {};
-
-      if (existingRow) {
-
-        performance[questionId] = {
-
-          attempts: existingRow.attempts,
-          correct: existingRow.correct,
-          wrong: existingRow.wrong,
-          unknown: existingRow.unknown,
-          streak: existingRow.streak,
-          mastery: existingRow.mastery,
-          lastAttempted: existingRow.last_attempted,
-          nextReview: existingRow.next_review,
-          interval: existingRow.interval,
-          normalInterval: existingRow.normal_interval,
-          normalNextReview: existingRow.normal_next_review,
-          recovery: existingRow.recovery,
-          history: existingRow.history || []
-
-        };
-
-      }
-
-      if (
-        !performance[questionId]
-      ) {
-
-        performance[questionId] = {
-
-          attempts: 0,
-
-          correct: 0,
-
-          wrong: 0,
-
-          unknown: 0,
-
-          streak: 0,
-
-          mastery: 0,
-
-          lastAttempted: null,
-
-          nextReview: null,
-
-          interval: 0,
-
-          normalInterval: 0,
-
-          normalNextReview: null,
-
-          recovery: false,
-
-          history: []
-
-        };
-
-      }
-
-      const p =
-        performance[
-          questionId
-        ];
-
-      p.attempts += 1;
-
-      /* -------------------------------------------
-         CORRECT
-         NORMAL REVIEW SCHEDULE
-
-         3 days
-         1 week
-         2 weeks
-         3 weeks
-         4 weeks
-         monthly
-      ------------------------------------------- */
-
-      if (
-        result === "correct"
-      ) {
-
-        p.correct += 1;
-
-        p.streak += 1;
-
-        /*
-         * Recovery questions return to the
-         * normal review schedule they were
-         * following before becoming unlearnt.
-         */
-
-        if (p.recovery) {
-
-          p.recovery = false;
-
-          /*
-           * The question has been learnt again.
-           * Resume its normal review progression
-           * from the interval it had before recovery.
-           */
-
-          const nextInterval = {
-
-            0: 3,
-
-            3: 7,
-
-            7: 14,
-
-            14: 21,
-
-            21: 28,
-
-            28: 30,
-
-            30: 30
-
-          };
-
-          p.interval =
-            nextInterval[
-              p.normalInterval || 0
-            ] ?? 3;
-
-          const next =
-            new Date();
-
-          next.setDate(
-            next.getDate() +
-            p.interval
-          );
-
-          p.nextReview =
-            next
-              .toISOString()
-              .slice(
-                0,
-                10
-              );
-
-          p.normalInterval =
-            p.interval;
-
-          p.normalNextReview =
-            p.nextReview;
-
-        }
-
-        else {
-
-          const nextInterval = {
-
-            0: 3,
-
-            3: 7,
-
-            7: 14,
-
-            14: 21,
-
-            21: 28,
-
-            28: 30,
-
-            30: 30
-
-          };
-
-          p.interval =
-            nextInterval[
-              p.interval
-            ] ?? 3;
-
-          const next =
-            new Date();
-
-          next.setDate(
-            next.getDate() +
-            p.interval
-          );
-
-          p.nextReview =
-            next
-              .toISOString()
-              .slice(
-                0,
-                10
-              );
-
-          p.normalInterval =
-            p.interval;
-
-          p.normalNextReview =
-            p.nextReview;
-
-        }
-
-      }
-
-      /* -------------------------------------------
-         WRONG / UNKNOWN
-
-         Always return tomorrow.
-
-         Repeated failure keeps the question
-         in next-day recovery until it is learnt.
-      ------------------------------------------- */
-
-      else {
-
-        if (
-          result === "wrong"
-        ) {
-          p.wrong += 1;
-        }
-
-        if (
-          result === "unknown"
-        ) {
-          p.unknown += 1;
-        }
-
-        p.streak = 0;
-
-        /*
-         * Preserve the normal topic schedule
-         * before entering next-day recovery.
-         */
-        if (!p.recovery) {
-
-          p.normalInterval =
-            p.interval || 3;
-
-          p.normalNextReview =
-            p.nextReview || null;
-
-        }
-
-        /*
-         * Mark this question as recovery.
-         * It will be reviewed tomorrow.
-         */
-        p.recovery = true;
-
-        p.interval = 0;
-
-        const tomorrow =
-          new Date();
-
-        tomorrow.setDate(
-          tomorrow.getDate() + 1
-        );
-
-        p.nextReview =
-          tomorrow
-            .toISOString()
-            .slice(
-              0,
-              10
-            );
-
-      }
-
-      /* -------------------------------------------
-         MASTERY
-      ------------------------------------------- */
-
-      const accuracy =
-        p.correct /
-        Math.max(
-          1,
-          p.attempts
-        );
-
-      const repetition =
-        Math.min(
-          1,
-          p.streak / 5
-        );
-
-      p.mastery =
-        Math.round(
-
-          (
-            accuracy * 0.7 +
-            repetition * 0.3
-          ) * 100
-
-        );
-
-      p.lastAttempted =
-        timestamp ||
-        new Date()
-          .toISOString();
-
-      /* -------------------------------------------
-         HISTORY
-      ------------------------------------------- */
-
-      p.history.push({
-
-        timestamp:
-          p.lastAttempted,
-
-        answer:
-          answer || null,
-
-        result,
-
-        correctAnswer:
-          question.answer
-
-      });
-
-      const {
-        error: saveError
-      } = await supabase
-        .from("question_performance")
-        .upsert({
-          user_id: user.id,
-          question_id: questionId,
-          attempts: p.attempts,
-          correct: p.correct,
-          wrong: p.wrong,
-          unknown: p.unknown,
-          streak: p.streak,
-          mastery: p.mastery,
-          last_attempted: p.lastAttempted,
-          next_review: p.nextReview,
-          interval: p.interval,
-          normal_interval: p.normalInterval,
-          normal_next_review: p.normalNextReview,
-          recovery: p.recovery,
-          history: p.history,
-          updated_at: new Date().toISOString()
+        return res.status(400).json({
+          error:
+            "filename and bank are required."
         });
-
-      if (saveError) {
-        throw saveError;
       }
+
+      const safeFilename =
+        path.basename(
+          filename
+        );
+
+      if (
+        !safeFilename
+          .toLowerCase()
+          .endsWith(".json")
+      ) {
+        return res.status(400).json({
+          error:
+            "Only JSON files are allowed."
+        });
+      }
+
+      const normalized =
+        normalizeBank(
+          bank,
+          safeFilename
+        );
+
+      if (!normalized) {
+        return res.status(400).json({
+          error:
+            "Invalid question bank."
+        });
+      }
+
+      const outputPath =
+        path.join(
+          QUESTION_BANK_DIR,
+          safeFilename
+        );
+
+      await fs.writeFile(
+        outputPath,
+        JSON.stringify(
+          bank,
+          null,
+          2
+        ),
+        "utf8"
+      );
 
       res.json({
-
-        ok: true,
-
-        questionId,
-
-        performance:
-          p
-
+        success: true,
+        filename:
+          safeFilename,
+        bank:
+          normalized
       });
 
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          "Failed to import question bank."
+      });
     }
-
-    catch (error) {
-
-      console.error(
-        "Answer event error:",
-        error
-      );
-
-      res
-        .status(500)
-        .json({
-
-          error:
-            error.message
-
-        });
-
-    }
-
   }
 );
 
-/* =======================================================
-   REVIEW API
-======================================================= */
+/* =========================================================
+   PERFORMANCE STORAGE
+   ========================================================= */
+
+async function readPerformance() {
+  await ensureDirectories();
+
+  try {
+    const raw =
+      await fs.readFile(
+        PERFORMANCE_FILE,
+        "utf8"
+      );
+
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function writePerformance(
+  performance
+) {
+  await ensureDirectories();
+
+  await fs.writeFile(
+    PERFORMANCE_FILE,
+
+    JSON.stringify(
+      performance,
+      null,
+      2
+    ),
+
+    "utf8"
+  );
+}
+
+/* =========================================================
+   PERFORMANCE API
+   ========================================================= */
 
 app.get(
-  "/api/review",
-  async (req, res) => {
-
+  "/api/performance",
+  async (_req, res) => {
     try {
+      const performance =
+        await readPerformance();
 
-      const user =
-        await getAuthenticatedUser(req);
-
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const database =
-        await loadQuestionBanks();
-
-      const questions =
-        flattenBanks(
-          database
-        );
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const performance = {};
-
-      (data || []).forEach(row => {
-
-        performance[row.question_id] = {
-
-          attempts: row.attempts,
-          correct: row.correct,
-          wrong: row.wrong,
-          unknown: row.unknown,
-          streak: row.streak,
-          mastery: row.mastery,
-          lastAttempted: row.last_attempted,
-          nextReview: row.next_review,
-          interval: row.interval,
-          normalInterval: row.normal_interval,
-          normalNextReview: row.normal_next_review,
-          recovery: row.recovery,
-          history: row.history || []
-
-        };
-
-      });
-
-      const todayKey =
-        today();
-
-    const due =
-      questions
-
-        .map(
-          question => ({
-
-            question,
-
-            performance:
-              performance[
-                question.id
-              ] || null
-
-          })
-        )
-
-        .filter(
-          item =>
-
-            item.performance?.nextReview &&
-
-            item.performance.nextReview <=
-              todayKey
-        );
-
-    res.json({
-
-      today:
-        todayKey,
-
-      due,
-
-      dueCount:
-        due.length,
-
-      overdueCount:
-
-        due.filter(
-
-          item =>
-            item.performance
-              .nextReview <
-            todayKey
-
-        ).length
-
-    });
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Review error:",
-        error
+      res.json(
+        performance
       );
 
-      res
-        .status(500)
-        .json({
+    } catch (error) {
+      console.error(error);
 
-          error:
-            error.message ||
-            "Could not load review data."
-
-        });
-
+      res.status(500).json({
+        error:
+          "Failed to load performance."
+      });
     }
-
   }
 );
 
-/* =======================================================
-   CALENDAR REVIEW API
-======================================================= */
-
-app.get(
-  "/api/review-calendar",
+app.post(
+  "/api/performance",
   async (req, res) => {
-
     try {
+      const performance =
+        await readPerformance();
 
-      const user =
-        await getAuthenticatedUser(req);
+      const incoming =
+        req.body || {};
 
-      if (!requireAuthenticatedUser(user, res)) {
-        return;
-      }
-
-      const database =
-        await loadQuestionBanks();
-
-      const questions =
-        flattenBanks(
-          database
-        );
-
-      const supabase =
-        await getUserSupabaseClient(req);
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("question_performance")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const performance = {};
-
-      (data || []).forEach(row => {
-
-        performance[row.question_id] = {
-
-          attempts: row.attempts,
-          correct: row.correct,
-          wrong: row.wrong,
-          unknown: row.unknown,
-          streak: row.streak,
-          mastery: row.mastery,
-          lastAttempted: row.last_attempted,
-          nextReview: row.next_review,
-          interval: row.interval,
-          normalInterval: row.normal_interval,
-          normalNextReview: row.normal_next_review,
-          recovery: row.recovery,
-          history: row.history || []
-
-        };
-
-      });
-
-      const calendar = {};
-
-    /*
-     * Group questions by topic and subject.
-     * Each question contributes its current
-     * review date to the calendar.
-     */
-
-    questions.forEach(question => {
-
-      const p =
-        performance[
-          question.id
-        ];
-
-      if (!p || !p.nextReview) {
-        return;
-      }
-
-      const date =
-        p.nextReview;
-
-      if (!calendar[date]) {
-        calendar[date] = [];
-      }
-
-      calendar[date].push({
-
-        subject:
-          question.subject || "Uncategorised",
-
-        topic:
-          question.topic || "Uncategorised",
-
-        questionId:
-          question.id,
-
-        recovery:
-          Boolean(p.recovery)
-
-      });
-
-    });
-
-    res.json({
-      calendar
-    });
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "Review calendar error:",
-        error
+      Object.assign(
+        performance,
+        incoming
       );
 
-      res
-        .status(500)
-        .json({
-          error:
-            error.message ||
-            "Could not load review calendar."
-        });
+      await writePerformance(
+        performance
+      );
 
+      res.json({
+        success: true
+      });
+
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        error:
+          "Failed to save performance."
+      });
     }
-
   }
 );
 
-/* =======================================================
-   STATIC FILES
-======================================================= */
-
-app.use(
-  express.static(ROOT)
-);
+/* =========================================================
+   HEALTH CHECK
+   ========================================================= */
 
 app.get(
-  "/",
+  "/api/health",
   (_req, res) => {
+    res.json({
+      ok: true,
+      timestamp:
+        new Date().toISOString()
+    });
+  }
+);
 
-    res.sendFile(
-      path.join(
-        ROOT,
-        "index.html"
-      )
+/* =========================================================
+   FALLBACK
+   ========================================================= */
+
+app.use(async (req, res, next) => {
+  if (req.method !== "GET") {
+    return next();
+  }
+
+  if (req.path.startsWith("/api/")) {
+    return next();
+  }
+
+  try {
+    await fs.access(
+      path.join(ROOT, "index.html")
     );
 
+    res.sendFile(
+      path.join(ROOT, "index.html")
+    );
+  } catch {
+    res.status(404).send(
+      "index.html not found."
+    );
   }
-);
+});
 
-/* =======================================================
-   ERROR HANDLING
-======================================================= */
+/* =========================================================
+   ERROR HANDLER
+   ========================================================= */
 
 app.use(
   (
@@ -3179,119 +2158,59 @@ app.use(
     res,
     _next
   ) => {
-
     console.error(
+      "Server error:",
       error
     );
 
-    res
-      .status(500)
-      .json({
+    if (
+      error instanceof multer.MulterError
+    ) {
+      if (
+        error.code ===
+        "LIMIT_FILE_SIZE"
+      ) {
+        return res.status(400).json({
+          error:
+            "PDF is too large. Maximum size is 50 MB."
+        });
+      }
 
+      return res.status(400).json({
         error:
-          error.message ||
-          "Internal server error."
-
+          error.message
       });
+    }
 
+    res.status(500).json({
+      error:
+        error?.message ||
+        "Internal server error."
+    });
   }
 );
 
-/* =======================================================
+/* =========================================================
    START SERVER
-======================================================= */
+   ========================================================= */
 
-async function start() {
+await ensureDirectories();
 
-  await ensureDirectories();
-
-  const database =
-    await loadQuestionBanks();
-
-  app.listen(
-    PORT,
-    () => {
-
-      console.log("");
-
-      console.log(
-        "========================================"
-      );
-
-      console.log(
-        "       Flo's Study Space"
-      );
-
-      console.log(
-        "========================================"
-      );
-
-      console.log(
-        `       http://localhost:${PORT}`
-      );
-
-      console.log("");
-
-      console.log(
-        `       Question banks : ${database.files.length}`
-      );
-
-      console.log(
-        `       Questions      : ${database.totalQuestions}`
-      );
-
-      console.log(
-        `       Bank folder    : ${QUESTION_BANK_DIR}`
-      );
-
-      console.log("");
-
-      if (
-        database.errors.length
-      ) {
-
-        console.log(
-          "       JSON warnings/errors:"
-        );
-
-        database.errors.forEach(
-          error =>
-            console.log(
-              `       - ${error}`
-            )
-        );
-
-        console.log("");
-
-      }
-
-      console.log(
-        "       Server ready."
-      );
-
-      console.log(
-        "========================================"
-      );
-
-      console.log("");
-
-    }
-  );
-
-}
-
-start().catch(
-  error => {
-
-    console.error(
-      "Could not start Flo's Study Space:"
+app.listen(
+  PORT,
+  () => {
+    console.log(
+      `Study Space server running on http://localhost:${PORT}`
     );
 
-    console.error(
-      error
+    console.log(
+      `Gemini configured: ${Boolean(
+        process.env.GEMINI_API_KEY
+      )}`
     );
 
-    process.exit(1);
-
+    console.log(
+      `Gemini model: ${GEMINI_MODEL}`
+    );
   }
 );

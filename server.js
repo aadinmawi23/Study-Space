@@ -1843,8 +1843,24 @@ app.get(
       const banks =
         await loadQuestionBanks();
 
+      const files =
+        (await fs.readdir(QUESTION_BANK_DIR))
+          .filter(filename =>
+            filename
+              .toLowerCase()
+              .endsWith(".json")
+          );
+
       res.json({
-        banks
+        banks,
+        files,
+        totalQuestions:
+          banks.reduce(
+            (total, bank) =>
+              total +
+              (bank.questions?.length || 0),
+            0
+          )
       });
 
     } catch (error) {
@@ -2234,12 +2250,16 @@ app.post(
     try {
       const {
         filename,
-        bank
+        bank,
+        data
       } = req.body || {};
+
+      const importedBank =
+        bank || data;
 
       if (
         !filename ||
-        !bank
+        !importedBank
       ) {
         return res.status(400).json({
           error:
@@ -2265,7 +2285,7 @@ app.post(
 
       const normalized =
         normalizeBank(
-          bank,
+          importedBank,
           safeFilename
         );
 
@@ -2285,7 +2305,7 @@ app.post(
       await fs.writeFile(
         outputPath,
         JSON.stringify(
-          bank,
+          normalized,
           null,
           2
         ),
@@ -2296,6 +2316,8 @@ app.post(
         success: true,
         filename:
           safeFilename,
+        questionCount:
+          normalized.questions?.length || 0,
         bank:
           normalized
       });

@@ -20662,6 +20662,153 @@ async function ensureUsername() {
 })();
 </script>
 
+
+<script id="flo-restore-solo-challenge">
+/* =========================================================
+   RESTORE SOLO STUDY / CHALLENGE MODE
+   Keeps the existing question-count system.
+   ========================================================= */
+
+window.openQuizModeModalFinal = function(){
+
+  const questions = window.__floQuizQuestions || [];
+
+  const modal = document.getElementById("floQuizModeModal");
+  const content = document.getElementById("floQuizModeContent");
+
+  if(!modal || !content){
+    console.error("Quiz mode modal elements not found.");
+    return;
+  }
+
+  if(!questions.length){
+    toast("No questions are loaded for this topic.");
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="flo-quiz-eyebrow">
+      START QUIZ
+    </div>
+
+    <h2 class="flo-quiz-title">
+      How would you like to play?
+    </h2>
+
+    <p class="flo-quiz-subtitle">
+      Choose Solo Study for your normal quiz,
+      or Challenge Mode to compete with another player.
+    </p>
+
+    <button
+      class="flo-quiz-choice"
+      onclick="window.__floSelectQuizMode('solo')"
+    >
+      <strong>
+        Solo Study
+      </strong>
+
+      <span>
+        Practice at your own pace using the existing
+        quiz and scoring system.
+      </span>
+    </button>
+
+    <button
+      class="flo-quiz-choice"
+      onclick="window.__floSelectQuizMode('challenge')"
+    >
+      <strong>
+        Challenge Mode
+      </strong>
+
+      <span>
+        Create a room or join another player
+        for a live two-player quiz.
+      </span>
+    </button>
+
+    <div class="flo-quiz-actions">
+      <button
+        class="btn light"
+        onclick="window.__floCloseQuizMode()"
+      >
+        Cancel
+      </button>
+    </div>
+  `;
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+};
+
+
+/* ---------------------------------------------------------
+   MODE SELECTION
+   --------------------------------------------------------- */
+
+window.__floSelectQuizMode = async function(mode){
+
+  const questions = window.__floQuizQuestions || [];
+
+  if(!questions.length){
+    toast("No questions are loaded for this topic.");
+    return;
+  }
+
+  /*
+   * SOLO:
+   * Open the existing question-count slider.
+   */
+  if(mode === "solo"){
+
+    window.__floOpenQuestionCountSelector(
+      "solo",
+      questions
+    );
+
+    return;
+  }
+
+
+  /*
+   * CHALLENGE:
+   * Keep the existing username + challenge-room flow.
+   * The question-count selector will be used by the
+   * host once the challenge room is created.
+   */
+  if(mode === "challenge"){
+
+    const username =
+      await window.__floRequireUsername();
+
+    if(!username){
+      return;
+    }
+
+    challenge.username = username;
+
+    challenge.subjectName =
+      window.pendingQuizSubject;
+
+    challenge.topic =
+      window.pendingQuizTopic;
+
+    window.__floCloseQuizMode();
+
+    window.__floOpenChallengeChoice();
+
+    return;
+  }
+};
+
+
+/* Keep old code compatible */
+window.selectQuizMode =
+  window.__floSelectQuizMode;
+
+</script>
+
 </body>
 </html>
 

@@ -15624,6 +15624,53 @@ async function ensureUsername() {
     };
 
 
+  /* FLO_JOIN_ROOM_CHOICE_CLICK_FIX */
+  document.addEventListener("click", function(event){
+    const button = event.target?.closest?.(
+      "#floChallengeContent button"
+    );
+
+    if(!button) return;
+
+    const label = button.innerText.trim();
+    const roomCodeInput = document.getElementById("floJoinRoomCode");
+
+    // Handle only the initial choice-screen button.
+    // The button inside the room-code form must still submit the join.
+    if(label !== "Join Room" || roomCodeInput) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    try {
+      if(typeof window.__floShowJoinRoom !== "function"){
+        throw new Error("Join Room dialog function is unavailable.");
+      }
+
+      window.__floShowJoinRoom();
+
+      const modal = document.getElementById("floChallengeModal");
+      const content = document.getElementById("floChallengeContent");
+      const input = document.getElementById("floJoinRoomCode");
+
+      if(!modal || !content || !input){
+        throw new Error("The Join Room dialog could not be rendered.");
+      }
+
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      modal.style.display = "flex";
+      input.focus();
+
+    } catch(error) {
+      console.error("Could not open Join Room dialog:", error);
+
+      if(typeof toast === "function"){
+        toast(error.message || "Could not open Join Room.");
+      }
+    }
+  }, true);
+
   window.__floJoinRoom =
     async function(){
 

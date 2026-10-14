@@ -11718,9 +11718,46 @@ async function ensureUsername() {
     options = {}
   ){
 
-    if(!supabaseSession?.access_token){
-      throw new Error("You must be signed in.");
+    if(!supabaseClient){
+      throw new Error(
+        "Supabase is not initialized. Refresh the page and sign in again."
+      );
     }
+
+    let sessionResult =
+      await supabaseClient.auth.getSession();
+
+    let session =
+      sessionResult?.data?.session || null;
+
+    if(sessionResult?.error){
+      console.warn(
+        "Could not retrieve the Supabase session:",
+        sessionResult.error.message
+      );
+    }
+
+    if(!session?.access_token){
+      const refreshed =
+        await supabaseClient.auth.refreshSession();
+
+      if(refreshed?.error){
+        throw new Error(
+          "Your sign-in session has expired. Sign out and sign in again."
+        );
+      }
+
+      session =
+        refreshed?.data?.session || null;
+    }
+
+    if(!session?.access_token){
+      throw new Error(
+        "Please sign in before using multiplayer rooms."
+      );
+    }
+
+    supabaseSession = session;
 
     const response =
       await fetch(
@@ -11728,10 +11765,10 @@ async function ensureUsername() {
         {
           ...options,
           headers:{
+            ...(options.headers || {}),
             "Content-Type":"application/json",
             "Authorization":
-              `Bearer ${supabaseSession.access_token}`,
-            ...(options.headers || {})
+              `Bearer ${session.access_token}`
           }
         }
       );
@@ -11751,7 +11788,6 @@ async function ensureUsername() {
 
     return data;
   }
-
 
   async function createPersistentChallengeRoom(){
 
@@ -16392,21 +16428,46 @@ async function ensureUsername() {
   window.__floStartChallenge =
     async function(){
 
-      if(
-        !challenge.isHost ||
-        !challenge.opponentJoined ||
-        !challenge.ready ||
-        !challenge.opponentReady
-      ){
-
+      if (!challenge.isHost) {
+        toast("Only the room host can start the challenge.");
         return;
-
       }
 
+      if (!challenge.opponentJoined) {
+        toast("Wait for the other player to join.");
+        return;
+      }
+
+      if (!challenge.ready || !challenge.opponentReady) {
+        toast("Both players must be ready before starting.");
+        return;
+      }
+
+      const questions =
+        Array.isArray(challenge.questions) &&
+        challenge.questions.length
+          ? challenge.questions
+          : (
+              Array.isArray(window.__floQuizQuestions)
+                ? window.__floQuizQuestions
+                : []
+            );
+
+      if (!questions.length) {
+        toast("No questions are available for this challenge. Reopen the topic and create the room again.");
+        console.error("Start Challenge: both players are ready, but no challenge questions are available.");
+        return;
+      }
+
+      if (typeof window.__floOpenQuestionCountSelector !== "function") {
+        toast("The question selector could not be loaded. Refresh the page and try again.");
+        console.error("Missing window.__floOpenQuestionCountSelector");
+        return;
+      }
 
       window.__floOpenQuestionCountSelector(
         "challenge",
-        window.__floQuizQuestions || []
+        questions
       );
 
     };

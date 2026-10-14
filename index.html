@@ -11737,23 +11737,55 @@ async function ensureUsername() {
       );
     }
 
-    if(!session?.access_token){
+    // Verify that Supabase still accepts the access token.
+    let verifiedUser = null;
+
+    if(session?.access_token){
+      const verification =
+        await supabaseClient.auth.getUser(session.access_token);
+
+      if(!verification.error && verification.data?.user){
+        verifiedUser = verification.data.user;
+      }else{
+        console.warn(
+          "Multiplayer session token was rejected; attempting refresh.",
+          verification.error?.message || "No user returned."
+        );
+      }
+    }
+
+    // Refresh both missing and rejected access tokens.
+    if(!verifiedUser){
       const refreshed =
         await supabaseClient.auth.refreshSession();
 
       if(refreshed?.error){
+        console.error(
+          "Multiplayer session refresh failed:",
+          refreshed.error.message
+        );
+
         throw new Error(
-          "Your sign-in session has expired. Sign out and sign in again."
+          "Your sign-in session is no longer valid. Sign out, sign in again, and retry."
         );
       }
 
       session =
         refreshed?.data?.session || null;
+
+      if(session?.access_token){
+        const verification =
+          await supabaseClient.auth.getUser(session.access_token);
+
+        if(!verification.error && verification.data?.user){
+          verifiedUser = verification.data.user;
+        }
+      }
     }
 
-    if(!session?.access_token){
+    if(!session?.access_token || !verifiedUser){
       throw new Error(
-        "Please sign in before using multiplayer rooms."
+        "Supabase could not verify your sign-in. Sign out and sign in again before using multiplayer."
       );
     }
 

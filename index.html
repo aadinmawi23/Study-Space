@@ -1552,6 +1552,30 @@ function updateAccountUI() {
     document.getElementById("accountButton");
 
   if (!accountButton) return;
+  const nameElement =
+    document.getElementById("accountName");
+
+  const emailElement =
+    document.getElementById("accountEmail");
+
+  const avatarElement =
+    document.getElementById("accountAvatar");
+
+  const avatarPlaceholder =
+    document.getElementById(
+      "accountAvatarPlaceholder"
+    );
+
+  const profileAvatar =
+    document.getElementById(
+      "accountProfileAvatar"
+    );
+
+  const profilePlaceholder =
+    document.getElementById(
+      "accountProfilePlaceholder"
+    );
+
 
   if (!supabaseSession) {
 
@@ -1606,29 +1630,6 @@ function updateAccountUI() {
     metadata.picture ||
     "";
 
-  const nameElement =
-    document.getElementById("accountName");
-
-  const emailElement =
-    document.getElementById("accountEmail");
-
-  const avatarElement =
-    document.getElementById("accountAvatar");
-
-  const avatarPlaceholder =
-    document.getElementById(
-      "accountAvatarPlaceholder"
-    );
-
-  const profileAvatar =
-    document.getElementById(
-      "accountProfileAvatar"
-    );
-
-  const profilePlaceholder =
-    document.getElementById(
-      "accountProfilePlaceholder"
-    );
 
   if (nameElement) {
     nameElement.textContent = name;
@@ -4519,8 +4520,10 @@ function allQuestions(){
         bank.subject,
 
       topic:
-        question.topic ||
-        bank.topic,
+        normalize(bank.subject) === "static gk" &&
+        normalize(bank.topic) === "merged"
+          ? bank.topic
+          : (question.topic || bank.topic),
 
       source:
         question.source ||

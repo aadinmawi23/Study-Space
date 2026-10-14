@@ -191,6 +191,22 @@ async function getUserSupabaseClient(req) {
   );
 }
 
+
+const supabaseAdmin =
+  SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(
+        SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+    : null;
+
+
 /* =========================================================
    GEMINI CLIENT
    ========================================================= */
@@ -2443,6 +2459,371 @@ app.use(
     });
   }
 );
+
+
+/* =========================================================
+   CHALLENGE ROOM API ROUTES
+   ========================================================= */
+
+function challengeRoomError(res, error, fallback = "Challenge room request failed.") {
+  console.error("[challenge-rooms]", error?.message || error);
+  return res.status(500).json({ error: fallback });
+}
+
+async function challengeRoomContext(req, res) {
+  if (!supabaseAdmin) {
+    res.status(503).json({
+      error: "Challenge rooms are not configured on the server."
+    });
+    return null;
+  }
+
+  const user = await getAuthenticatedUser(req);
+  if (!user) {
+    res.status(401).json({
+      error: "Please sign in before using multiplayer rooms."
+    });
+    return null;
+  }
+
+  return user;
+}
+
+function challengeRoomCode(value) {
+  return typeof value === "string" ? value.trim().toUpperCase() : "";
+}
+
+function challengeRoomUsername(value) {
+  return typeof value === "string" ? value.trim().slice(0, 80) : "";
+}
+
+function challengeRoomMember(room, userId) {
+  return room &&
+    (room.host_user_id === userId || room.guest_user_id === userId);
+}
+
+/* Create a room */
+app.post("/api/challenge-rooms", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const roomCode = challengeRoomCode(req.body?.roomCode);
+    const hostUsername = challengeRoomUsername(req.body?.hostUsername);
+    const subjectName = typeof req.body?.subjectName === "string"
+      ? req.body.subjectName.trim().slice(0, 160)
+      : "";
+    const topic = typeof req.body?.topic === "string"
+      ? req.body.topic.trim().slice(0, 200)
+      : "";
+    const questionIds = req.body?.questionIds;
+
+    if (!roomCode || !hostUsername || !subjectName || !topic ||
+        !Array.isArray(questionIds) || questionIds.length === 0) {
+      return res.status(400).json({
+        error: "Room code, username, subject, topic, and question IDs are required."
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("challenge_rooms")
+      .insert({
+        room_code: roomCode,
+        host_user_id: user.id,
+        host_username: hostUsername,
+        subject_name: subjectName,
+        topic,
+        question_ids: questionIds,
+        status: "waiting"
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "That room code is already in use. Create another room." });
+      }
+      return challengeRoomError(res, error);
+    }
+
+    return res.status(201).json(data);
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+/* Join a room */
+app.post("/api/challenge-rooms/:roomCode/join", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const roomCode = challengeRoomCode(req.params.roomCode);
+    const guestUsername = challengeRoomUsername(req.body?.guestUsername);
+
+    if (!roomCode || !guestUsername) {
+      return res.status(400).json({ error: "Room code and username are required." });
+    }
+
+    const { data: room, error: findError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("room_code", roomCode)
+      .maybeSingle();
+
+    if (findError) return challengeRoomError(res, findError);
+    if (!room) return res.status(404).json({ error: "Room not found. Check the code and try again." });
+    if (room.host_user_id === user.id) {
+      return res.status(400).json({ error: "The room host cannot join their own room as the guest." });
+    }
+    if (room.status === "completed") {
+      return res.status(409).json({ error: "This room has already been completed." });
+    }
+
+    /* Allow the current guest to reconnect to their existing room. */
+    if (room.guest_user_id === user.id) {
+      const { data, error } = await supabaseAdmin
+        .from("challenge_rooms")
+        .update({
+          guest_username: guestUsername,
+          last_guest_seen_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", room.id)
+        .select("*")
+        .single();
+
+      if (error) return challengeRoomError(res, error);
+      return res.json(data);
+    }
+
+    if (room.guest_user_id) {
+      return res.status(409).json({ error: "This room already has a guest." });
+    }
+
+    if (!["waiting", "paused"].includes(room.status)) {
+      return res.status(409).json({ error: "This room is not currently accepting a guest." });
+    }
+
+    /* Conditional update prevents two users claiming the same room. */
+    const now = new Date().toISOString();
+    const { data, error } = await supabaseAdmin
+      .from("challenge_rooms")
+      .update({
+        guest_user_id: user.id,
+        guest_username: guestUsername,
+        guest_ready: false,
+        status: "waiting",
+        last_guest_seen_at: now,
+        updated_at: now
+      })
+      .eq("id", room.id)
+      .is("guest_user_id", null)
+      .select("*")
+      .maybeSingle();
+
+    if (error) return challengeRoomError(res, error);
+    if (!data) {
+      return res.status(409).json({ error: "Another player just joined this room. Try another room code." });
+    }
+
+    return res.json(data);
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+/* Fetch one room, only for its host or guest */
+app.get("/api/challenge-rooms/:roomCode", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const roomCode = challengeRoomCode(req.params.roomCode);
+    const { data: room, error } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("room_code", roomCode)
+      .maybeSingle();
+
+    if (error) return challengeRoomError(res, error);
+    if (!room) return res.status(404).json({ error: "Room not found." });
+    if (!challengeRoomMember(room, user.id)) {
+      return res.status(403).json({ error: "You are not a participant in this room." });
+    }
+
+    const now = new Date().toISOString();
+    const seenField = room.host_user_id === user.id
+      ? "last_host_seen_at"
+      : "last_guest_seen_at";
+
+    const { data, error: updateError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .update({ [seenField]: now, updated_at: now })
+      .eq("id", room.id)
+      .select("*")
+      .single();
+
+    if (updateError) return challengeRoomError(res, updateError);
+    return res.json(data);
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+/* List rooms belonging to the signed-in user */
+app.get("/api/challenge-rooms", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const { data: hosted, error: hostError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("host_user_id", user.id)
+      .order("updated_at", { ascending: false });
+
+    if (hostError) return challengeRoomError(res, hostError);
+
+    const { data: joined, error: guestError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("guest_user_id", user.id)
+      .order("updated_at", { ascending: false });
+
+    if (guestError) return challengeRoomError(res, guestError);
+
+    const rooms = [...(hosted || []), ...(joined || [])]
+      .filter((room, index, all) =>
+        all.findIndex(item => item.id === room.id) === index
+      )
+      .sort((a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+
+    return res.json(rooms);
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+/* Save room state; each participant can only change their own score and answers */
+app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const roomCode = challengeRoomCode(req.params.roomCode);
+    const { data: room, error: findError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("room_code", roomCode)
+      .maybeSingle();
+
+    if (findError) return challengeRoomError(res, findError);
+    if (!room) return res.status(404).json({ error: "Room not found." });
+    if (!challengeRoomMember(room, user.id)) {
+      return res.status(403).json({ error: "You are not a participant in this room." });
+    }
+
+    const isHost = room.host_user_id === user.id;
+    const body = req.body || {};
+    const patch = { updated_at: new Date().toISOString() };
+
+    const validStatuses = ["waiting", "playing", "paused", "completed"];
+
+    if (isHost) {
+      if (validStatuses.includes(body.status)) patch.status = body.status;
+      if (Number.isInteger(body.currentIndex) && body.currentIndex >= 0) {
+        patch.current_index = body.currentIndex;
+      }
+      if (Array.isArray(body.questionIds)) patch.question_ids = body.questionIds;
+      if (typeof body.hostReady === "boolean") patch.host_ready = body.hostReady;
+      if (body.hostAnswers && typeof body.hostAnswers === "object" && !Array.isArray(body.hostAnswers)) {
+        patch.host_answers = body.hostAnswers;
+      }
+      if (Number.isFinite(body.hostScore) && body.hostScore >= 0) patch.host_score = body.hostScore;
+      if (Number.isFinite(body.hostCorrect) && body.hostCorrect >= 0) patch.host_correct = body.hostCorrect;
+      patch.last_host_seen_at = patch.updated_at;
+    } else {
+      if (typeof body.guestReady === "boolean") patch.guest_ready = body.guestReady;
+      if (body.guestAnswers && typeof body.guestAnswers === "object" && !Array.isArray(body.guestAnswers)) {
+        patch.guest_answers = body.guestAnswers;
+      }
+      if (Number.isFinite(body.guestScore) && body.guestScore >= 0) patch.guest_score = body.guestScore;
+      if (Number.isFinite(body.guestCorrect) && body.guestCorrect >= 0) patch.guest_correct = body.guestCorrect;
+      patch.last_guest_seen_at = patch.updated_at;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("challenge_rooms")
+      .update(patch)
+      .eq("id", room.id)
+      .select("*")
+      .single();
+
+    if (error) return challengeRoomError(res, error);
+    return res.json(data);
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+/* Leave a room without deleting its history */
+app.post("/api/challenge-rooms/:roomCode/leave", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const roomCode = challengeRoomCode(req.params.roomCode);
+    const { data: room, error: findError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("room_code", roomCode)
+      .maybeSingle();
+
+    if (findError) return challengeRoomError(res, findError);
+    if (!room) return res.status(404).json({ error: "Room not found." });
+    if (!challengeRoomMember(room, user.id)) {
+      return res.status(403).json({ error: "You are not a participant in this room." });
+    }
+
+    const now = new Date().toISOString();
+    let patch;
+
+    if (room.host_user_id === user.id) {
+      patch = {
+        status: room.status === "completed" ? "completed" : "paused",
+        host_ready: false,
+        updated_at: now
+      };
+    } else {
+      patch = {
+        guest_user_id: null,
+        guest_username: null,
+        guest_ready: false,
+        status: room.status === "completed" ? "completed" : "waiting",
+        updated_at: now
+      };
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("challenge_rooms")
+      .update(patch)
+      .eq("id", room.id)
+      .select("*")
+      .single();
+
+    if (error) return challengeRoomError(res, error);
+    return res.json(data);
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+/* =========================================================
+   END CHALLENGE ROOM API ROUTES
+   ========================================================= */
 
 /* =========================================================
    START SERVER

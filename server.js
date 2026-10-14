@@ -2730,7 +2730,7 @@ app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
     const body = req.body || {};
     const patch = { updated_at: new Date().toISOString() };
 
-    const validStatuses = ["waiting", "playing", "paused", "completed"];
+    const validStatuses = ["waiting", "playing", "in_progress", "paused", "completed"];
 
     if (isHost) {
       if (validStatuses.includes(body.status)) patch.status = body.status;

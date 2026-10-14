@@ -3557,6 +3557,7 @@ async function signOutFromGoogle() {
 }
 </style>
 
+  <link rel="stylesheet" href="ludo.css">
 </head>
 
 <div id="usernameSetupModal" class="username-modal-overlay">
@@ -3907,6 +3908,7 @@ async function signOutFromGoogle() {
     <button data-page="calendar" onclick="navigate('calendar')">SPACED REPETITION</button>
     <button data-page="trophies" onclick="navigate('trophies')">TROPHY ROOM</button>
     <button data-page="progress" onclick="navigate('progress')">PROGRESS</button>
+    <button data-page="ludo" onclick="navigate('ludo')">LUDO</button>
   </nav>
 
   <div class="settings-nav">
@@ -4986,6 +4988,9 @@ function render(page){
   }
   else if(page === "progress"){
     renderProgress();
+  }
+  else if(page === "ludo"){
+    renderLudoPage();
   }
   else if(page === "settings"){
     renderSettings();
@@ -18189,6 +18194,7 @@ async function ensureUsername() {
 
 </script>
 
+  <script src="ludo.js"></script>
 </body>
 </html>
 

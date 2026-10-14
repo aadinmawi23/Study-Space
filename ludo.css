@@ -1,0 +1,74 @@
+/* Flo's Study Space — Ludo */
+.ludo-page{--ludo-red:#d99a98;--ludo-blue:#94b6d5;--ludo-green:#9fbea7;--ludo-yellow:#e7c879;max-width:1450px;margin:0 auto}
+.ludo-eyebrow{font-size:11px;letter-spacing:2.5px;font-weight:700;color:#958c83;margin-bottom:8px}
+.ludo-heading{font:clamp(34px,4vw,46px) Georgia,serif;letter-spacing:-1px;margin:0 0 10px}
+.ludo-subtitle{color:var(--muted,#8d857c);line-height:1.65;margin:0;max-width:650px}
+.ludo-topline{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:28px}
+.ludo-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;background:#e7efe7;border-radius:30px;font-size:12px;font-weight:700;color:#56725e;white-space:nowrap}
+.ludo-pill:before{content:"";width:7px;height:7px;border-radius:50%;background:#8eb49a}
+.ludo-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);gap:22px;align-items:start}
+.ludo-card{background:var(--card,#fffdf9);border:1px solid var(--line,#e6ddd1);border-radius:23px;padding:25px;box-shadow:var(--shadow,0 8px 24px rgba(71,57,45,.05));min-width:0}
+.ludo-card h3{font:24px Georgia,serif;margin:0 0 8px}
+.ludo-muted{color:var(--muted,#8d857c);font-size:13px;line-height:1.6}
+.ludo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.ludo-button{border:0;border-radius:12px;padding:13px 18px;background:#403a35;color:white;font-weight:700;cursor:pointer;transition:transform .15s,opacity .15s}
+.ludo-button:hover{transform:translateY(-1px)}
+.ludo-button.secondary{background:transparent;color:#403a35;border:1px solid var(--line,#e6ddd1)}
+.ludo-button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.ludo-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}
+.ludo-choice{border:1px solid var(--line,#e6ddd1);border-radius:18px;padding:20px;text-align:left;background:#fffdf9;cursor:pointer;min-height:155px;transition:.15s}
+.ludo-choice:hover{border-color:#c7b3a4;transform:translateY(-2px);box-shadow:0 8px 22px #47392d0d}
+.ludo-choice-icon{width:43px;height:43px;border-radius:14px;background:#f0e7dc;display:grid;place-items:center;font-size:22px;margin-bottom:17px}
+.ludo-choice strong{display:block;font:20px Georgia,serif;margin-bottom:6px}
+.ludo-choice span{font-size:12px;line-height:1.5;color:var(--muted,#8d857c)}
+.ludo-field{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.ludo-field label{font-size:12px;font-weight:700;color:#776e65}
+.ludo-field input,.ludo-field select{width:100%;min-height:45px;border:1px solid var(--line,#e6ddd1);border-radius:11px;padding:11px 13px;background:#fffdf9;color:#403a35;font:inherit;outline:none}
+.ludo-field input:focus,.ludo-field select:focus{border-color:#b69c89;box-shadow:0 0 0 3px #b69c891c}
+.ludo-code-input{text-transform:uppercase;letter-spacing:5px;font-weight:700;font-size:21px!important}
+.ludo-feature-list{display:grid;gap:15px;margin-top:21px}
+.ludo-feature{display:flex;gap:12px;align-items:flex-start}
+.ludo-feature-mark{flex:0 0 30px;width:30px;height:30px;border-radius:10px;background:#f0e8df;display:grid;place-items:center;font-size:14px}
+.ludo-feature strong{display:block;font-size:13px;margin:1px 0 4px}
+.ludo-feature span{font-size:12px;color:var(--muted,#8d857c);line-height:1.5}
+.ludo-page-note{margin-top:18px;padding:14px 16px;background:#f3ece2;border-radius:14px;color:#796e62;font-size:12px;line-height:1.6}
+.ludo-page-back{border:0;background:transparent;color:#8d857c;padding:0 0 18px;cursor:pointer;font-weight:700;font-size:13px}
+.ludo-game-header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px;flex-wrap:wrap}
+.ludo-room-code{display:inline-flex;align-items:center;gap:10px;background:#fffdf9;border:1px dashed #cfc0b1;border-radius:13px;padding:11px 15px;font-size:12px;color:#8d857c}
+.ludo-room-code strong{font-size:17px;letter-spacing:4px;color:#403a35}
+.ludo-game-layout{display:grid;grid-template-columns:minmax(280px,1.05fr) minmax(300px,.95fr);gap:20px;align-items:start}
+.ludo-board-shell{background:#fffdf9;border:1px solid var(--line,#e6ddd1);border-radius:22px;padding:14px;box-shadow:var(--shadow,0 8px 24px rgba(71,57,45,.05))}
+.ludo-board{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));aspect-ratio:1;border:2px solid #d8cfc4;border-radius:7px;overflow:hidden;background:#fff}
+.ludo-cell{min-width:0;min-height:0;border:.5px solid #e9e2d9;display:flex;align-items:center;justify-content:center;position:relative;background:#fffdf9}
+.ludo-cell.track{background:#f8f3ec}
+.ludo-cell.safe:after{content:"✦";font-size:clamp(6px,1vw,12px);color:#b8a99b}
+.ludo-cell.home-red{background:#f3dada}.ludo-cell.home-blue{background:#dce8f2}.ludo-cell.home-green{background:#dcebe0}.ludo-cell.home-yellow{background:#f5eacb}
+.ludo-cell.lane-red{background:#d99a98}.ludo-cell.lane-blue{background:#94b6d5}.ludo-cell.lane-green{background:#9fbea7}.ludo-cell.lane-yellow{background:#e7c879}
+.ludo-yard{position:absolute;inset:12%;border-radius:10px;background:#fffdf9;border:1px solid #ffffffcc;display:grid;grid-template-columns:1fr 1fr;place-items:center;gap:5%;padding:10%}
+.ludo-token{width:68%;aspect-ratio:1;border-radius:50%;box-shadow:inset 0 -3px 0 #0000001c,0 1px 3px #0002;border:2px solid #ffffffd9}
+.ludo-token.red{background:#d17978}.ludo-token.blue{background:#709bc4}.ludo-token.green{background:#77a686}.ludo-token.yellow{background:#d6b04f}
+.ludo-centre{grid-column:7/10;grid-row:7/10;background:conic-gradient(from 45deg,#e7c879 0 25%,#d99a98 0 50%,#94b6d5 0 75%,#9fbea7 0);display:grid;place-items:center;color:#fff;font-size:clamp(10px,1.7vw,20px);font-weight:900;text-shadow:0 1px 3px #0004}
+.ludo-player-list{display:grid;gap:9px;margin-top:18px}
+.ludo-player{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--line,#e6ddd1);border-radius:13px}
+.ludo-player-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.ludo-player-info{flex:1;min-width:0}
+.ludo-player-info strong{display:block;font-size:13px}
+.ludo-player-info span{display:block;color:var(--muted,#8d857c);font-size:11px;margin-top:3px}
+.ludo-turn{font-size:10px;font-weight:800;letter-spacing:1px;padding:6px 8px;background:#e7efe7;color:#56725e;border-radius:8px}
+.ludo-question{margin-top:18px;background:#f5eee5;border-radius:18px;padding:21px}
+.ludo-question-tag{font-size:10px;letter-spacing:1.8px;font-weight:800;color:#958779;margin-bottom:10px}
+.ludo-question h4{font:21px/1.4 Georgia,serif;margin:0 0 15px}
+.ludo-answer-list{display:grid;gap:8px}
+.ludo-answer{display:flex;align-items:center;gap:10px;text-align:left;padding:12px;border-radius:11px;border:1px solid #e3d7ca;background:#fffdf9;cursor:pointer;font-size:13px}
+.ludo-answer:hover{border-color:#bca895}
+.ludo-answer.selected{border-color:#8aab93;background:#e7f0e8}
+.ludo-answer-key{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:#f0e7dc;font-weight:800;font-size:11px;flex-shrink:0}
+.ludo-dice-row{display:flex;align-items:center;gap:15px;margin-top:18px;padding:17px;border:1px solid var(--line,#e6ddd1);border-radius:17px;background:#fffdf9}
+.ludo-die{width:58px;height:58px;display:grid;place-items:center;border:1px solid #dfd2c4;border-radius:14px;background:#f8f1e7;font-size:32px;box-shadow:0 3px 0 #d7c8b8;flex-shrink:0}
+.ludo-dice-copy{flex:1}.ludo-dice-copy strong{display:block;font:18px Georgia,serif}.ludo-dice-copy span{font-size:11px;color:var(--muted,#8d857c)}
+.ludo-game-status{margin-top:12px;font-size:12px;line-height:1.5;color:#796e62;min-height:19px}
+.ludo-mobile-hint{display:none}
+@media(max-width:1050px){.ludo-layout,.ludo-game-layout{grid-template-columns:1fr}.ludo-game-layout{max-width:760px;margin:auto}}
+@media(max-width:760px){.ludo-topline{flex-direction:column}.ludo-choice-grid{grid-template-columns:1fr 1fr}.ludo-card{padding:19px}.ludo-board-shell{padding:7px}.ludo-mobile-hint{display:block}.ludo-game-header{align-items:flex-start}}
+@media(max-width:430px){.ludo-choice-grid{grid-template-columns:1fr}.ludo-choice{min-height:125px}.ludo-room-code{padding:9px}.ludo-heading{font-size:32px}}
+</style>

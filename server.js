@@ -2748,7 +2748,10 @@ app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
       if (Array.isArray(body.questionIds)) patch.question_ids = body.questionIds;
       if (typeof body.hostReady === "boolean") patch.host_ready = body.hostReady;
       if (body.hostAnswers && typeof body.hostAnswers === "object" && !Array.isArray(body.hostAnswers)) {
-        patch.host_answers = body.hostAnswers;
+        patch.host_answers = {
+          ...(room.host_answers && typeof room.host_answers === "object" ? room.host_answers : {}),
+          ...body.hostAnswers
+        };
       }
       if (Number.isFinite(body.hostScore) && body.hostScore >= 0) patch.host_score = body.hostScore;
       if (Number.isFinite(body.hostCorrect) && body.hostCorrect >= 0) patch.host_correct = body.hostCorrect;
@@ -2756,7 +2759,10 @@ app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
     } else {
       if (typeof body.guestReady === "boolean") patch.guest_ready = body.guestReady;
       if (body.guestAnswers && typeof body.guestAnswers === "object" && !Array.isArray(body.guestAnswers)) {
-        patch.guest_answers = body.guestAnswers;
+        patch.guest_answers = {
+          ...(room.guest_answers && typeof room.guest_answers === "object" ? room.guest_answers : {}),
+          ...body.guestAnswers
+        };
       }
       if (Number.isFinite(body.guestScore) && body.guestScore >= 0) patch.guest_score = body.guestScore;
       if (Number.isFinite(body.guestCorrect) && body.guestCorrect >= 0) patch.guest_correct = body.guestCorrect;

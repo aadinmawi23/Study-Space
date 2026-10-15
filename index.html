@@ -12876,6 +12876,142 @@ async function ensureUsername() {
   }
 
 
+
+  /*
+   * Active-game recovery: Realtime broadcasts are fast, but not guaranteed.
+   * The room record is the recovery source for missed answers and advances.
+   */
+  let challengeGameplayPollTimer = null;
+  let challengeGameplayPollInFlight = false;
+
+  function stopChallengeGameplayPolling(){
+    if(challengeGameplayPollTimer){
+      clearInterval(challengeGameplayPollTimer);
+      challengeGameplayPollTimer = null;
+    }
+    challengeGameplayPollInFlight = false;
+  }
+
+  async function syncPersistentChallengeGame(){
+    if(
+      challengeGameplayPollInFlight ||
+      !challenge.active ||
+      challenge.finished ||
+      !challenge.roomCode
+    ){
+      return;
+    }
+
+    challengeGameplayPollInFlight = true;
+    const roomCodeAtStart = challenge.roomCode;
+
+    try{
+      const room = await loadPersistentChallengeRoom(roomCodeAtStart);
+
+      if(
+        !room ||
+        roomCodeAtStart !== challenge.roomCode ||
+        !challenge.active ||
+        challenge.finished
+      ){
+        return;
+      }
+
+      if(Array.isArray(room.question_ids) && room.question_ids.length){
+        const idsMatch =
+          Array.isArray(challenge.questionIds) &&
+          room.question_ids.length === challenge.questionIds.length &&
+          room.question_ids.every(
+            (id, i) => String(id) === String(challenge.questionIds[i])
+          );
+
+        // Do not reconcile a different challenge's room into this game.
+        if(!idsMatch){
+          console.warn("Challenge sync skipped: saved question IDs differ.");
+          return;
+        }
+      }
+
+      const hostAnswers =
+        room.host_answers && typeof room.host_answers === "object"
+          ? room.host_answers
+          : {};
+      const guestAnswers =
+        room.guest_answers && typeof room.guest_answers === "object"
+          ? room.guest_answers
+          : {};
+
+      const answerIndexes = new Set([
+        ...Object.keys(hostAnswers),
+        ...Object.keys(guestAnswers),
+        ...Object.keys(challenge.answers || {})
+      ]);
+
+      answerIndexes.forEach(key => {
+        const idx = Number(key);
+        if(!Number.isInteger(idx) || idx < 0) return;
+
+        const existing = challenge.answers[idx] || {me:null, opponent:null};
+        const savedMe = challenge.isHost ? hostAnswers[key] : guestAnswers[key];
+        const savedOpponent = challenge.isHost ? guestAnswers[key] : hostAnswers[key];
+
+        // Merge only missing slots: never replace a local answer with stale data.
+        challenge.answers[idx] = {
+          me: existing.me || savedMe || null,
+          opponent: existing.opponent || savedOpponent || null
+        };
+      });
+
+      // Scores are monotonic during a challenge; avoid rolling back a local answer.
+      const savedMyScore = Number(challenge.isHost ? room.host_score : room.guest_score);
+      const savedOpponentScore = Number(challenge.isHost ? room.guest_score : room.host_score);
+      const savedMyCorrect = Number(challenge.isHost ? room.host_correct : room.guest_correct);
+      const savedOpponentCorrect = Number(challenge.isHost ? room.guest_correct : room.host_correct);
+
+      if(Number.isFinite(savedMyScore)) challenge.myScore = Math.max(challenge.myScore || 0, savedMyScore);
+      if(Number.isFinite(savedOpponentScore)) challenge.opponentScore = Math.max(challenge.opponentScore || 0, savedOpponentScore);
+      if(Number.isFinite(savedMyCorrect)) challenge.myCorrect = Math.max(challenge.myCorrect || 0, savedMyCorrect);
+      if(Number.isFinite(savedOpponentCorrect)) challenge.opponentCorrect = Math.max(challenge.opponentCorrect || 0, savedOpponentCorrect);
+
+      let changed = false;
+      const savedIndex = Number(room.current_index);
+
+      // The host is authoritative for progression; guests catch up to persisted state.
+      if(
+        !challenge.isHost &&
+        Number.isInteger(savedIndex) &&
+        savedIndex > challenge.index &&
+        savedIndex < challenge.questions.length
+      ){
+        challenge.index = savedIndex;
+        changed = true;
+      }
+
+      if(room.status === "completed"){
+        challenge.active = false;
+        challenge.finished = true;
+        stopChallengeGameplayPolling();
+        renderChallengeResults();
+        return;
+      }
+
+      if(changed || challenge.active){
+        renderChallengeQuiz();
+      }
+    }catch(error){
+      console.warn("Challenge gameplay recovery failed:", error);
+    }finally{
+      challengeGameplayPollInFlight = false;
+    }
+  }
+
+  function startChallengeGameplayPolling(){
+    stopChallengeGameplayPolling();
+    if(!challenge.roomCode || !challenge.active || challenge.finished) return;
+    syncPersistentChallengeGame();
+    challengeGameplayPollTimer = setInterval(syncPersistentChallengeGame, 1500);
+  }
+
   function restorePersistentChallengeRoom(
     room
   ){
@@ -16157,27 +16293,22 @@ async function ensureUsername() {
   }
 
 
-  async function broadcast(
-    event,
-    payload
-  ){
-
-    if(
-      !challenge.channel
-    ){
-      return;
+  async function broadcast(event, payload){
+    if(!challenge.channel){
+      throw new Error("Challenge Realtime channel is not connected.");
     }
 
-    await challenge.channel.send({
-
+    const result = await challenge.channel.send({
       type:"broadcast",
-
       event,
-
       payload
-
     });
 
+    if(result && result.status && result.status !== "ok"){
+      throw new Error(`Challenge broadcast failed (${result.status}).`);
+    }
+
+    return result;
   }
 
 
@@ -17491,6 +17622,8 @@ async function ensureUsername() {
     challenge.finished =
       false;
 
+    startChallengeGameplayPolling();
+
 
     window.__floCloseChallengeModal();
 
@@ -17677,6 +17810,15 @@ async function ensureUsername() {
       challenge.index
     ){
 
+      console.warn(
+        "Challenge answer arrived for a different question:",
+        {
+          receivedIndex: payload.index,
+          localIndex: challenge.index,
+          playerId: payload.playerId
+        }
+      );
+
       return;
 
     }
@@ -17817,17 +17959,17 @@ async function ensureUsername() {
         challenge.index + 1;
 
 
-      await broadcast(
-        "flo-advance",
-        {
-          index:next
-        }
-      );
+      // Advance the host immediately; network delivery must not
+      // block the local question transition.
+      advanceChallenge(next);
 
-
-      advanceChallenge(
-        next
-      );
+      // Notify the guest asynchronously and report delivery failures.
+      broadcast("flo-advance", {
+        index: next
+      }).catch(error => {
+        console.error("Challenge advance broadcast failed:", error);
+        challenge.realtimeStatus = "Sync issue: question advance";
+      });
 
     };
 
@@ -18744,6 +18886,7 @@ async function ensureUsername() {
 
     challenge.active = false;
     challenge.finished = true;
+    stopChallengeGameplayPolling();
 
     if(
       typeof playAppSound ===
@@ -18768,6 +18911,7 @@ async function ensureUsername() {
 
       challenge.active = false;
       challenge.finished = true;
+      stopChallengeGameplayPolling();
 
       try{
 
@@ -18839,6 +18983,8 @@ async function ensureUsername() {
 
   window.__floLeaveChallenge =
     async function(){
+
+      stopChallengeGameplayPolling();
 
       /*
        * IMPORTANT:

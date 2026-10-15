@@ -17555,6 +17555,16 @@ async function ensureUsername() {
     }
 
 
+    // Multiplayer quiz rendering requires four MCQ options.
+    // Leave the original question banks and other study modes untouched.
+    challenge.questions = challenge.questions.filter(q =>
+      q &&
+      q.options &&
+      ["A", "B", "C", "D"].every(
+        letter => q.options[letter] != null
+      )
+    );
+
     if(
       !challenge.questions.length
     ){

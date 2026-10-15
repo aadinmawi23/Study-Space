@@ -1402,10 +1402,6 @@ async function initializeSupabase() {
     supabaseSession =
       data.session || null;
 
-    // Restore the session before loading private question banks.
-    await loadBanks();
-
-
     if(supabaseSession?.access_token){
 
       try{
@@ -1579,7 +1575,7 @@ async function initializeSupabase() {
   }
 }
 
-initializeSupabase();
+window.supabaseInitializationPromise = initializeSupabase();
 
 
 function updateAuthenticationUI() {
@@ -11191,6 +11187,14 @@ updateMuteButton();
 
 
 
+
+
+// Load question banks only after Supabase has restored the session.
+window.supabaseInitializationPromise
+  .then(() => loadBanks())
+  .catch(error => {
+    console.error("Question bank startup failed:", error);
+  });
 
 </script>
 

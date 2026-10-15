@@ -4789,24 +4789,51 @@ function syncImportedBankSubjects(importedBanks) {
 
   for (const bank of importedBanks || []) {
     const name = String(bank.subject || "").trim();
-    const topic = String(bank.topic || "").trim();
-
-    if (!name || !topic) continue;
+    if (!name) continue;
 
     const key = normalize(name);
+
     if (!active.has(key)) {
-      active.set(key, { name, topics: new Map() });
+      active.set(key, {
+        name,
+        topics: new Map()
+      });
     }
 
-    active.get(key).topics.set(normalize(topic), topic);
+    const entry = active.get(key);
+
+    // Prefer each question's actual topic over the bank-level
+    // placeholder, such as "Static GK".
+    for (const question of bank.questions || []) {
+      const topic = String(
+        question.topic || question.subtopic || ""
+      ).trim();
+
+      if (!topic) continue;
+
+      const topicKey = normalize(topic);
+      if (topicKey && !entry.topics.has(topicKey)) {
+        entry.topics.set(topicKey, topic);
+      }
+    }
+
+    // Compatibility fallback for older banks whose questions
+    // do not contain individual topic labels.
+    if (!entry.topics.size) {
+      const topic = String(bank.topic || "").trim();
+      if (topic) {
+        entry.topics.set(normalize(topic), topic);
+      }
+    }
   }
 
   let changed = false;
 
   for (const [key, entry] of active) {
     let subject = SUBJECT_CATALOG.find(
-      item => normalize(item.questionSubject || item.name) === key
-        || normalize(item.name) === key
+      item =>
+        normalize(item.questionSubject || item.name) === key ||
+        normalize(item.name) === key
     );
 
     if (!subject) {
@@ -4833,9 +4860,31 @@ function syncImportedBankSubjects(importedBanks) {
       subject.importedTopics = [];
     }
 
+    const realTopics = [...entry.topics.entries()].filter(
+      ([topicKey]) => topicKey && topicKey !== key
+    );
+
+    // Remove the subject-name placeholder only when the imported
+    // questions provide real, more specific topic categories.
+    if (realTopics.length) {
+      const placeholderIndex = subject.topics.findIndex(
+        topic => normalize(topic) === key
+      );
+
+      if (placeholderIndex !== -1) {
+        subject.topics.splice(placeholderIndex, 1);
+        subject.importedTopics = subject.importedTopics.filter(
+          topic => normalize(topic) !== key
+        );
+        changed = true;
+      }
+    }
+
     for (const [topicKey, topicName] of entry.topics) {
+      if (!topicKey) continue;
+
       const exists = subject.topics.some(
-        item => normalize(item) === topicKey
+        topic => normalize(topic) === topicKey
       );
 
       if (!exists) {
@@ -4846,9 +4895,7 @@ function syncImportedBankSubjects(importedBanks) {
     }
   }
 
-  if (changed) {
-    saveSubjects();
-  }
+  if (changed) saveSubjects();
 }
 async function loadBanks(){
 

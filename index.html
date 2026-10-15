@@ -4897,7 +4897,13 @@ function syncImportedBankSubjects(importedBanks) {
 
   if (changed) saveSubjects();
 }
+let banksLoadRequestId = 0;
+
 async function loadBanks(){
+
+  // Ignore responses from older requests. An initial unauthenticated
+  // request must not overwrite a newer authenticated result.
+  const requestId = ++banksLoadRequestId;
 
   let data;
 
@@ -4924,21 +4930,24 @@ async function loadBanks(){
 
   }catch(error){
 
+    // A newer request may already have succeeded.
+    if(requestId !== banksLoadRequestId) return;
+
     console.error(
       "Question bank request failed:",
       error
     );
 
-    banks = [];
-
-    render();
-
+    // Preserve the last successfully loaded banks on temporary failures.
     toast(
-      "Could not load question banks. Check the server connection."
+      "Could not refresh question banks. Your previously loaded banks are preserved."
     );
 
     return;
   }
+
+  // Never let a stale response overwrite newer bank data.
+  if(requestId !== banksLoadRequestId) return;
 
   banks =
     data.banks || [];
@@ -5025,23 +5034,23 @@ function floCurrentPage(){
 
 function navigate(page){
 
-  const current =
-    floCurrentPage();
+  const current = floCurrentPage();
 
   if(current !== page){
-
     floPageHistory.push(current);
-
   }
 
   selectedSubject = null;
   currentQuiz = null;
 
-  history.replaceState(
-    {},
-    "",
-    `#${page}`
-  );
+  // Create a real browser-history entry for in-app navigation.
+  if(current !== page){
+    history.pushState(
+      { floPage: page },
+      "",
+      `#${page}`
+    );
+  }
 
   render(page);
 }
@@ -5058,7 +5067,7 @@ function goToPreviousPage(){
   currentQuiz = null;
 
   history.replaceState(
-    {},
+    { floPage: previous },
     "",
     `#${previous}`
   );
@@ -5152,6 +5161,143 @@ function render(page){
 /* =========================================================
    HOME / DASHBOARD
    ========================================================= */
+
+
+/* CARD SORTING HELPERS */
+const floCardSortHelpersInstalled = true;
+const FLO_MIDNIGHT = new Date().setHours(0,0,0,0);
+
+function floSortOptionsHTML(selected){
+  return [
+    ["recent","Recently added"],
+    ["oldest","Oldest added"],
+    ["az","A–Z"],
+    ["za","Z–A"],
+    ["most","Most questions"],
+    ["fewest","Fewest questions"],
+    ["custom","Custom order"]
+  ].map(([value,label]) =>
+    `<option value="${value}" ${selected===value?"selected":""}>${label}</option>`
+  ).join("");
+}
+
+function floSortByMode(items, mode, getName, getDate, getCount){
+  const result = [...items];
+  const name = item => String(getName(item) || "");
+  const date = item => Number(getDate(item) || 0);
+  const count = item => Number(getCount(item) || 0);
+
+  if(mode === "oldest") return result.sort((a,b)=>date(a)-date(b));
+  if(mode === "az") return result.sort((a,b)=>name(a).localeCompare(name(b),undefined,{sensitivity:"base"}));
+  if(mode === "za") return result.sort((a,b)=>name(b).localeCompare(name(a),undefined,{sensitivity:"base"}));
+  if(mode === "most") return result.sort((a,b)=>count(b)-count(a) || name(a).localeCompare(name(b)));
+  if(mode === "fewest") return result.sort((a,b)=>count(a)-count(b) || name(a).localeCompare(name(b)));
+  if(mode === "custom") return result;
+  return result.sort((a,b)=>date(b)-date(a));
+}
+
+function floSubjectQuestionCount(subject){
+  return (subject.topics || []).reduce(
+    (total,topic)=>total + topicStats(subject,topic).questions, 0
+  );
+}
+
+function floEnsureSubjectDates(){
+  let changed = false;
+  SUBJECT_CATALOG.forEach(subject=>{
+    if(!Number.isFinite(Number(subject.createdAt))){
+      subject.createdAt = FLO_MIDNIGHT;
+      changed = true;
+    }
+  });
+  if(changed) saveSubjects();
+}
+
+function floTopicDates(subject){
+  const key = "floTopicCreatedAt";
+  let all = {};
+  try { all = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch {}
+  if(!all[subject.key]) all[subject.key] = {};
+  let changed = false;
+  (subject.topics || []).forEach(topic=>{
+    if(!Number.isFinite(Number(all[subject.key][topic]))){
+      all[subject.key][topic] = FLO_MIDNIGHT;
+      changed = true;
+    }
+  });
+  if(changed) localStorage.setItem(key,JSON.stringify(all));
+  return all[subject.key];
+}
+
+floEnsureSubjectDates();
+
+
+/* BROWSER BACK / FORWARD NAVIGATION */
+const floBrowserHistoryInstalled = true;
+
+function floCurrentPageState(){
+  const content = document.getElementById("subjectContent");
+  const title = content?.querySelector("h2")?.textContent?.trim() || "";
+  const subject = window.floCurrentSubjectKey || null;
+  const tab = window.floCurrentSubjectTab || "topics";
+  return subject
+    ? { page:"subject", subjectKey:subject, tab }
+    : { page:"home" };
+}
+
+function floRenderPageState(state){
+  if(!state || state.page === "home"){
+    window.floCurrentSubjectKey = null;
+    window.floCurrentSubjectTab = null;
+    renderHome();
+    return;
+  }
+
+  if(state.page === "subject" && state.subjectKey){
+    const subject = getSubject(state.subjectKey);
+    if(subject){
+      window.floCurrentSubjectKey = state.subjectKey;
+      window.floCurrentSubjectTab = state.tab || "topics";
+      renderSubject(subject, window.floCurrentSubjectTab);
+      return;
+    }
+  }
+
+  window.floCurrentSubjectKey = null;
+  window.floCurrentSubjectTab = null;
+  renderHome();
+}
+
+function floNavigate(state){
+  history.pushState(state, "");
+  floRenderPageState(state);
+}
+
+window.addEventListener("popstate", event=>{
+  const state = event.state || {};
+  selectedSubject = null;
+  currentQuiz = null;
+
+  if(state.floPage === "subject" && state.subjectKey){
+    const subject = getSubject(state.subjectKey);
+    if(subject){
+      selectedSubject = subject;
+      window.floCurrentSubjectKey = subject.key;
+      window.floCurrentSubjectTab = state.tab || "topics";
+      renderSubject(subject, state.tab || "topics");
+      return;
+    }
+  }
+
+  const page = location.hash.slice(1) || "home";
+  window.floCurrentSubjectKey = null;
+  window.floCurrentSubjectTab = null;
+  render(page);
+});
+
+if(!history.state){
+  history.replaceState({floPage:location.hash.slice(1) || "home"}, "");
+}
 
 function renderHome(){
 
@@ -5319,6 +5465,12 @@ function renderHome(){
 
     </div>
 
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap;">
+      <label for="floSubjectSort" style="font-size:12px;color:var(--muted);">Sort by</label>
+      <select id="floSubjectSort" aria-label="Sort subjects" style="width:150px;max-width:100%;box-sizing:border-box;padding:7px 34px 7px 12px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font:inherit;font-size:12px;appearance:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27 fill=%27none%27 stroke=%27%23564f48%27 stroke-width=%271.5%27%3E%3Cpath d=%27m2 4 4 4 4-4%27/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;">
+        ${floSortOptionsHTML(localStorage.getItem("floSubjectSortBy") || "recent")}
+      </select>
+    </div>
     <div
       class="grid"
       id="subjectGrid"
@@ -5333,30 +5485,30 @@ function renderHome(){
 
   /* SUBJECT CARDS */
 
-  const savedSubjectOrder =
-    JSON.parse(
-      localStorage.getItem(
-        "floSubjectCardOrder"
-      ) || "[]"
-    );
+  const subjectSortControl = document.getElementById("floSubjectSort");
+  const subjectSortMode = localStorage.getItem("floSubjectSortBy") || "recent";
 
-  const orderedSubjects = [
-    ...savedSubjectOrder
-      .map(key =>
-        SUBJECT_CATALOG.find(
-          subject =>
-            subject.key === key
-        )
-      )
-      .filter(Boolean),
+  if(subjectSortControl){
+    subjectSortControl.value = subjectSortMode;
+    subjectSortControl.addEventListener("change",()=>{
+      localStorage.setItem("floSubjectSortBy",subjectSortControl.value);
+      renderHome();
+    });
+  }
 
-    ...SUBJECT_CATALOG.filter(
-      subject =>
-        !savedSubjectOrder.includes(
-          subject.key
-        )
-    )
+  const savedSubjectOrder = JSON.parse(localStorage.getItem("floSubjectCardOrder") || "[]");
+  const customSubjects = [
+    ...savedSubjectOrder.map(key=>SUBJECT_CATALOG.find(subject=>subject.key===key)).filter(Boolean),
+    ...SUBJECT_CATALOG.filter(subject=>!savedSubjectOrder.includes(subject.key))
   ];
+
+  const orderedSubjects = floSortByMode(
+    customSubjects,
+    subjectSortMode,
+    subject=>subject.name,
+    subject=>subject.createdAt,
+    subject=>floSubjectQuestionCount(subject)
+  );
 
   orderedSubjects.forEach(subject=>{
 
@@ -5902,6 +6054,7 @@ function createSubject(){
     accent:
       color?.value || "#b99ac7",
 
+    createdAt:Date.now(),
     topics:[]
   };
 
@@ -6211,6 +6364,18 @@ function deleteSubject(key){
    ========================================================= */
 
 function openSubject(key){
+  const subjectToOpen = getSubject(key);
+  if(!subjectToOpen) return;
+
+  window.floCurrentSubjectKey = key;
+  window.floCurrentSubjectTab = "topics";
+
+  // Record the subject in browser history without changing the app's page hash.
+  history.pushState(
+    { floPage:"subject", subjectKey:key, tab:"topics" },
+    "",
+    location.href
+  );
 
   const current =
     floCurrentPage();
@@ -6398,6 +6563,18 @@ function renderSubjectTopics(
     }
   }
 
+  const topicSortStorageKey = "floTopicSortBy:" + subject.key;
+  const topicSortMode = localStorage.getItem(topicSortStorageKey) || "recent";
+  const topicDates = floTopicDates(subject);
+
+  const sortedTopics = floSortByMode(
+    subject.topics,
+    topicSortMode,
+    topic => topic,
+    topic => topicDates[topic],
+    topic => topicStats(subject, topic).questions
+  );
+
   container.innerHTML = `
 
     <div
@@ -6421,18 +6598,26 @@ function renderSubjectTopics(
           Topics
         </h2>
 
-        <div class="small">
-          Drag to reorder your topics
-        </div>
       </div>
 
-      <button
-        class="btn"
-        type="button"
-        onclick="addSubjectTopic('${escapeHTML(subject.key)}')"
-      >
-        + Add Topic
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <label for="floTopicSort" style="font-size:12px;color:var(--muted);">Sort by</label>
+        <select
+          id="floTopicSort"
+          aria-label="Sort topics"
+          onchange="localStorage.setItem(${JSON.stringify(topicSortStorageKey)},this.value);renderSubject(getSubject(${JSON.stringify(subject.key)}),'topics')"
+          style="width:150px;max-width:100%;box-sizing:border-box;padding:7px 34px 7px 12px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font:inherit;font-size:12px;appearance:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27 fill=%27none%27 stroke=%27%23564f48%27 stroke-width=%271.5%27%3E%3Cpath d=%27m2 4 4 4 4-4%27/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;"
+        >
+          ${floSortOptionsHTML(topicSortMode)}
+        </select>
+        <button
+          class="btn"
+          type="button"
+          onclick="addSubjectTopic('${escapeHTML(subject.key)}')"
+        >
+          + Add Topic
+        </button>
+      </div>
 
     </div>
 
@@ -6444,7 +6629,7 @@ function renderSubjectTopics(
             class="topic-grid"
           >
 
-            ${subject.topics.map((topic,index)=>{
+            ${sortedTopics.map((topic,index)=>{
 
               const stats =
                 topicStats(
@@ -7607,6 +7792,13 @@ function addSubjectTopic(subjectKey){
   }
 
   subject.topics.push(topic);
+
+  const topicDateKey = "floTopicCreatedAt";
+  let topicDates = {};
+  try { topicDates = JSON.parse(localStorage.getItem(topicDateKey) || "{}") || {}; } catch {}
+  if(!topicDates[subject.key]) topicDates[subject.key] = {};
+  topicDates[subject.key][topic] = Date.now();
+  localStorage.setItem(topicDateKey,JSON.stringify(topicDates));
 
   saveSubjects();
 
@@ -10117,14 +10309,7 @@ function renderSettings(){
             Import MCQs
           </strong>
 
-          <div
-            class="small"
-            style="
-              margin:8px 0 16px
-            "
-          >
-            Upload a JSON question bank.
-          </div>
+
 
           <input
             class="file-input"
@@ -10133,10 +10318,35 @@ function renderSettings(){
             accept=".json,application/json"
           >
 
-          <select id="jsonImportVisibility" class="input" style="margin:0 0 12px;width:100%">
+          <select id="jsonImportVisibility" style="display:none" aria-hidden="true">
             <option value="private">Private</option>
             <option value="shared">Shared</option>
           </select>
+
+          <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:12px 0 16px;">
+            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-primary,#373d46);font-size:13px;">
+              <input
+                type="radio"
+                name="jsonImportVisibilityChoice"
+                value="private"
+                checked
+                onchange="document.getElementById('jsonImportVisibility').value=this.value"
+                style="width:17px;height:17px;accent-color:#6688b2;cursor:pointer;"
+              >
+              Private
+            </label>
+
+            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-primary,#373d46);font-size:13px;">
+              <input
+                type="radio"
+                name="jsonImportVisibilityChoice"
+                value="shared"
+                onchange="document.getElementById('jsonImportVisibility').value=this.value"
+                style="width:17px;height:17px;accent-color:#6688b2;cursor:pointer;"
+              >
+              Shared
+            </label>
+          </div>
 
           <button
             class="btn"
@@ -10157,12 +10367,7 @@ function renderSettings(){
             Imported JSON Files
           </strong>
 
-          <div
-            class="small"
-            style="margin:8px 0 16px"
-          >
-            Your imported question banks. Swipe left on a file to reveal Delete.
-          </div>
+
 
           <div id="floImportedJsonFiles">
             <div class="small">
@@ -10247,44 +10452,22 @@ async function loadImportedJsonFiles(){
     container.innerHTML =
       files.map(fileName => {
 
-        const bank =
-          banks.find(
-            bank =>
-              String(
-                bank.source || ""
-              ) === String(fileName)
-          );
+        const bank = banks.find(
+          bank => String(bank.source || "") === String(fileName)
+        );
 
-        const questionCount =
-          bank?.questions?.length || 0;
+        const questionCount = bank?.questions?.length || 0;
+        const visibility = bank?.visibility === "shared" ? "Shared" : "Private";
+        const shared = visibility === "Shared";
 
-        const safeName =
-          String(fileName)
-            .replace(
-              /&/g,
-              "&amp;"
-            )
-            .replace(
-              /</g,
-              "&lt;"
-            )
-            .replace(
-              />/g,
-              "&gt;"
-            )
-            .replace(
-              /"/g,
-              "&quot;"
-            )
-            .replace(
-              /'/g,
-              "&#039;"
-            );
+        const safeName = String(fileName)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
 
-        const encodedFile =
-          encodeURIComponent(
-            fileName
-          );
+        const encodedFile = encodeURIComponent(fileName);
 
         return `
           <div
@@ -10293,12 +10476,12 @@ async function loadImportedJsonFiles(){
             style="
               position:relative;
               overflow:hidden;
-              margin-top:10px;
-              border-radius:14px;
-              background:#d9534f;
+              margin-top:9px;
+              border-radius:13px;
+              background:#f4e8e5;
+              border:1px solid #ead7d2;
             "
           >
-
             <div
               style="
                 position:absolute;
@@ -10309,23 +10492,21 @@ async function loadImportedJsonFiles(){
                 padding-right:8px;
               "
             >
-
               <button
                 type="button"
                 onclick='window.__floDeleteImportedJson("${encodedFile}")'
                 style="
-                  border:0;
-                  border-radius:10px;
-                  background:#fff;
-                  color:#b52b2b;
-                  font-weight:700;
-                  padding:10px 14px;
+                  border:1px solid #e7c8c2;
+                  border-radius:9px;
+                  background:#fffaf8;
+                  color:#a34e46;
+                  font-weight:600;
+                  padding:8px 11px;
                   cursor:pointer;
                 "
               >
                 Delete
               </button>
-
             </div>
 
             <div
@@ -10334,51 +10515,85 @@ async function loadImportedJsonFiles(){
               style="
                 position:relative;
                 z-index:2;
-                padding:14px;
-                background:rgba(255,255,255,.82);
-                border:1px solid rgba(0,0,0,.08);
-                border-radius:14px;
+                padding:11px 13px;
+                background:#fbf9f4;
+                border:1px solid #e9e4da;
+                border-radius:12px;
                 transition:transform .2s ease;
                 touch-action:pan-y;
               "
             >
-
-              <div
-                style="
-                  display:flex;
-                  align-items:center;
-                  justify-content:space-between;
-                  gap:12px;
-                "
-              >
-
+              <div style="display:flex;align-items:center;gap:11px;">
                 <div
+                  aria-hidden="true"
                   style="
-                    min-width:0;
-                    flex:1;
+                    width:38px;
+                    height:38px;
+                    flex:0 0 38px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    border-radius:10px;
+                    background:#e8eef6;
+                    color:#54749b;
+                    font-size:11px;
+                    font-weight:700;
+                    letter-spacing:.2px;
                   "
                 >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="21"
+                    height="21"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/>
+                    <path d="M13 3v7h7"/>
+                    <path d="M8 15h8M8 18h6"/>
+                  </svg>
+                </div>
 
+                <div style="min-width:0;flex:1;">
                   <div
                     style="
-                      font-weight:700;
-                      overflow:hidden;
-                      text-overflow:ellipsis;
-                      white-space:nowrap;
+                      color:var(--text-primary, #373d46);
+                      font-weight:650;
+                      font-size:13px;
+                      line-height:1.4;
+                      overflow-wrap:anywhere;
+                      word-break:break-word;
                     "
                     title="${safeName}"
                   >
                     ${safeName}
                   </div>
 
-                  <div
-                    class="small"
-                    style="margin-top:4px"
-                  >
+                  <div class="small" style="margin-top:3px;color:#85847d;font-size:12px;">
                     ${questionCount.toLocaleString()}
                     question${questionCount === 1 ? "" : "s"}
                   </div>
 
+                  <span
+                    style="
+                      display:inline-flex;
+                      align-items:center;
+                      margin-top:6px;
+                      padding:3px 8px;
+                      border-radius:999px;
+                      background:${shared ? "#e6f0e7" : "#eeeae2"};
+                      color:${shared ? "#477451" : "#776c59"};
+                      font-size:10px;
+                      font-weight:650;
+                      letter-spacing:.2px;
+                    "
+                  >
+                    ${visibility}
+                  </span>
                 </div>
 
                 <button
@@ -10386,26 +10601,26 @@ async function loadImportedJsonFiles(){
                   aria-label="File actions"
                   onclick='window.__floToggleImportedJsonDelete("${encodedFile}")'
                   style="
-                    flex:0 0 auto;
-                    border:0;
-                    background:transparent;
-                    font-size:22px;
+                    flex:0 0 31px;
+                    width:31px;
+                    height:31px;
+                    border:1px solid #e8e3d9;
+                    border-radius:9px;
+                    background:#fffdf9;
+                    color:#77766f;
+                    font-size:20px;
                     line-height:1;
-                    padding:4px 8px;
+                    padding:0;
                     cursor:pointer;
                   "
                 >
                   ⋯
                 </button>
-
               </div>
-
             </div>
-
           </div>
         `;
       }).join("");
-
 
     installImportedJsonSwipeHandlers();
 
@@ -10967,6 +11182,62 @@ updateMuteButton();
 
 
 <script>
+
+// Swipe gestures for the existing sidebar.
+// Swipe left on the open sidebar to collapse it;
+// swipe right from the left edge to reopen it.
+(function installSidebarSwipeGestures(){
+  if (window.__floSidebarSwipeInstalled) return;
+  window.__floSidebarSwipeInstalled = true;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  document.addEventListener("touchstart", function(event){
+    if (!event.touches || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+
+    const app = document.querySelector(".app");
+    const collapsed = app?.classList.contains("sidebar-collapsed");
+    const sidebar = document.querySelector(".sidebar");
+
+    tracking = collapsed
+      ? startX <= 28
+      : !!sidebar && sidebar.contains(event.target);
+  }, { passive: true });
+
+  document.addEventListener("touchend", function(event){
+    if (!tracking || !event.changedTouches?.length) return;
+    tracking = false;
+
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    // Ignore vertical scrolling and short movements.
+    if (Math.abs(dx) < 75 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+
+    const app = document.querySelector(".app");
+    if (!app) return;
+
+    const collapsed = app.classList.contains("sidebar-collapsed");
+
+    if (!collapsed && dx < 0) {
+      toggleSidebar();
+    } else if (collapsed && dx > 0) {
+      toggleSidebar();
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchcancel", function(){
+    tracking = false;
+  }, { passive: true });
+})();
+
 function toggleSidebar() {
     const app = document.querySelector(".app");
     const toggle = document.getElementById("sidebarToggle");

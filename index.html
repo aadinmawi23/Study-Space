@@ -15024,16 +15024,41 @@ async function ensureUsername() {
 
                   </div>
 
-                  <button
-                    class="btn"
-                    onclick='
-                      window.__floReturnToChallengeRoom(
-                        ${JSON.stringify(code)}
-                      )
-                    '
-                  >
-                    Return to Room
-                  </button>
+                  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <button
+                      type="button"
+                      class="btn"
+                      onclick='
+                        window.__floReturnToChallengeRoom(
+                          ${JSON.stringify(code)}
+                        )
+                      '
+                    >
+                      Return to Room
+                    </button>
+
+                    <button
+                      type="button"
+                      onclick='
+                        window.__floDeleteChallengeRoom(
+                          ${JSON.stringify(code)}
+                        )
+                      '
+                      style="
+                        padding:9px 12px;
+                        border:1px solid #e7c8c2;
+                        border-radius:9px;
+                        background:#fffaf8;
+                        color:#a34e46;
+                        font-size:13px;
+                        font-weight:600;
+                        cursor:pointer;
+                        white-space:nowrap;
+                      "
+                    >
+                      Delete
+                    </button>
+                  </div>
 
                 </div>
 

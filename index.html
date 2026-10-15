@@ -17903,13 +17903,11 @@ async function ensureUsername() {
     try {
       let slot = challenge.answers[currentIndex];
 
-      // Recover persisted answers before deciding the question is stuck.
-      if (
-        !slot ||
-        !slot.me ||
-        !slot.opponent
-      ) {
-        if (roomCodeAtStart) {
+      // If both answers are already registered locally, do not wait for
+      // a database read before advancing.
+      if (slot && slot.me && slot.opponent) {
+        // Continue directly to the advancement checks below.
+      } else if (roomCodeAtStart) {
           const room = await loadPersistentChallengeRoom(roomCodeAtStart);
 
           if (
@@ -17959,17 +17957,14 @@ async function ensureUsername() {
               slot.opponent = savedOpponent;
             }
           }
-        }
       }
 
       if (!slot || !slot.me || !slot.opponent) {
         renderChallengeQuiz();
-
         console.warn(
-          "Cannot advance: both answers are not available locally or in the saved room.",
+          "Cannot advance: both answers are not available.",
           { questionIndex: currentIndex }
         );
-
         return;
       }
 
@@ -17985,60 +17980,24 @@ async function ensureUsername() {
 
       const roomCodeAtAdvance = challenge.roomCode;
 
-      const broadcastPromise = broadcast("flo-advance", {
-        index: next
+      // Send the advance and save independently; neither network request
+      // should block the host's local question transition.
+      Promise.resolve()
+        .then(() => broadcast("flo-advance", { index: next }))
+        .catch(error => {
+          console.error("Could not broadcast challenge advance:", error);
+          challenge.realtimeStatus =
+            "Sync issue: recovering question progress.";
+        });
+
+      savePersistentChallengeRoom({
+        status: "in_progress",
+        currentIndex: next
       }).catch(error => {
-        console.error("Could not broadcast challenge advance:", error);
+        console.error("Could not persist challenge advance:", error);
         challenge.realtimeStatus =
           "Sync issue: recovering question progress.";
       });
-
-      const savePromise = savePersistentChallengeRoom({
-        status: "in_progress",
-        currentIndex: next
-      });
-
-      const [, saveResult] = await Promise.allSettled([
-        broadcastPromise,
-        savePromise
-      ]);
-
-      // Ignore completion from a room that is no longer active.
-      if (challenge.roomCode !== roomCodeAtAdvance) {
-        return;
-      }
-
-      if (saveResult.status === "rejected") {
-        console.error(
-          "Could not persist challenge advance:",
-          saveResult.reason
-        );
-
-        challenge.realtimeStatus =
-          "Sync issue: checking saved question progress.";
-
-        const room = await loadPersistentChallengeRoom(roomCodeAtAdvance);
-
-        if (
-          challenge.roomCode !== roomCodeAtAdvance ||
-          !challenge.active ||
-          challenge.finished ||
-          !room
-        ) {
-          return;
-        }
-
-        const savedIndex = Number(room.current_index);
-
-        if (
-          Number.isInteger(savedIndex) &&
-          savedIndex >= 0 &&
-          savedIndex < challenge.questions.length
-        ) {
-          challenge.index = savedIndex;
-          renderChallengeQuiz();
-        }
-      }
     } catch (error) {
       console.error("Could not advance challenge question:", error);
       challenge.realtimeStatus =
@@ -18443,7 +18402,7 @@ async function ensureUsername() {
 
 
             ${
-              bothAnswered
+              (challenge.isHost && myAnswered)
                 ? (
                     challenge.index <
                     challenge.questions.length - 1

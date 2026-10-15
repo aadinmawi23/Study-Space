@@ -1478,6 +1478,10 @@ async function initializeSupabase() {
 
         }
 
+        if (event === "SIGNED_IN") loadBanks();
+
+        if (event === "SIGNED_OUT") loadBanks();
+
         if(event === "SIGNED_OUT"){
 
           showAuthStatusToast(
@@ -4779,6 +4783,98 @@ function topicStats(subject,topic){
    LOAD QUESTION BANKS
    ========================================================= */
 
+
+function syncImportedBankSubjects(importedBanks) {
+  const active = new Map();
+
+  for (const bank of importedBanks || []) {
+    const subjectName = String(bank.subject || "").trim();
+    const topicName = String(bank.topic || "").trim();
+    if (!subjectName || !topicName) continue;
+
+    const key = normalize(subjectName);
+    if (!active.has(key)) active.set(key, { name: subjectName, topics: new Set() });
+    active.get(key).topics.add(topicName);
+  }
+
+  let changed = false;
+
+  // Remove only topics explicitly tracked as import-created.
+  for (const subject of [...SUBJECT_CATALOG]) {
+    const tracked = Array.isArray(subject.importedTopics)
+      ? subject.importedTopics
+      : [];
+
+    if (!tracked.length) continue;
+
+    const current = active.get(normalize(subject.name));
+    const activeTopics = current ? current.topics : new Set();
+
+    const remainingTracked = tracked.filter(topic =>
+      activeTopics.has(topic)
+    );
+
+    for (const topic of tracked) {
+      if (!activeTopics.has(topic) &&
+          Array.isArray(subject.topics) &&
+          subject.topics.some(item => normalize(item) === normalize(topic))) {
+        subject.topics = subject.topics.filter(
+          item => normalize(item) !== normalize(topic)
+        );
+        changed = true;
+      }
+    }
+
+    if (remainingTracked.length !== tracked.length) {
+      subject.importedTopics = remainingTracked;
+      changed = true;
+    }
+
+    if (subject.isImportedSubject &&
+        (!Array.isArray(subject.topics) || subject.topics.length === 0)) {
+      SUBJECT_CATALOG.splice(SUBJECT_CATALOG.indexOf(subject), 1);
+      changed = true;
+    }
+  }
+
+  // Add currently visible imports, tracking only items created by imports.
+  for (const [key, entry] of active) {
+    let subject = SUBJECT_CATALOG.find(
+      item => normalize(item.name) === key
+    );
+
+    if (!subject) {
+      subject = {
+        key: `${slugify(entry.name)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: entry.name,
+        questionSubject: entry.name,
+        accent: "#c5b8a5",
+        topics: [],
+        importedTopics: [],
+        isImportedSubject: true
+      };
+      SUBJECT_CATALOG.push(subject);
+      changed = true;
+    }
+
+    if (!Array.isArray(subject.topics)) subject.topics = [];
+    if (!Array.isArray(subject.importedTopics)) subject.importedTopics = [];
+
+    for (const topic of entry.topics) {
+      const exists = subject.topics.some(
+        item => normalize(item) === normalize(topic)
+      );
+
+      if (!exists) {
+        subject.topics.push(topic);
+        subject.importedTopics.push(topic);
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) saveSubjects();
+}
 async function loadBanks(){
 
   let data;
@@ -4786,7 +4882,13 @@ async function loadBanks(){
   try{
 
     const response =
-      await fetch("/api/question-banks");
+      await fetch("/api/question-banks", {
+        headers: {
+          ...(supabaseSession?.access_token
+            ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
+            : {})
+        }
+      });
 
     if(!response.ok){
       throw new Error(
@@ -4818,6 +4920,10 @@ async function loadBanks(){
 
   banks =
     data.banks || [];
+
+  syncImportedBankSubjects(
+    banks.filter(bank => bank.isUserImport)
+  );
 
   if(data.errors?.length){
 
@@ -9987,6 +10093,11 @@ function renderSettings(){
             accept=".json,application/json"
           >
 
+          <select id="jsonImportVisibility" class="input" style="margin:0 0 12px;width:100%">
+            <option value="private">Private</option>
+            <option value="shared">Shared</option>
+          </select>
+
           <button
             class="btn"
             onclick="
@@ -10496,15 +10607,17 @@ async function importJSON(event){
           method:"POST",
 
           headers:{
-            "Content-Type":
-              "application/json"
+            "Content-Type": "application/json",
+            ...(supabaseSession?.access_token
+              ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
+              : {})
           },
 
-          body:
-            JSON.stringify({
-              filename:file.name,
-              data
-            })
+          body: JSON.stringify({
+            filename: file.name,
+            data,
+            visibility: document.getElementById("jsonImportVisibility")?.value || "private"
+          })
         }
       );
 
@@ -10523,6 +10636,9 @@ async function importJSON(event){
     );
 
     await loadBanks();
+    await loadImportedJsonFiles();
+
+    event.target.value = "";
 
   }catch(error){
 

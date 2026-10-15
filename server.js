@@ -1716,60 +1716,69 @@ app.delete(
   "/api/question-banks/:filename",
   async (req, res) => {
     try {
-      await ensureDirectories();
+      const filename = path.basename(
+        decodeURIComponent(String(req.params.filename || ""))
+      );
 
-      const filename =
-        path.basename(
-          decodeURIComponent(
-            String(req.params.filename || "")
-          )
-        );
-
-      if (
-        !filename ||
-        !filename.toLowerCase().endsWith(".json")
-      ) {
-        return res.status(400).json({
-          error: "Invalid question bank filename."
-        });
+      if (!filename || !filename.toLowerCase().endsWith(".json")) {
+        return res.status(400).json({ error: "Invalid question bank filename." });
       }
 
-      const filePath =
-        path.join(
-          QUESTION_BANK_DIR,
-          filename
-        );
+      const user = await getAuthenticatedUser(req);
 
+      if (supabaseAdmin && user) {
+        const { data: owned, error: ownedError } = await supabaseAdmin
+          .from("imported_question_banks")
+          .select("id")
+          .eq("owner_id", user.id)
+          .eq("filename", filename)
+          .maybeSingle();
+
+        if (ownedError) throw ownedError;
+
+        if (owned) {
+          const { error } = await supabaseAdmin
+            .from("imported_question_banks")
+            .delete()
+            .eq("id", owned.id)
+            .eq("owner_id", user.id);
+
+          if (error) throw error;
+          return res.json({ success: true, filename });
+        }
+
+        const { data: otherImport, error: otherError } = await supabaseAdmin
+          .from("imported_question_banks")
+          .select("id")
+          .eq("filename", filename)
+          .limit(1);
+
+        if (otherError) throw otherError;
+        if (otherImport?.length) {
+          return res.status(403).json({
+            error: "You can only delete question banks you uploaded."
+          });
+        }
+      }
+
+      // Preserve the existing delete behavior for legacy disk-based files.
+      const filePath = path.join(QUESTION_BANK_DIR, filename);
       try {
         await fs.access(filePath);
       } catch {
-        return res.status(404).json({
-          error: "Question bank not found."
-        });
+        return res.status(404).json({ error: "Question bank not found." });
       }
 
       await fs.unlink(filePath);
-
-      res.json({
-        success: true,
-        filename
-      });
-
+      return res.json({ success: true, filename });
     } catch (error) {
-      console.error(
-        "Question bank delete error:",
-        error
-      );
-
+      console.error("Question bank delete error:", error);
       res.status(500).json({
-        error:
-          error?.message ||
-          "Failed to delete question bank."
+        error: error?.message || "Failed to delete question bank."
       });
     }
   }
 );
-
 
 /* =========================================================
    QUESTION BANK LOADING
@@ -1827,6 +1836,33 @@ async function loadQuestionBanks() {
   }
 
   return banks;
+}
+
+
+/* Imported JSON banks: shared banks plus the current user's banks. */
+async function loadVisibleImportedBanks(user) {
+  if (!user || !supabaseAdmin) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("imported_question_banks")
+    .select("id, filename, subject, topic, visibility, owner_id, bank_data")
+    .or(`visibility.eq.shared,owner_id.eq.${user.id}`);
+
+  if (error) throw error;
+
+  return (data || []).map(row => {
+    const bank = normalizeBank(row.bank_data, row.filename);
+    if (!bank) return null;
+
+    return {
+      ...bank,
+      source: row.filename,
+      isUserImport: true,
+      importId: row.id,
+      visibility: row.visibility,
+      ownerId: row.owner_id
+    };
+  }).filter(Boolean);
 }
 
 /* =========================================================
@@ -1913,68 +1949,56 @@ app.get(
 
 app.get(
   "/api/question-banks",
-  async (_req, res) => {
+  async (req, res) => {
     try {
-      const banks =
-        await loadQuestionBanks();
+      const legacyBanks = await loadQuestionBanks();
+      const user = await getAuthenticatedUser(req);
+      const importedBanks = await loadVisibleImportedBanks(user);
 
-      const files =
-        (await fs.readdir(QUESTION_BANK_DIR))
-          .filter(filename =>
-            filename
-              .toLowerCase()
-              .endsWith(".json")
-          );
+      const legacyFiles = (await fs.readdir(QUESTION_BANK_DIR))
+        .filter(name => name.toLowerCase().endsWith(".json"));
+
+      const files = [...new Set([
+        ...legacyFiles,
+        ...importedBanks.map(bank => bank.source)
+      ])];
 
       res.json({
-        banks,
+        banks: [...legacyBanks, ...importedBanks],
         files,
-        totalQuestions:
-          banks.reduce(
-            (total, bank) =>
-              total +
-              (bank.questions?.length || 0),
-            0
-          )
+        totalQuestions: [...legacyBanks, ...importedBanks]
+          .reduce((total, bank) => total + (bank.questions?.length || 0), 0)
       });
-
     } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        error:
-          "Failed to load question banks."
-      });
+      console.error("Question bank listing error:", error);
+      res.status(500).json({ error: "Failed to load question banks." });
     }
   }
 );
 
 app.get(
   "/api/questions",
-  async (_req, res) => {
+  async (req, res) => {
     try {
-      const banks =
-        await loadQuestionBanks();
+      const legacyBanks = await loadQuestionBanks();
+      const user = await getAuthenticatedUser(req);
+      const importedBanks = await loadVisibleImportedBanks(user);
 
-      const questions =
-        flattenQuestionBanks(
-          banks
-        );
+      const questions = flattenQuestionBanks([
+        ...legacyBanks,
+        ...importedBanks
+      ]);
 
-      res.json({
-        questions
-      });
-
+      res.json({ questions });
     } catch (error) {
-      console.error(error);
-
+      console.error("Question loading error:", error);
       res.status(500).json({
-        error:
-          "Failed to load questions."
+        error: "Failed to load questions."
       });
     }
   }
 );
+
 
 /* =========================================================
    AI STATUS
@@ -2323,95 +2347,82 @@ app.post(
   "/api/question-banks/import",
   async (req, res) => {
     try {
-      await ensureDirectories();
-
-      const filename =
-        path.basename(
-          String(
-            req.body?.filename || ""
-          ).trim()
-        );
-
-      const data =
-        req.body?.data ??
-        req.body?.bank;
-
-      if (
-        !filename ||
-        !data ||
-        typeof data !== "object"
-      ) {
-        return res.status(400).json({
-          error:
-            "filename and valid JSON data are required."
+      if (!supabaseAdmin) {
+        return res.status(503).json({
+          error: "Imported-bank storage is not configured on the server."
         });
       }
 
-      if (
-        !filename
-          .toLowerCase()
-          .endsWith(".json")
-      ) {
-        return res.status(400).json({
-          error:
-            "Only JSON files are allowed."
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        return res.status(401).json({
+          error: "Sign in before importing a question bank."
         });
       }
 
-      const normalized =
-        normalizeBank(
-          data,
-          filename
-        );
-
-      if (
-        !normalized ||
-        !Array.isArray(
-          normalized.questions
-        ) ||
-        !normalized.questions.length
-      ) {
-        return res.status(400).json({
-          error:
-            "The JSON does not contain any valid questions for the study system."
-        });
-      }
-
-      const outputPath =
-        path.join(
-          QUESTION_BANK_DIR,
-          filename
-        );
-
-      await fs.writeFile(
-        outputPath,
-        JSON.stringify(
-          data,
-          null,
-          2
-        ),
-        "utf8"
+      const filename = path.basename(
+        String(req.body?.filename || "").trim()
       );
+      const data = req.body?.data ?? req.body?.bank;
+      const visibility = req.body?.visibility === "shared"
+        ? "shared"
+        : "private";
+
+      if (!filename || !data || typeof data !== "object" ||
+          !filename.toLowerCase().endsWith(".json")) {
+        return res.status(400).json({
+          error: "A valid JSON filename and JSON data are required."
+        });
+      }
+
+      const normalized = normalizeBank(data, filename);
+      if (!normalized || !Array.isArray(normalized.questions) ||
+          !normalized.questions.length) {
+        return res.status(400).json({
+          error: "The JSON does not contain any valid questions."
+        });
+      }
+
+      if (!String(normalized.subject || "").trim() ||
+          !String(normalized.topic || "").trim()) {
+        return res.status(400).json({
+          error: "The JSON must specify a subject and topic."
+        });
+      }
+
+      const { data: saved, error } = await supabaseAdmin
+        .from("imported_question_banks")
+        .upsert({
+          filename,
+          subject: normalized.subject,
+          topic: normalized.topic,
+          visibility,
+          owner_id: user.id,
+          bank_data: data,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "owner_id,filename" })
+        .select("id, filename, subject, topic, visibility, owner_id")
+        .single();
+
+      if (error) throw error;
 
       res.json({
         success: true,
         filename,
-        questionCount:
-          normalized.questions.length,
-        bank:
-          normalized
+        visibility: saved.visibility,
+        questionCount: normalized.questions.length,
+        bank: {
+          ...normalized,
+          isUserImport: true,
+          importId: saved.id,
+          visibility: saved.visibility,
+          ownerId: saved.owner_id
+        }
       });
-
     } catch (error) {
-      console.error(
-        "Question bank import error:",
-        error
-      );
-
+      console.error("Question bank import error:", error);
       res.status(500).json({
-        error:
-          error?.message ||
-          "Failed to import question bank."
+        error: error?.message || "Failed to import question bank."
       });
     }
   }

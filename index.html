@@ -13776,6 +13776,13 @@ async function ensureUsername() {
 
         try{
 
+          // Start the host's quiz immediately; do not wait for network requests.
+          beginChallenge(
+            challenge.questionIds,
+            { skipSave: true }
+          );
+
+          // Persist first, then notify the guest to avoid stale room data.
           await savePersistentChallengeRoom({
             status:"in_progress",
             currentIndex:0,
@@ -13795,10 +13802,6 @@ async function ensureUsername() {
               questionIds:
                 challenge.questionIds
             }
-          );
-
-          beginChallenge(
-            challenge.questionIds
           );
 
         }catch(error){
@@ -16788,7 +16791,7 @@ async function ensureUsername() {
   }
 
 
-  function beginChallenge(ids){
+  function beginChallenge(ids, options = {}){
 
     const requestedIds = ids || challenge.questionIds || [];
 
@@ -16887,17 +16890,19 @@ async function ensureUsername() {
     renderChallengeQuiz();
 
 
-    savePersistentChallengeRoom({
-      status:"in_progress",
-      currentIndex:
-        challenge.index
-    }).catch(
-      error =>
-        console.error(
-          "Could not save challenge start:",
-          error
-        )
-    );
+    if (!options.skipSave) {
+      savePersistentChallengeRoom({
+        status:"in_progress",
+        currentIndex:
+          challenge.index
+      }).catch(
+        error =>
+          console.error(
+            "Could not save challenge start:",
+            error
+          )
+      );
+    }
 
   }
 

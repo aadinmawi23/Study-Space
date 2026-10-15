@@ -10159,9 +10159,13 @@ async function loadImportedJsonFiles(){
   try{
 
     const response =
-      await fetch(
-        "/api/question-banks"
-      );
+      await fetch("/api/question-banks", {
+        headers: {
+          ...(supabaseSession?.access_token
+            ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
+            : {})
+        }
+      });
 
     const data =
       await response.json();

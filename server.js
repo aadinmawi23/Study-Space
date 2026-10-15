@@ -1955,13 +1955,10 @@ app.get(
       const user = await getAuthenticatedUser(req);
       const importedBanks = await loadVisibleImportedBanks(user);
 
-      const legacyFiles = (await fs.readdir(QUESTION_BANK_DIR))
-        .filter(name => name.toLowerCase().endsWith(".json"));
-
-      const files = [...new Set([
-        ...legacyFiles,
-        ...importedBanks.map(bank => bank.source)
-      ])];
+      // Only database imports appear in Settings > Imported JSON Files.
+      const files = [...new Set(
+        importedBanks.map(bank => bank.source)
+      )];
 
       res.json({
         banks: [...legacyBanks, ...importedBanks],

@@ -2777,6 +2777,84 @@ app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
   }
 });
 
+/* Delete a room for its host, or leave it for its guest */
+app.delete("/api/challenge-rooms/:roomCode", async (req, res) => {
+  try {
+    const user = await challengeRoomContext(req, res);
+    if (!user) return;
+
+    const roomCode = challengeRoomCode(req.params.roomCode);
+
+    if (!roomCode) {
+      return res.status(400).json({ error: "Room code is required." });
+    }
+
+    const { data: room, error: findError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .select("*")
+      .eq("room_code", roomCode)
+      .maybeSingle();
+
+    if (findError) return challengeRoomError(res, findError);
+
+    if (!room) {
+      return res.status(404).json({ error: "Room not found." });
+    }
+
+    if (!challengeRoomMember(room, user.id)) {
+      return res.status(403).json({
+        error: "You are not a participant in this room."
+      });
+    }
+
+    // The host owns the room and can permanently delete it.
+    if (room.host_user_id === user.id) {
+      const { error: deleteError } = await supabaseAdmin
+        .from("challenge_rooms")
+        .delete()
+        .eq("id", room.id);
+
+      if (deleteError) return challengeRoomError(res, deleteError);
+
+      return res.json({
+        success: true,
+        action: "deleted",
+        roomCode
+      });
+    }
+
+    // A guest can remove the room from their own list without
+    // deleting the host's room or its saved progress.
+    const patch = {
+      guest_user_id: null,
+      guest_username: null,
+      guest_ready: false,
+      updated_at: new Date().toISOString()
+    };
+
+    if (room.status !== "completed") {
+      patch.status = "waiting";
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from("challenge_rooms")
+      .update(patch)
+      .eq("id", room.id);
+
+    if (updateError) return challengeRoomError(res, updateError);
+
+    return res.json({
+      success: true,
+      action: "left",
+      roomCode
+    });
+
+  } catch (error) {
+    return challengeRoomError(res, error);
+  }
+});
+
+
 /* Leave a room without deleting its history */
 app.post("/api/challenge-rooms/:roomCode/leave", async (req, res) => {
   try {

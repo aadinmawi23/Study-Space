@@ -2722,6 +2722,10 @@ app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
     if (!user) return;
 
     const roomCode = challengeRoomCode(req.params.roomCode);
+    if (!roomCode) {
+      return res.status(400).json({ error: "Room code is required." });
+    }
+
     const { data: room, error: findError } = await supabaseAdmin
       .from("challenge_rooms")
       .select("*")
@@ -2730,53 +2734,126 @@ app.put("/api/challenge-rooms/:roomCode", async (req, res) => {
 
     if (findError) return challengeRoomError(res, findError);
     if (!room) return res.status(404).json({ error: "Room not found." });
+
     if (!challengeRoomMember(room, user.id)) {
-      return res.status(403).json({ error: "You are not a participant in this room." });
+      return res.status(403).json({
+        error: "You are not a participant in this room."
+      });
     }
 
     const isHost = room.host_user_id === user.id;
     const body = req.body || {};
     const patch = { updated_at: new Date().toISOString() };
 
-    const validStatuses = ["waiting", "playing", "in_progress", "paused", "completed"];
+    const validStatuses = [
+      "waiting", "playing", "in_progress", "paused", "completed"
+    ];
 
+    // Only the host controls shared question progression and status.
     if (isHost) {
-      if (validStatuses.includes(body.status)) patch.status = body.status;
-      if (Number.isInteger(body.currentIndex) && body.currentIndex >= 0) {
-        patch.current_index = body.currentIndex;
+      if (validStatuses.includes(body.status)) {
+        patch.status = body.status;
       }
-      if (Array.isArray(body.questionIds)) patch.question_ids = body.questionIds;
-      if (typeof body.hostReady === "boolean") patch.host_ready = body.hostReady;
-      if (body.hostAnswers && typeof body.hostAnswers === "object" && !Array.isArray(body.hostAnswers)) {
-        patch.host_answers = {
-          ...(room.host_answers && typeof room.host_answers === "object" ? room.host_answers : {}),
-          ...body.hostAnswers
-        };
+
+      // Update question progression atomically in the database.
+      // The host is the only participant allowed to advance the index.
+      if (
+        Number.isInteger(body.currentIndex) &&
+        body.currentIndex >= 0 &&
+        body.currentIndex >= Number(room.current_index || 0)
+      ) {
+        const { error: advanceError } = await supabaseAdmin.rpc(
+          "advance_challenge_room",
+          {
+            p_room_code: roomCode,
+            p_current_index: body.currentIndex
+          }
+        );
+
+        if (advanceError) {
+          return challengeRoomError(res, advanceError);
+        }
       }
-      if (Number.isFinite(body.hostScore) && body.hostScore >= 0) patch.host_score = body.hostScore;
-      if (Number.isFinite(body.hostCorrect) && body.hostCorrect >= 0) patch.host_correct = body.hostCorrect;
+
+      if (Array.isArray(body.questionIds)) {
+        patch.question_ids = body.questionIds;
+      }
+
+      if (typeof body.hostReady === "boolean") {
+        patch.host_ready = body.hostReady;
+      }
+
+      if (Number.isFinite(body.hostScore) && body.hostScore >= 0) {
+        patch.host_score = body.hostScore;
+      }
+
+      if (Number.isFinite(body.hostCorrect) && body.hostCorrect >= 0) {
+        patch.host_correct = body.hostCorrect;
+      }
+
       patch.last_host_seen_at = patch.updated_at;
     } else {
-      if (typeof body.guestReady === "boolean") patch.guest_ready = body.guestReady;
-      if (body.guestAnswers && typeof body.guestAnswers === "object" && !Array.isArray(body.guestAnswers)) {
-        patch.guest_answers = {
-          ...(room.guest_answers && typeof room.guest_answers === "object" ? room.guest_answers : {}),
-          ...body.guestAnswers
-        };
+      if (typeof body.guestReady === "boolean") {
+        patch.guest_ready = body.guestReady;
       }
-      if (Number.isFinite(body.guestScore) && body.guestScore >= 0) patch.guest_score = body.guestScore;
-      if (Number.isFinite(body.guestCorrect) && body.guestCorrect >= 0) patch.guest_correct = body.guestCorrect;
+
+      if (Number.isFinite(body.guestScore) && body.guestScore >= 0) {
+        patch.guest_score = body.guestScore;
+      }
+
+      if (Number.isFinite(body.guestCorrect) && body.guestCorrect >= 0) {
+        patch.guest_correct = body.guestCorrect;
+      }
+
       patch.last_guest_seen_at = patch.updated_at;
     }
 
-    const { data, error } = await supabaseAdmin
+    // Accept only this participant's answer map. The database function
+    // merges it atomically with the stored maps for both participants.
+    const ownAnswers = isHost ? body.hostAnswers : body.guestAnswers;
+
+    if (
+      ownAnswers !== undefined &&
+      (!ownAnswers ||
+       typeof ownAnswers !== "object" ||
+       Array.isArray(ownAnswers))
+    ) {
+      return res.status(400).json({
+        error: "Answer data must be an object."
+      });
+    }
+
+    if (ownAnswers !== undefined) {
+      const { error: mergeError } = await supabaseAdmin.rpc(
+        "merge_challenge_answers",
+        {
+          p_room_code: roomCode,
+          p_host_answers: isHost ? ownAnswers : {},
+          p_guest_answers: isHost ? {} : ownAnswers
+        }
+      );
+
+      if (mergeError) return challengeRoomError(res, mergeError);
+    }
+
+    if (Object.keys(patch).length > 1) {
+      const { error: updateError } = await supabaseAdmin
+        .from("challenge_rooms")
+        .update(patch)
+        .eq("id", room.id);
+
+      if (updateError) return challengeRoomError(res, updateError);
+    }
+
+    // Fetch fresh state after atomic answer/index operations and metadata updates.
+    const { data, error: refreshError } = await supabaseAdmin
       .from("challenge_rooms")
-      .update(patch)
-      .eq("id", room.id)
       .select("*")
+      .eq("id", room.id)
       .single();
 
-    if (error) return challengeRoomError(res, error);
+    if (refreshError) return challengeRoomError(res, refreshError);
+
     return res.json(data);
   } catch (error) {
     return challengeRoomError(res, error);

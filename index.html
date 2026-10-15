@@ -17792,186 +17792,261 @@ async function ensureUsername() {
     };
 
 
-  function onAnswer(payload){
-
-    if(
+  function onAnswer(payload) {
+    if (
       !payload ||
-      payload.playerId ===
-      challenge.playerId
-    ){
-
+      payload.playerId === challenge.playerId ||
+      !Number.isInteger(Number(payload.index))
+    ) {
       return;
-
     }
 
+    const index = Number(payload.index);
 
-    if(
-      payload.index !==
-      challenge.index
-    ){
-
-      console.warn(
-        "Challenge answer arrived for a different question:",
-        {
-          receivedIndex: payload.index,
-          localIndex: challenge.index,
-          playerId: payload.playerId
-        }
-      );
-
+    if (
+      index < 0 ||
+      index >= challenge.questions.length ||
+      !challenge.active ||
+      challenge.finished
+    ) {
       return;
-
     }
 
+    const question = challenge.questions[index];
+    if (!question) return;
 
-    if(
-      !challenge.answers[
-        challenge.index
-      ]
-    ){
+    const validChoices = ["A", "B", "C", "D", "UNKNOWN"];
 
-      challenge.answers[
-        challenge.index
-      ] = {
+    if (
+      !validChoices.includes(payload.choice) ||
+      !["correct", "wrong", "unknown"].includes(payload.result)
+    ) {
+      return;
+    }
 
-        me:null,
+    const expectedResult =
+      payload.choice === "UNKNOWN"
+        ? "unknown"
+        : payload.choice === question.answer
+          ? "correct"
+          : "wrong";
 
-        opponent:null
+    if (payload.result !== expectedResult) {
+      console.warn("Challenge answer result did not match its question.");
+      return;
+    }
 
+    if (!challenge.answers[index]) {
+      challenge.answers[index] = {
+        me: null,
+        opponent: null
       };
-
     }
 
+    const slot = challenge.answers[index];
 
-    const slot =
-      challenge.answers[
-        challenge.index
-      ];
-
-
-    if(slot.opponent){
-      return;
-    }
-
+    // A repeated broadcast must not award points twice.
+    if (slot.opponent) return;
 
     challenge.opponentUsername =
-      payload.username ||
-      challenge.opponentUsername;
-
+      payload.username || challenge.opponentUsername;
 
     slot.opponent = {
-
-      choice:
-        payload.choice,
-
-      result:
-        payload.result
-
+      choice: payload.choice,
+      result: expectedResult
     };
 
-
-    if(
-      payload.result ===
-      "correct"
-    ){
-
+    if (expectedResult === "correct") {
       challenge.opponentScore++;
-
       challenge.opponentCorrect++;
-
     }
 
+    // A delayed answer must not redraw a different question.
+    if (index === challenge.index) {
+      renderChallengeQuiz();
 
-    renderChallengeQuiz();
-
-    if(
-      slot.me &&
-      slot.opponent
-    ){
-      window.requestAnimationFrame(() => {
-        flashChallengeScores();
-      });
+      if (slot.me && slot.opponent) {
+        window.requestAnimationFrame(() => {
+          flashChallengeScores();
+        });
+      }
     }
 
+    savePersistentChallengeRoom({
+      status: "in_progress",
+      currentIndex: challenge.index
+    }).catch(error => {
+      console.error("Could not save received challenge answer:", error);
+    });
   }
-
-
   /*
    * ========================================================
    * NEXT QUESTION
    * ========================================================
    */
 
-  window.__floNextChallengeQuestion =
-    async function(){
+  window.__floNextChallengeQuestion = async function() {
+    if (
+      !challenge.active ||
+      challenge.finished ||
+      !challenge.isHost ||
+      challenge.advanceInFlight
+    ) {
+      return;
+    }
 
-      if(
-        !challenge.active
-      ){
-        return;
-      }
+    const currentIndex = challenge.index;
+    const roomCodeAtStart = challenge.roomCode;
 
+    challenge.advanceInFlight = true;
 
-      const slot =
-        challenge.answers[
-          challenge.index
-        ];
+    try {
+      let slot = challenge.answers[currentIndex];
 
-
-      if(
+      // Recover persisted answers before deciding the question is stuck.
+      if (
         !slot ||
         !slot.me ||
         !slot.opponent
-      ){
+      ) {
+        if (roomCodeAtStart) {
+          const room = await loadPersistentChallengeRoom(roomCodeAtStart);
 
-        return;
+          if (
+            !challenge.active ||
+            challenge.finished ||
+            challenge.roomCode !== roomCodeAtStart ||
+            challenge.index !== currentIndex
+          ) {
+            return;
+          }
 
+          if (room) {
+            const hostAnswers =
+              room.host_answers &&
+              typeof room.host_answers === "object"
+                ? room.host_answers
+                : {};
+
+            const guestAnswers =
+              room.guest_answers &&
+              typeof room.guest_answers === "object"
+                ? room.guest_answers
+                : {};
+
+            const key = String(currentIndex);
+            const savedMe = challenge.isHost
+              ? hostAnswers[key]
+              : guestAnswers[key];
+            const savedOpponent = challenge.isHost
+              ? guestAnswers[key]
+              : hostAnswers[key];
+
+            if (!challenge.answers[currentIndex]) {
+              challenge.answers[currentIndex] = {
+                me: null,
+                opponent: null
+              };
+            }
+
+            slot = challenge.answers[currentIndex];
+
+            if (!slot.me && savedMe) {
+              slot.me = savedMe;
+            }
+
+            if (!slot.opponent && savedOpponent) {
+              slot.opponent = savedOpponent;
+            }
+          }
+        }
       }
 
+      if (!slot || !slot.me || !slot.opponent) {
+        renderChallengeQuiz();
 
-      if(
-        challenge.index >=
-        challenge.questions.length - 1
-      ){
+        console.warn(
+          "Cannot advance: both answers are not available locally or in the saved room.",
+          { questionIndex: currentIndex }
+        );
 
+        return;
+      }
+
+      if (currentIndex >= challenge.questions.length - 1) {
         finishChallenge();
-
         return;
-
       }
 
+      const next = currentIndex + 1;
 
-      /*
-       * Host advances the shared question.
-       * This keeps both devices synchronized.
-       */
-
-      if(
-        !challenge.isHost
-      ){
-
-        return;
-
-      }
-
-
-      const next =
-        challenge.index + 1;
-
-
-      // Advance the host immediately; network delivery must not
-      // block the local question transition.
+      // Advance locally and notify the guest without waiting for the database.
       advanceChallenge(next);
 
-      // Notify the guest asynchronously and report delivery failures.
-      broadcast("flo-advance", {
+      const roomCodeAtAdvance = challenge.roomCode;
+
+      const broadcastPromise = broadcast("flo-advance", {
         index: next
       }).catch(error => {
-        console.error("Challenge advance broadcast failed:", error);
-        challenge.realtimeStatus = "Sync issue: question advance";
+        console.error("Could not broadcast challenge advance:", error);
+        challenge.realtimeStatus =
+          "Sync issue: recovering question progress.";
       });
 
-    };
+      const savePromise = savePersistentChallengeRoom({
+        status: "in_progress",
+        currentIndex: next
+      });
+
+      const [, saveResult] = await Promise.allSettled([
+        broadcastPromise,
+        savePromise
+      ]);
+
+      // Ignore completion from a room that is no longer active.
+      if (challenge.roomCode !== roomCodeAtAdvance) {
+        return;
+      }
+
+      if (saveResult.status === "rejected") {
+        console.error(
+          "Could not persist challenge advance:",
+          saveResult.reason
+        );
+
+        challenge.realtimeStatus =
+          "Sync issue: checking saved question progress.";
+
+        const room = await loadPersistentChallengeRoom(roomCodeAtAdvance);
+
+        if (
+          challenge.roomCode !== roomCodeAtAdvance ||
+          !challenge.active ||
+          challenge.finished ||
+          !room
+        ) {
+          return;
+        }
+
+        const savedIndex = Number(room.current_index);
+
+        if (
+          Number.isInteger(savedIndex) &&
+          savedIndex >= 0 &&
+          savedIndex < challenge.questions.length
+        ) {
+          challenge.index = savedIndex;
+          renderChallengeQuiz();
+        }
+      }
+    } catch (error) {
+      console.error("Could not advance challenge question:", error);
+      challenge.realtimeStatus =
+        "Sync issue: question advance. Please wait for recovery.";
+    } finally {
+      challenge.advanceInFlight = false;
+    }
+  };
 
 
   function onAdvance(payload){

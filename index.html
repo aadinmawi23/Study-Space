@@ -13574,8 +13574,10 @@ async function ensureUsername() {
         return;
       }
 
+      // Keep a reference instead of copying the entire question bank.
+      // The selected questions are shuffled when the user confirms the count.
       window.__floQuestionCountQuestions =
-        [...questions];
+        questions;
 
       window.__floQuestionCountMode =
         mode;

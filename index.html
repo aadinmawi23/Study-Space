@@ -4788,59 +4788,25 @@ function syncImportedBankSubjects(importedBanks) {
   const active = new Map();
 
   for (const bank of importedBanks || []) {
-    const subjectName = String(bank.subject || "").trim();
-    const topicName = String(bank.topic || "").trim();
-    if (!subjectName || !topicName) continue;
+    const name = String(bank.subject || "").trim();
+    const topic = String(bank.topic || "").trim();
 
-    const key = normalize(subjectName);
-    if (!active.has(key)) active.set(key, { name: subjectName, topics: new Set() });
-    active.get(key).topics.add(topicName);
+    if (!name || !topic) continue;
+
+    const key = normalize(name);
+    if (!active.has(key)) {
+      active.set(key, { name, topics: new Map() });
+    }
+
+    active.get(key).topics.set(normalize(topic), topic);
   }
 
   let changed = false;
 
-  // Remove only topics explicitly tracked as import-created.
-  for (const subject of [...SUBJECT_CATALOG]) {
-    const tracked = Array.isArray(subject.importedTopics)
-      ? subject.importedTopics
-      : [];
-
-    if (!tracked.length) continue;
-
-    const current = active.get(normalize(subject.name));
-    const activeTopics = current ? current.topics : new Set();
-
-    const remainingTracked = tracked.filter(topic =>
-      activeTopics.has(topic)
-    );
-
-    for (const topic of tracked) {
-      if (!activeTopics.has(topic) &&
-          Array.isArray(subject.topics) &&
-          subject.topics.some(item => normalize(item) === normalize(topic))) {
-        subject.topics = subject.topics.filter(
-          item => normalize(item) !== normalize(topic)
-        );
-        changed = true;
-      }
-    }
-
-    if (remainingTracked.length !== tracked.length) {
-      subject.importedTopics = remainingTracked;
-      changed = true;
-    }
-
-    if (subject.isImportedSubject &&
-        (!Array.isArray(subject.topics) || subject.topics.length === 0)) {
-      SUBJECT_CATALOG.splice(SUBJECT_CATALOG.indexOf(subject), 1);
-      changed = true;
-    }
-  }
-
-  // Add currently visible imports, tracking only items created by imports.
   for (const [key, entry] of active) {
     let subject = SUBJECT_CATALOG.find(
-      item => normalize(item.name) === key
+      item => normalize(item.questionSubject || item.name) === key
+        || normalize(item.name) === key
     );
 
     if (!subject) {
@@ -4853,27 +4819,36 @@ function syncImportedBankSubjects(importedBanks) {
         importedTopics: [],
         isImportedSubject: true
       };
+
       SUBJECT_CATALOG.push(subject);
       changed = true;
     }
 
-    if (!Array.isArray(subject.topics)) subject.topics = [];
-    if (!Array.isArray(subject.importedTopics)) subject.importedTopics = [];
+    if (!Array.isArray(subject.topics)) {
+      subject.topics = [];
+      changed = true;
+    }
 
-    for (const topic of entry.topics) {
+    if (!Array.isArray(subject.importedTopics)) {
+      subject.importedTopics = [];
+    }
+
+    for (const [topicKey, topicName] of entry.topics) {
       const exists = subject.topics.some(
-        item => normalize(item) === normalize(topic)
+        item => normalize(item) === topicKey
       );
 
       if (!exists) {
-        subject.topics.push(topic);
-        subject.importedTopics.push(topic);
+        subject.topics.push(topicName);
+        subject.importedTopics.push(topicName);
         changed = true;
       }
     }
   }
 
-  if (changed) saveSubjects();
+  if (changed) {
+    saveSubjects();
+  }
 }
 async function loadBanks(){
 

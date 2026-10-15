@@ -14721,51 +14721,84 @@ async function ensureUsername() {
 
 
   window.__floDeleteChallengeRoom =
-    async function(roomCode){
+  async function(roomCode){
 
-      if(!roomCode){
-        return;
+    if(!roomCode) return;
+
+    const confirmed = window.confirm(
+      "Delete this saved room? This will permanently remove the room and its saved progress."
+    );
+
+    if(!confirmed) return;
+
+    // Remove the room from the visible list immediately.
+    const container = document.getElementById("floChallengeSavedRooms");
+    let removedCard = null;
+
+    if(container){
+      const buttons = [
+        ...container.querySelectorAll(
+          'button[onclick*="__floDeleteChallengeRoom"]'
+        )
+      ];
+
+      const button = buttons.find(btn =>
+        (btn.getAttribute("onclick") || "").includes(
+          JSON.stringify(String(roomCode))
+        )
+      );
+
+      if(button){
+        removedCard =
+          button.closest(".flo-saved-room-wrap") ||
+          button.closest('div[style*="margin-top:10px"]') ||
+          button.parentElement;
+
+        removedCard?.remove();
       }
 
-      const confirmed =
-        window.confirm(
-          "Delete this saved room? This will permanently remove the room and its saved progress."
-        );
-
-      if(!confirmed){
-        return;
+      if(container.querySelectorAll(
+        ".flo-saved-room-wrap, button[onclick*='__floDeleteChallengeRoom']"
+      ).length === 0){
+        container.innerHTML = `
+          <div class="flo-quiz-eyebrow" style="margin-top:24px;">
+            YOUR OPEN ROOMS
+          </div>
+          <div style="
+            padding:16px;
+            border:1px solid rgba(0,0,0,.08);
+            border-radius:14px;
+            text-align:center;
+            color:#777;
+          ">
+            Updating saved rooms…
+          </div>
+        `;
       }
+    }
 
-      try{
+    try{
+      await floChallengeApi(
+        `/api/challenge-rooms/${encodeURIComponent(roomCode)}`,
+        { method:"DELETE" }
+      );
 
-        await floChallengeApi(
-          `/api/challenge-rooms/${encodeURIComponent(roomCode)}`,
-          {
-            method:"DELETE"
-          }
-        );
+      toast("Saved room deleted.");
 
-        toast(
-          "Saved room deleted."
-        );
+      await renderPersistentChallengeRooms();
 
-        await renderPersistentChallengeRooms();
+    }catch(error){
+      console.error("Could not delete challenge room:", error);
 
-      }catch(error){
+      toast(
+        error?.message ||
+        "Could not delete saved room. Refreshing the list…"
+      );
 
-        console.error(
-          "Could not delete challenge room:",
-          error
-        );
-
-        toast(
-          error?.message ||
-          "Could not delete saved room."
-        );
-
-      }
-
-    };
+      // Restore the authoritative list if deletion failed.
+      await renderPersistentChallengeRooms();
+    }
+  };
 
 
   window.__floReturnToChallengeRoom =

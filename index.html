@@ -1402,6 +1402,10 @@ async function initializeSupabase() {
     supabaseSession =
       data.session || null;
 
+    // Restore the session before loading private question banks.
+    await loadBanks();
+
+
     if(supabaseSession?.access_token){
 
       try{
@@ -11064,8 +11068,6 @@ window.addEventListener(
 /* =========================================================
    START APPLICATION
    ========================================================= */
-
-loadBanks();
 
 
 

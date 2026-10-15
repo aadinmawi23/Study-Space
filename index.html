@@ -4921,9 +4921,27 @@ async function loadBanks(){
   banks =
     data.banks || [];
 
-  syncImportedBankSubjects(
-    banks.filter(bank => bank.isUserImport)
-  );
+  const importedBanksForSubjects =
+    banks.filter(bank => bank.isUserImport);
+
+  console.log("[IMPORT DEBUG] All banks:", banks.length);
+  console.log("[IMPORT DEBUG] Imported banks:", importedBanksForSubjects.map(bank => ({
+    subject: bank.subject,
+    topic: bank.topic,
+    isUserImport: bank.isUserImport,
+    questions: bank.questions?.length
+  })));
+  console.log("[IMPORT DEBUG] Catalog before sync:", SUBJECT_CATALOG.map(subject => ({
+    name: subject.name,
+    topics: subject.topics
+  })));
+
+  syncImportedBankSubjects(importedBanksForSubjects);
+
+  console.log("[IMPORT DEBUG] Catalog after sync:", SUBJECT_CATALOG.map(subject => ({
+    name: subject.name,
+    topics: subject.topics
+  })));
 
   if(data.errors?.length){
 
@@ -10543,7 +10561,12 @@ window.__floDeleteImportedJson =
         await fetch(
           `/api/question-banks/${encodeURIComponent(fileName)}`,
           {
-            method:"DELETE"
+            method: "DELETE",
+            headers: {
+              ...(supabaseSession?.access_token
+                ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
+                : {})
+            }
           }
         );
 
@@ -10641,6 +10664,9 @@ async function importJSON(event){
 
     await loadBanks();
     await loadImportedJsonFiles();
+
+    // Show the updated subject catalog after a successful import.
+    navigate("home");
 
     event.target.value = "";
 

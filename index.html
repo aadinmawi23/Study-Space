@@ -16790,21 +16790,28 @@ async function ensureUsername() {
 
   function beginChallenge(ids){
 
-    const all =
-      allQuestions();
+    const requestedIds = ids || challenge.questionIds || [];
 
+    // Reuse the already-selected questions when possible.
+    if (
+      Array.isArray(challenge.questions) &&
+      challenge.questions.length === requestedIds.length &&
+      challenge.questions.every(
+        (q, index) =>
+          String(q.id) === String(requestedIds[index])
+      )
+    ) {
+      challenge.questions = [...challenge.questions];
+    } else {
+      const all = allQuestions();
+      const questionsById = new Map(
+        all.map(q => [String(q.id), q])
+      );
 
-    challenge.questions =
-      (ids || challenge.questionIds || [])
-        .map(
-          id =>
-            all.find(
-              q =>
-                String(q.id) ===
-                String(id)
-            )
-        )
+      challenge.questions = requestedIds
+        .map(id => questionsById.get(String(id)))
         .filter(Boolean);
+    }
 
 
     if(

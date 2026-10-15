@@ -538,24 +538,41 @@ body.authenticated #loginScreen {
   pointer-events:auto;
 }
 
-.auth-icon-button{
-  width:48px !important;
-  height:48px !important;
-  min-width:48px !important;
-  min-height:48px !important;
-  padding:0;
-  border:0;
-  border-radius:50%;
-  background:transparent;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  overflow:hidden;
-  position:relative;
-  z-index:1000;
+.auth-icon-button {
+  width: 88px !important;
+  height: 88px !important;
+  min-width: 88px !important;
+  min-height: 88px !important;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  z-index: 1000;
+  flex-shrink: 0;
 }
 
+
+.auth-google-avatar {
+  display: block;
+  width: 125% !important;
+  height: 125% !important;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  flex-shrink: 0;
+}
 
 .auth-icon-button:hover{
   background:#f5f1eb;
@@ -1240,6 +1257,53 @@ body.authenticated #loginScreen {
         font-size: 14px;
     }
 }
+
+.avatar-picker {
+  padding: 12px 0;
+}
+.avatar-picker[hidden] {
+  display: none !important;
+}
+.avatar-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.avatar-choice {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: #f5f1eb;
+  cursor: pointer;
+}
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.avatar-choice.selected {
+  border-color: #6b8f82;
+  background: #e8f0eb;
+}
+.avatar-choice:focus-visible {
+  outline: 2px solid #6b8f82;
+  outline-offset: 2px;
+}
+.avatar-picker-status {
+  min-height: 18px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
 </style>
 
 <style id="sidebar-username-brand-css">
@@ -1914,7 +1978,12 @@ function refreshAuthUI(){
 
   /* LOGGED IN */
 
-  if(avatar){
+  const customAvatarUrl =
+    typeof selectedAvatarId === "string" && /^[a-zA-Z0-9_-]+$/.test(selectedAvatarId)
+      ? STUDY_SPACE_AVATAR_BASE + selectedAvatarId + ".png"
+      : null;
+
+  if(customAvatarUrl || avatar){
 
     button.innerHTML = "";
 
@@ -1925,13 +1994,14 @@ function refreshAuthUI(){
       "auth-google-avatar";
 
     img.src =
-      avatar;
+      customAvatarUrl || avatar;
 
     img.alt =
-      "Account";
+      customAvatarUrl ? "Selected profile avatar" : "Account";
 
-    img.referrerPolicy =
-      "no-referrer";
+    if (!customAvatarUrl) {
+      img.referrerPolicy = "no-referrer";
+    }
 
     button.appendChild(img);
 
@@ -1953,6 +2023,11 @@ function refreshAuthUI(){
   }
 
   button.title = "Account";
+
+  // Reapply the saved Study Space avatar after the auth UI refresh.
+  if (typeof renderSelectedAvatar === "function") {
+    renderSelectedAvatar();
+  }
 
   const usernameLabel =
     document.getElementById("authUsernameLabel");
@@ -2023,25 +2098,23 @@ function refreshAuthUI(){
 document.addEventListener(
   "click",
   event => {
+    const control = document.querySelector(".auth-control");
+    const menu = document.getElementById("accountMenu");
+    const panel = document.getElementById("accountPanel");
 
-    const control =
-      document.querySelector(
-        ".auth-control"
-      );
+    if (!control || !menu) return;
 
-    const menu =
-      document.getElementById(
-        "accountMenu"
-      );
-
-    if(
-      menu &&
-      control &&
-      !control.contains(event.target)
-    ){
+    // Clicking outside the account control closes the popup.
+    if (!control.contains(event.target)) {
       menu.classList.remove("open");
-    }
 
+      if (panel) {
+        panel.classList.remove("open");
+      }
+
+      const picker = document.getElementById("avatarPicker");
+      if (picker) picker.hidden = true;
+    }
   }
 );
 
@@ -5382,6 +5455,21 @@ function renderHome(){
 
             </div>
 
+          </div>
+
+          <button
+            type="button"
+            class="account-panel-button"
+            onclick="toggleAvatarPicker()"
+          >
+            Edit avatar
+          </button>
+
+          <div id="avatarPicker" class="avatar-picker" hidden>
+            <div class="avatar-picker-title">Choose your avatar</div>
+            <div id="avatarPickerGrid" class="avatar-picker-grid"></div>
+            <div id="avatarPickerStatus" class="avatar-picker-status" role="status"></div>
+            <button type="button" class="account-panel-button" onclick="toggleAvatarPicker()">Done</button>
           </div>
 
           <div class="account-panel-divider"></div>
@@ -11338,6 +11426,174 @@ function updateTopUserProfile(username) {
   }
 }
 
+
+function toggleAvatarPicker() {
+  const picker = document.getElementById("avatarPicker");
+  const grid = document.getElementById("avatarPickerGrid");
+  if (!picker || !grid) return;
+
+  picker.hidden = !picker.hidden;
+  if (!picker.hidden && !grid.children.length) {
+    renderAvatarPicker();
+  }
+}
+
+async function renderAvatarPicker() {
+  const grid = document.getElementById("avatarPickerGrid");
+  const status = document.getElementById("avatarPickerStatus");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  if (status) status.textContent = "Loading avatars...";
+
+  try {
+    const response = await fetch(
+      STUDY_SPACE_AVATAR_BASE + "manifest.json",
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not load avatar manifest.");
+    }
+
+    const manifest = await response.json();
+    const avatars = Array.isArray(manifest)
+      ? manifest
+      : manifest.avatars;
+
+    if (!Array.isArray(avatars)) {
+      throw new Error("Manifest must contain an avatars array.");
+    }
+
+    for (const item of avatars) {
+      const filename = typeof item === "string" ? item : item.filename;
+      const id = typeof item === "string"
+        ? item.replace(/\.png$/i, "")
+        : item.id;
+
+      if (
+        typeof id !== "string" ||
+        !/^[a-zA-Z0-9_-]+$/.test(id) ||
+        typeof filename !== "string" ||
+        !/^[a-zA-Z0-9_-]+\.png$/i.test(filename)
+      ) {
+        console.warn("Skipping invalid avatar entry:", item);
+        continue;
+      }
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className =
+        "avatar-choice" +
+        (selectedAvatarId === id ? " selected" : "");
+      button.setAttribute("aria-label", "Choose avatar " + id);
+      button.setAttribute(
+        "aria-pressed",
+        selectedAvatarId === id ? "true" : "false"
+      );
+
+      const img = document.createElement("img");
+      img.src = STUDY_SPACE_AVATAR_BASE + filename;
+      img.alt = "";
+      img.loading = "lazy";
+
+      img.onerror = () => {
+        button.remove();
+        console.warn("Could not load avatar:", filename);
+      };
+
+      button.appendChild(img);
+      button.addEventListener("click", () => saveSelectedAvatar(id));
+      grid.appendChild(button);
+    }
+
+    if (status) {
+      status.textContent = grid.children.length
+        ? "Choose an avatar."
+        : "No avatars found in the manifest.";
+    }
+  } catch (error) {
+    console.error("Avatar picker error:", error);
+    if (status) {
+      status.textContent =
+        "Could not load avatars. Check avatars/manifest.json.";
+    }
+  }
+}
+
+async function saveSelectedAvatar(avatarId) {
+  if (typeof avatarId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(avatarId)) return;
+
+  const status = document.getElementById("avatarPickerStatus");
+  if (!supabaseClient || !supabaseSession?.user) {
+    if (status) status.textContent = "Please sign in before choosing an avatar.";
+    return;
+  }
+
+  if (status) status.textContent = "Saving...";
+
+  const { error } = await supabaseClient
+    .from("profiles")
+    .upsert({
+      id: supabaseSession.user.id,
+      username: currentUsername,
+      avatar_id: avatarId,
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    console.error("Could not save avatar:", error);
+    if (status) status.textContent = "Could not save avatar. Please try again.";
+    return;
+  }
+
+  selectedAvatarId = avatarId;
+  renderSelectedAvatar();
+  renderAvatarPicker();
+  if (status) status.textContent = "Avatar saved.";
+
+  const picker = document.getElementById("avatarPicker");
+  if (picker) picker.hidden = true;
+}
+
+function renderSelectedAvatar() {
+  const validAvatarId = typeof selectedAvatarId === "string" && /^[a-zA-Z0-9_-]+$/.test(selectedAvatarId);
+
+  const avatarUrl = validAvatarId
+    ? STUDY_SPACE_AVATAR_BASE + selectedAvatarId + ".png"
+    : null;
+
+  const button = document.getElementById("authButton");
+  const panelAvatar = document.getElementById("accountPanelAvatar");
+  const fallback = document.getElementById("accountPanelAvatarFallback");
+
+  if (button && avatarUrl) {
+    button.innerHTML = "";
+    const img = document.createElement("img");
+    img.className = "auth-google-avatar";
+    img.src = avatarUrl;
+    img.alt = "Selected profile avatar";
+    img.referrerPolicy = "no-referrer";
+    button.appendChild(img);
+    button.title = "Account";
+  }
+
+  if (panelAvatar && fallback) {
+    if (avatarUrl) {
+      panelAvatar.src = avatarUrl;
+      panelAvatar.alt = "Selected profile avatar";
+      panelAvatar.style.display = "block";
+      fallback.style.display = "none";
+    } else {
+      panelAvatar.style.display = "none";
+      fallback.style.display = "flex";
+    }
+  }
+}
+
+let selectedAvatarId = null;
+const STUDY_SPACE_AVATAR_BASE = "/avatars/";
+
 async function loadCurrentUsername() {
   if (!supabaseClient || !supabaseSession?.user) {
     currentUsername = null;
@@ -11347,7 +11603,7 @@ async function loadCurrentUsername() {
 
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("username")
+    .select("username, avatar_id")
     .eq("id", supabaseSession.user.id)
     .maybeSingle();
 
@@ -11357,8 +11613,10 @@ async function loadCurrentUsername() {
   }
 
   currentUsername = data?.username || null;
+  selectedAvatarId = data?.avatar_id || null;
 
   updateTopUserProfile(currentUsername);
+  renderSelectedAvatar();
 
   const authUsernameLabel =
     document.getElementById("authUsernameLabel");

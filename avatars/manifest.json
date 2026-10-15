@@ -1,0 +1,56 @@
+{
+  "avatars": [
+    {
+      "id": "avatar_01",
+      "filename": "avatar_01.png"
+    },
+    {
+      "id": "avatar_02",
+      "filename": "avatar_02.png"
+    },
+    {
+      "id": "avatar_03",
+      "filename": "avatar_03.png"
+    },
+    {
+      "id": "avatar_04",
+      "filename": "avatar_04.png"
+    },
+    {
+      "id": "avatar_05",
+      "filename": "avatar_05.png"
+    },
+    {
+      "id": "avatar_06",
+      "filename": "avatar_06.png"
+    },
+    {
+      "id": "avatar_07",
+      "filename": "avatar_07.png"
+    },
+    {
+      "id": "avatar_08",
+      "filename": "avatar_08.png"
+    },
+    {
+      "id": "avatar_09",
+      "filename": "avatar_09.png"
+    },
+    {
+      "id": "avatar_10",
+      "filename": "avatar_10.png"
+    },
+    {
+      "id": "avatar_11",
+      "filename": "avatar_11.png"
+    },
+    {
+      "id": "avatar_12",
+      "filename": "avatar_12.png"
+    },
+    {
+      "id": "avatar_13",
+      "filename": "avatar_13.png"
+    }
+  ]
+}

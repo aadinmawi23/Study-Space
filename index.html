@@ -538,41 +538,24 @@ body.authenticated #loginScreen {
   pointer-events:auto;
 }
 
-.auth-icon-button {
-  width: 88px !important;
-  height: 88px !important;
-  min-width: 88px !important;
-  min-height: 88px !important;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  overflow: hidden;
-  position: relative;
-  z-index: 1000;
-  flex-shrink: 0;
+.auth-icon-button{
+  width:48px !important;
+  height:48px !important;
+  min-width:48px !important;
+  min-height:48px !important;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  overflow:hidden;
+  position:relative;
+  z-index:1000;
 }
 
-
-.auth-google-avatar {
-  display: block;
-  width: 125% !important;
-  height: 125% !important;
-  min-width: 0;
-  min-height: 0;
-  max-width: none;
-  max-height: none;
-  object-fit: contain;
-  object-position: center;
-  border-radius: 50%;
-  background: transparent;
-  pointer-events: none;
-  flex-shrink: 0;
-}
 
 .auth-icon-button:hover{
   background:#f5f1eb;
@@ -1257,53 +1240,6 @@ body.authenticated #loginScreen {
         font-size: 14px;
     }
 }
-
-.avatar-picker {
-  padding: 12px 0;
-}
-.avatar-picker[hidden] {
-  display: none !important;
-}
-.avatar-picker-title {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-.avatar-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-.avatar-choice {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  padding: 3px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: #f5f1eb;
-  cursor: pointer;
-}
-.avatar-choice img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.avatar-choice.selected {
-  border-color: #6b8f82;
-  background: #e8f0eb;
-}
-.avatar-choice:focus-visible {
-  outline: 2px solid #6b8f82;
-  outline-offset: 2px;
-}
-.avatar-picker-status {
-  min-height: 18px;
-  margin-top: 8px;
-  font-size: 12px;
-}
-
 </style>
 
 <style id="sidebar-username-brand-css">
@@ -1542,10 +1478,6 @@ async function initializeSupabase() {
 
         }
 
-        if (event === "SIGNED_IN") loadBanks();
-
-        if (event === "SIGNED_OUT") loadBanks();
-
         if(event === "SIGNED_OUT"){
 
           showAuthStatusToast(
@@ -1575,7 +1507,7 @@ async function initializeSupabase() {
   }
 }
 
-window.supabaseInitializationPromise = initializeSupabase();
+initializeSupabase();
 
 
 function updateAuthenticationUI() {
@@ -1620,30 +1552,6 @@ function updateAccountUI() {
     document.getElementById("accountButton");
 
   if (!accountButton) return;
-  const nameElement =
-    document.getElementById("accountName");
-
-  const emailElement =
-    document.getElementById("accountEmail");
-
-  const avatarElement =
-    document.getElementById("accountAvatar");
-
-  const avatarPlaceholder =
-    document.getElementById(
-      "accountAvatarPlaceholder"
-    );
-
-  const profileAvatar =
-    document.getElementById(
-      "accountProfileAvatar"
-    );
-
-  const profilePlaceholder =
-    document.getElementById(
-      "accountProfilePlaceholder"
-    );
-
 
   if (!supabaseSession) {
 
@@ -1698,6 +1606,29 @@ function updateAccountUI() {
     metadata.picture ||
     "";
 
+  const nameElement =
+    document.getElementById("accountName");
+
+  const emailElement =
+    document.getElementById("accountEmail");
+
+  const avatarElement =
+    document.getElementById("accountAvatar");
+
+  const avatarPlaceholder =
+    document.getElementById(
+      "accountAvatarPlaceholder"
+    );
+
+  const profileAvatar =
+    document.getElementById(
+      "accountProfileAvatar"
+    );
+
+  const profilePlaceholder =
+    document.getElementById(
+      "accountProfilePlaceholder"
+    );
 
   if (nameElement) {
     nameElement.textContent = name;
@@ -1978,12 +1909,7 @@ function refreshAuthUI(){
 
   /* LOGGED IN */
 
-  const customAvatarUrl =
-    typeof selectedAvatarId === "string" && /^[a-zA-Z0-9_-]+$/.test(selectedAvatarId)
-      ? STUDY_SPACE_AVATAR_BASE + selectedAvatarId + ".png"
-      : null;
-
-  if(customAvatarUrl || avatar){
+  if(avatar){
 
     button.innerHTML = "";
 
@@ -1994,14 +1920,13 @@ function refreshAuthUI(){
       "auth-google-avatar";
 
     img.src =
-      customAvatarUrl || avatar;
+      avatar;
 
     img.alt =
-      customAvatarUrl ? "Selected profile avatar" : "Account";
+      "Account";
 
-    if (!customAvatarUrl) {
-      img.referrerPolicy = "no-referrer";
-    }
+    img.referrerPolicy =
+      "no-referrer";
 
     button.appendChild(img);
 
@@ -2023,11 +1948,6 @@ function refreshAuthUI(){
   }
 
   button.title = "Account";
-
-  // Reapply the saved Study Space avatar after the auth UI refresh.
-  if (typeof renderSelectedAvatar === "function") {
-    renderSelectedAvatar();
-  }
 
   const usernameLabel =
     document.getElementById("authUsernameLabel");
@@ -2098,23 +2018,25 @@ function refreshAuthUI(){
 document.addEventListener(
   "click",
   event => {
-    const control = document.querySelector(".auth-control");
-    const menu = document.getElementById("accountMenu");
-    const panel = document.getElementById("accountPanel");
 
-    if (!control || !menu) return;
+    const control =
+      document.querySelector(
+        ".auth-control"
+      );
 
-    // Clicking outside the account control closes the popup.
-    if (!control.contains(event.target)) {
+    const menu =
+      document.getElementById(
+        "accountMenu"
+      );
+
+    if(
+      menu &&
+      control &&
+      !control.contains(event.target)
+    ){
       menu.classList.remove("open");
-
-      if (panel) {
-        panel.classList.remove("open");
-      }
-
-      const picker = document.getElementById("avatarPicker");
-      if (picker) picker.hidden = true;
     }
+
   }
 );
 
@@ -3634,7 +3556,6 @@ async function signOutFromGoogle() {
 }
 </style>
 
-  <link rel="stylesheet" href="ludo.css">
 </head>
 
 <div id="usernameSetupModal" class="username-modal-overlay">
@@ -3985,7 +3906,6 @@ async function signOutFromGoogle() {
     <button data-page="calendar" onclick="navigate('calendar')">SPACED REPETITION</button>
     <button data-page="trophies" onclick="navigate('trophies')">TROPHY ROOM</button>
     <button data-page="progress" onclick="navigate('progress')">PROGRESS</button>
-    <button data-page="ludo" onclick="navigate('ludo')">LUDO</button>
   </nav>
 
   <div class="settings-nav">
@@ -4599,10 +4519,8 @@ function allQuestions(){
         bank.subject,
 
       topic:
-        normalize(bank.subject) === "static gk" &&
-        normalize(bank.topic) === "merged"
-          ? bank.topic
-          : (question.topic || bank.topic),
+        question.topic ||
+        bank.topic,
 
       source:
         question.source ||
@@ -4856,140 +4774,14 @@ function topicStats(subject,topic){
    LOAD QUESTION BANKS
    ========================================================= */
 
-
-function syncImportedBankSubjects(importedBanks) {
-  const active = new Map();
-
-  for (const bank of importedBanks || []) {
-    const name = String(bank.subject || "").trim();
-    if (!name) continue;
-
-    const key = normalize(name);
-
-    if (!active.has(key)) {
-      active.set(key, {
-        name,
-        topics: new Map()
-      });
-    }
-
-    const entry = active.get(key);
-
-    // Prefer each question's actual topic over the bank-level
-    // placeholder, such as "Static GK".
-    for (const question of bank.questions || []) {
-      const topic = String(
-        question.topic || question.subtopic || ""
-      ).trim();
-
-      if (!topic) continue;
-
-      const topicKey = normalize(topic);
-      if (topicKey && !entry.topics.has(topicKey)) {
-        entry.topics.set(topicKey, topic);
-      }
-    }
-
-    // Compatibility fallback for older banks whose questions
-    // do not contain individual topic labels.
-    if (!entry.topics.size) {
-      const topic = String(bank.topic || "").trim();
-      if (topic) {
-        entry.topics.set(normalize(topic), topic);
-      }
-    }
-  }
-
-  let changed = false;
-
-  for (const [key, entry] of active) {
-    let subject = SUBJECT_CATALOG.find(
-      item =>
-        normalize(item.questionSubject || item.name) === key ||
-        normalize(item.name) === key
-    );
-
-    if (!subject) {
-      subject = {
-        key: `${slugify(entry.name)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: entry.name,
-        questionSubject: entry.name,
-        accent: "#c5b8a5",
-        topics: [],
-        importedTopics: [],
-        isImportedSubject: true
-      };
-
-      SUBJECT_CATALOG.push(subject);
-      changed = true;
-    }
-
-    if (!Array.isArray(subject.topics)) {
-      subject.topics = [];
-      changed = true;
-    }
-
-    if (!Array.isArray(subject.importedTopics)) {
-      subject.importedTopics = [];
-    }
-
-    const realTopics = [...entry.topics.entries()].filter(
-      ([topicKey]) => topicKey && topicKey !== key
-    );
-
-    // Remove the subject-name placeholder only when the imported
-    // questions provide real, more specific topic categories.
-    if (realTopics.length) {
-      const placeholderIndex = subject.topics.findIndex(
-        topic => normalize(topic) === key
-      );
-
-      if (placeholderIndex !== -1) {
-        subject.topics.splice(placeholderIndex, 1);
-        subject.importedTopics = subject.importedTopics.filter(
-          topic => normalize(topic) !== key
-        );
-        changed = true;
-      }
-    }
-
-    for (const [topicKey, topicName] of entry.topics) {
-      if (!topicKey) continue;
-
-      const exists = subject.topics.some(
-        topic => normalize(topic) === topicKey
-      );
-
-      if (!exists) {
-        subject.topics.push(topicName);
-        subject.importedTopics.push(topicName);
-        changed = true;
-      }
-    }
-  }
-
-  if (changed) saveSubjects();
-}
-let banksLoadRequestId = 0;
-
 async function loadBanks(){
-
-  // Ignore responses from older requests. An initial unauthenticated
-  // request must not overwrite a newer authenticated result.
-  const requestId = ++banksLoadRequestId;
 
   let data;
 
   try{
 
     const response =
-      await fetch("/api/question-banks", {
-        headers: {
-          ...(supabaseSession?.access_token
-            ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
-            : {})
-        }
-      });
+      await fetch("/api/question-banks");
 
     if(!response.ok){
       throw new Error(
@@ -5003,49 +4795,24 @@ async function loadBanks(){
 
   }catch(error){
 
-    // A newer request may already have succeeded.
-    if(requestId !== banksLoadRequestId) return;
-
     console.error(
       "Question bank request failed:",
       error
     );
 
-    // Preserve the last successfully loaded banks on temporary failures.
+    banks = [];
+
+    render();
+
     toast(
-      "Could not refresh question banks. Your previously loaded banks are preserved."
+      "Could not load question banks. Check the server connection."
     );
 
     return;
   }
 
-  // Never let a stale response overwrite newer bank data.
-  if(requestId !== banksLoadRequestId) return;
-
   banks =
     data.banks || [];
-
-  const importedBanksForSubjects =
-    banks.filter(bank => bank.isUserImport);
-
-  console.log("[IMPORT DEBUG] All banks:", banks.length);
-  console.log("[IMPORT DEBUG] Imported banks:", importedBanksForSubjects.map(bank => ({
-    subject: bank.subject,
-    topic: bank.topic,
-    isUserImport: bank.isUserImport,
-    questions: bank.questions?.length
-  })));
-  console.log("[IMPORT DEBUG] Catalog before sync:", SUBJECT_CATALOG.map(subject => ({
-    name: subject.name,
-    topics: subject.topics
-  })));
-
-  syncImportedBankSubjects(importedBanksForSubjects);
-
-  console.log("[IMPORT DEBUG] Catalog after sync:", SUBJECT_CATALOG.map(subject => ({
-    name: subject.name,
-    topics: subject.topics
-  })));
 
   if(data.errors?.length){
 
@@ -5107,23 +4874,23 @@ function floCurrentPage(){
 
 function navigate(page){
 
-  const current = floCurrentPage();
+  const current =
+    floCurrentPage();
 
   if(current !== page){
+
     floPageHistory.push(current);
+
   }
 
   selectedSubject = null;
   currentQuiz = null;
 
-  // Create a real browser-history entry for in-app navigation.
-  if(current !== page){
-    history.pushState(
-      { floPage: page },
-      "",
-      `#${page}`
-    );
-  }
+  history.replaceState(
+    {},
+    "",
+    `#${page}`
+  );
 
   render(page);
 }
@@ -5140,7 +4907,7 @@ function goToPreviousPage(){
   currentQuiz = null;
 
   history.replaceState(
-    { floPage: previous },
+    {},
     "",
     `#${previous}`
   );
@@ -5217,9 +4984,6 @@ function render(page){
   else if(page === "progress"){
     renderProgress();
   }
-  else if(page === "ludo"){
-    renderLudoPage();
-  }
   else if(page === "settings"){
     renderSettings();
   }
@@ -5234,143 +4998,6 @@ function render(page){
 /* =========================================================
    HOME / DASHBOARD
    ========================================================= */
-
-
-/* CARD SORTING HELPERS */
-const floCardSortHelpersInstalled = true;
-const FLO_MIDNIGHT = new Date().setHours(0,0,0,0);
-
-function floSortOptionsHTML(selected){
-  return [
-    ["recent","Recently added"],
-    ["oldest","Oldest added"],
-    ["az","A–Z"],
-    ["za","Z–A"],
-    ["most","Most questions"],
-    ["fewest","Fewest questions"],
-    ["custom","Custom order"]
-  ].map(([value,label]) =>
-    `<option value="${value}" ${selected===value?"selected":""}>${label}</option>`
-  ).join("");
-}
-
-function floSortByMode(items, mode, getName, getDate, getCount){
-  const result = [...items];
-  const name = item => String(getName(item) || "");
-  const date = item => Number(getDate(item) || 0);
-  const count = item => Number(getCount(item) || 0);
-
-  if(mode === "oldest") return result.sort((a,b)=>date(a)-date(b));
-  if(mode === "az") return result.sort((a,b)=>name(a).localeCompare(name(b),undefined,{sensitivity:"base"}));
-  if(mode === "za") return result.sort((a,b)=>name(b).localeCompare(name(a),undefined,{sensitivity:"base"}));
-  if(mode === "most") return result.sort((a,b)=>count(b)-count(a) || name(a).localeCompare(name(b)));
-  if(mode === "fewest") return result.sort((a,b)=>count(a)-count(b) || name(a).localeCompare(name(b)));
-  if(mode === "custom") return result;
-  return result.sort((a,b)=>date(b)-date(a));
-}
-
-function floSubjectQuestionCount(subject){
-  return (subject.topics || []).reduce(
-    (total,topic)=>total + topicStats(subject,topic).questions, 0
-  );
-}
-
-function floEnsureSubjectDates(){
-  let changed = false;
-  SUBJECT_CATALOG.forEach(subject=>{
-    if(!Number.isFinite(Number(subject.createdAt))){
-      subject.createdAt = FLO_MIDNIGHT;
-      changed = true;
-    }
-  });
-  if(changed) saveSubjects();
-}
-
-function floTopicDates(subject){
-  const key = "floTopicCreatedAt";
-  let all = {};
-  try { all = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch {}
-  if(!all[subject.key]) all[subject.key] = {};
-  let changed = false;
-  (subject.topics || []).forEach(topic=>{
-    if(!Number.isFinite(Number(all[subject.key][topic]))){
-      all[subject.key][topic] = FLO_MIDNIGHT;
-      changed = true;
-    }
-  });
-  if(changed) localStorage.setItem(key,JSON.stringify(all));
-  return all[subject.key];
-}
-
-floEnsureSubjectDates();
-
-
-/* BROWSER BACK / FORWARD NAVIGATION */
-const floBrowserHistoryInstalled = true;
-
-function floCurrentPageState(){
-  const content = document.getElementById("subjectContent");
-  const title = content?.querySelector("h2")?.textContent?.trim() || "";
-  const subject = window.floCurrentSubjectKey || null;
-  const tab = window.floCurrentSubjectTab || "topics";
-  return subject
-    ? { page:"subject", subjectKey:subject, tab }
-    : { page:"home" };
-}
-
-function floRenderPageState(state){
-  if(!state || state.page === "home"){
-    window.floCurrentSubjectKey = null;
-    window.floCurrentSubjectTab = null;
-    renderHome();
-    return;
-  }
-
-  if(state.page === "subject" && state.subjectKey){
-    const subject = getSubject(state.subjectKey);
-    if(subject){
-      window.floCurrentSubjectKey = state.subjectKey;
-      window.floCurrentSubjectTab = state.tab || "topics";
-      renderSubject(subject, window.floCurrentSubjectTab);
-      return;
-    }
-  }
-
-  window.floCurrentSubjectKey = null;
-  window.floCurrentSubjectTab = null;
-  renderHome();
-}
-
-function floNavigate(state){
-  history.pushState(state, "");
-  floRenderPageState(state);
-}
-
-window.addEventListener("popstate", event=>{
-  const state = event.state || {};
-  selectedSubject = null;
-  currentQuiz = null;
-
-  if(state.floPage === "subject" && state.subjectKey){
-    const subject = getSubject(state.subjectKey);
-    if(subject){
-      selectedSubject = subject;
-      window.floCurrentSubjectKey = subject.key;
-      window.floCurrentSubjectTab = state.tab || "topics";
-      renderSubject(subject, state.tab || "topics");
-      return;
-    }
-  }
-
-  const page = location.hash.slice(1) || "home";
-  window.floCurrentSubjectKey = null;
-  window.floCurrentSubjectTab = null;
-  render(page);
-});
-
-if(!history.state){
-  history.replaceState({floPage:location.hash.slice(1) || "home"}, "");
-}
 
 function renderHome(){
 
@@ -5457,21 +5084,6 @@ function renderHome(){
 
           </div>
 
-          <button
-            type="button"
-            class="account-panel-button"
-            onclick="toggleAvatarPicker()"
-          >
-            Edit avatar
-          </button>
-
-          <div id="avatarPicker" class="avatar-picker" hidden>
-            <div class="avatar-picker-title">Choose your avatar</div>
-            <div id="avatarPickerGrid" class="avatar-picker-grid"></div>
-            <div id="avatarPickerStatus" class="avatar-picker-status" role="status"></div>
-            <button type="button" class="account-panel-button" onclick="toggleAvatarPicker()">Done</button>
-          </div>
-
           <div class="account-panel-divider"></div>
 
           <button
@@ -5553,12 +5165,6 @@ function renderHome(){
 
     </div>
 
-    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap;">
-      <label for="floSubjectSort" style="font-size:12px;color:var(--muted);">Sort by</label>
-      <select id="floSubjectSort" aria-label="Sort subjects" style="width:150px;max-width:100%;box-sizing:border-box;padding:7px 34px 7px 12px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font:inherit;font-size:12px;appearance:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27 fill=%27none%27 stroke=%27%23564f48%27 stroke-width=%271.5%27%3E%3Cpath d=%27m2 4 4 4 4-4%27/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;">
-        ${floSortOptionsHTML(localStorage.getItem("floSubjectSortBy") || "recent")}
-      </select>
-    </div>
     <div
       class="grid"
       id="subjectGrid"
@@ -5573,30 +5179,30 @@ function renderHome(){
 
   /* SUBJECT CARDS */
 
-  const subjectSortControl = document.getElementById("floSubjectSort");
-  const subjectSortMode = localStorage.getItem("floSubjectSortBy") || "recent";
+  const savedSubjectOrder =
+    JSON.parse(
+      localStorage.getItem(
+        "floSubjectCardOrder"
+      ) || "[]"
+    );
 
-  if(subjectSortControl){
-    subjectSortControl.value = subjectSortMode;
-    subjectSortControl.addEventListener("change",()=>{
-      localStorage.setItem("floSubjectSortBy",subjectSortControl.value);
-      renderHome();
-    });
-  }
+  const orderedSubjects = [
+    ...savedSubjectOrder
+      .map(key =>
+        SUBJECT_CATALOG.find(
+          subject =>
+            subject.key === key
+        )
+      )
+      .filter(Boolean),
 
-  const savedSubjectOrder = JSON.parse(localStorage.getItem("floSubjectCardOrder") || "[]");
-  const customSubjects = [
-    ...savedSubjectOrder.map(key=>SUBJECT_CATALOG.find(subject=>subject.key===key)).filter(Boolean),
-    ...SUBJECT_CATALOG.filter(subject=>!savedSubjectOrder.includes(subject.key))
+    ...SUBJECT_CATALOG.filter(
+      subject =>
+        !savedSubjectOrder.includes(
+          subject.key
+        )
+    )
   ];
-
-  const orderedSubjects = floSortByMode(
-    customSubjects,
-    subjectSortMode,
-    subject=>subject.name,
-    subject=>subject.createdAt,
-    subject=>floSubjectQuestionCount(subject)
-  );
 
   orderedSubjects.forEach(subject=>{
 
@@ -6142,7 +5748,6 @@ function createSubject(){
     accent:
       color?.value || "#b99ac7",
 
-    createdAt:Date.now(),
     topics:[]
   };
 
@@ -6452,18 +6057,6 @@ function deleteSubject(key){
    ========================================================= */
 
 function openSubject(key){
-  const subjectToOpen = getSubject(key);
-  if(!subjectToOpen) return;
-
-  window.floCurrentSubjectKey = key;
-  window.floCurrentSubjectTab = "topics";
-
-  // Record the subject in browser history without changing the app's page hash.
-  history.pushState(
-    { floPage:"subject", subjectKey:key, tab:"topics" },
-    "",
-    location.href
-  );
 
   const current =
     floCurrentPage();
@@ -6651,18 +6244,6 @@ function renderSubjectTopics(
     }
   }
 
-  const topicSortStorageKey = "floTopicSortBy:" + subject.key;
-  const topicSortMode = localStorage.getItem(topicSortStorageKey) || "recent";
-  const topicDates = floTopicDates(subject);
-
-  const sortedTopics = floSortByMode(
-    subject.topics,
-    topicSortMode,
-    topic => topic,
-    topic => topicDates[topic],
-    topic => topicStats(subject, topic).questions
-  );
-
   container.innerHTML = `
 
     <div
@@ -6686,26 +6267,18 @@ function renderSubjectTopics(
           Topics
         </h2>
 
+        <div class="small">
+          Drag to reorder your topics
+        </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <label for="floTopicSort" style="font-size:12px;color:var(--muted);">Sort by</label>
-        <select
-          id="floTopicSort"
-          aria-label="Sort topics"
-          onchange="localStorage.setItem(${JSON.stringify(topicSortStorageKey)},this.value);renderSubject(getSubject(${JSON.stringify(subject.key)}),'topics')"
-          style="width:150px;max-width:100%;box-sizing:border-box;padding:7px 34px 7px 12px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font:inherit;font-size:12px;appearance:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27 fill=%27none%27 stroke=%27%23564f48%27 stroke-width=%271.5%27%3E%3Cpath d=%27m2 4 4 4 4-4%27/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;"
-        >
-          ${floSortOptionsHTML(topicSortMode)}
-        </select>
-        <button
-          class="btn"
-          type="button"
-          onclick="addSubjectTopic('${escapeHTML(subject.key)}')"
-        >
-          + Add Topic
-        </button>
-      </div>
+      <button
+        class="btn"
+        type="button"
+        onclick="addSubjectTopic('${escapeHTML(subject.key)}')"
+      >
+        + Add Topic
+      </button>
 
     </div>
 
@@ -6717,7 +6290,7 @@ function renderSubjectTopics(
             class="topic-grid"
           >
 
-            ${sortedTopics.map((topic,index)=>{
+            ${subject.topics.map((topic,index)=>{
 
               const stats =
                 topicStats(
@@ -7881,13 +7454,6 @@ function addSubjectTopic(subjectKey){
 
   subject.topics.push(topic);
 
-  const topicDateKey = "floTopicCreatedAt";
-  let topicDates = {};
-  try { topicDates = JSON.parse(localStorage.getItem(topicDateKey) || "{}") || {}; } catch {}
-  if(!topicDates[subject.key]) topicDates[subject.key] = {};
-  topicDates[subject.key][topic] = Date.now();
-  localStorage.setItem(topicDateKey,JSON.stringify(topicDates));
-
   saveSubjects();
 
   renderSubject(
@@ -8496,23 +8062,77 @@ function quizStorageKey(questions){
       .join("|");
 }
 
-function saveCurrentQuiz(){
+// FLO_SOLO_QUIZ_ACCOUNT_SYNC_V1
+let soloQuizSaveQueue = Promise.resolve();
 
-  if(!currentQuiz || !currentQuiz.questions?.length){
-    return;
+function getSoloQuizKey(){
+  return "solo::" +
+    normalize(window.pendingQuizSubject || "") +
+    "::" +
+    normalize(window.pendingQuizTopic || "");
+}
+
+async function soloQuizApi(method, quizKey, sessionData){
+  if(!supabaseClient){
+    throw new Error("Supabase is not initialized.");
   }
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  if(error) throw error;
+
+  const token = data.session?.access_token;
+  if(!token){
+    throw new Error("Please sign in to save and resume Solo Quizzes.");
+  }
+
+  const url = "/api/solo-quiz-session?quizKey=" + encodeURIComponent(quizKey);
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    ...(method === "PUT" ? {
+      body: JSON.stringify({ quizKey, sessionData })
+    } : {})
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if(!response.ok){
+    throw new Error(result.error || "Solo Quiz sync failed.");
+  }
+  return result;
+}
+
+async function getRemoteSoloQuiz(quizKey){
+  const result = await soloQuizApi("GET", quizKey);
+  return result.session || null;
+}
+
+async function deleteRemoteSoloQuiz(quizKey){
+  return soloQuizApi("DELETE", quizKey);
+}
+
+function saveCurrentQuiz(){
+  if(!currentQuiz || !currentQuiz.questions?.length) return;
+
+  const snapshot = JSON.parse(JSON.stringify(currentQuiz));
 
   try{
-    localStorage.setItem(
-      "flo_active_quiz",
-      JSON.stringify(currentQuiz)
-    );
+    localStorage.setItem("flo_active_quiz", JSON.stringify(snapshot));
   }catch(error){
-    console.warn(
-      "Could not save active quiz:",
-      error
-    );
+    console.warn("Could not save local quiz:", error);
   }
+
+  if(!snapshot.soloSession || !snapshot.quizKey) return;
+
+  // Serialize writes to prevent an older autosave overwriting a newer one.
+  soloQuizSaveQueue = soloQuizSaveQueue
+    .catch(() => {})
+    .then(() => soloQuizApi("PUT", snapshot.quizKey, snapshot))
+    .catch(error => {
+      console.error("Solo Quiz account sync failed:", error);
+    });
 }
 
 function clearSavedQuiz(){
@@ -8834,13 +8454,13 @@ function renderQuiz(){
   `;
 }
 
-function exitQuiz(){
+async function exitQuiz(){
 
-  /*
-   * Keep the current quiz so it can be
-   * resumed from the exact same question.
-   */
+  /* Persist the exact current state before leaving the quiz screen. */
   saveCurrentQuiz();
+  if(currentQuiz?.soloSession){
+    await soloQuizSaveQueue.catch(() => {});
+  }
 
   currentQuiz = null;
 
@@ -9055,7 +8675,20 @@ function nextQuestion(){
    QUIZ RESULTS
    ========================================================= */
 
-function finishQuiz(){
+async function finishQuiz(){
+
+  const completedQuizKey = currentQuiz?.soloSession
+    ? currentQuiz.quizKey
+    : null;
+
+  if(completedQuizKey){
+    await soloQuizSaveQueue.catch(() => {});
+    try{
+      await deleteRemoteSoloQuiz(completedQuizKey);
+    }catch(error){
+      console.warn("Could not remove completed Solo Quiz session:", error);
+    }
+  }
 
   clearSavedQuiz();
 
@@ -10397,7 +10030,14 @@ function renderSettings(){
             Import MCQs
           </strong>
 
-
+          <div
+            class="small"
+            style="
+              margin:8px 0 16px
+            "
+          >
+            Upload a JSON question bank.
+          </div>
 
           <input
             class="file-input"
@@ -10405,36 +10045,6 @@ function renderSettings(){
             type="file"
             accept=".json,application/json"
           >
-
-          <select id="jsonImportVisibility" style="display:none" aria-hidden="true">
-            <option value="private">Private</option>
-            <option value="shared">Shared</option>
-          </select>
-
-          <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:12px 0 16px;">
-            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-primary,#373d46);font-size:13px;">
-              <input
-                type="radio"
-                name="jsonImportVisibilityChoice"
-                value="private"
-                checked
-                onchange="document.getElementById('jsonImportVisibility').value=this.value"
-                style="width:17px;height:17px;accent-color:#6688b2;cursor:pointer;"
-              >
-              Private
-            </label>
-
-            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-primary,#373d46);font-size:13px;">
-              <input
-                type="radio"
-                name="jsonImportVisibilityChoice"
-                value="shared"
-                onchange="document.getElementById('jsonImportVisibility').value=this.value"
-                style="width:17px;height:17px;accent-color:#6688b2;cursor:pointer;"
-              >
-              Shared
-            </label>
-          </div>
 
           <button
             class="btn"
@@ -10455,7 +10065,12 @@ function renderSettings(){
             Imported JSON Files
           </strong>
 
-
+          <div
+            class="small"
+            style="margin:8px 0 16px"
+          >
+            Your imported question banks. Swipe left on a file to reveal Delete.
+          </div>
 
           <div id="floImportedJsonFiles">
             <div class="small">
@@ -10492,13 +10107,9 @@ async function loadImportedJsonFiles(){
   try{
 
     const response =
-      await fetch("/api/question-banks", {
-        headers: {
-          ...(supabaseSession?.access_token
-            ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
-            : {})
-        }
-      });
+      await fetch(
+        "/api/question-banks"
+      );
 
     const data =
       await response.json();
@@ -10540,22 +10151,44 @@ async function loadImportedJsonFiles(){
     container.innerHTML =
       files.map(fileName => {
 
-        const bank = banks.find(
-          bank => String(bank.source || "") === String(fileName)
-        );
+        const bank =
+          banks.find(
+            bank =>
+              String(
+                bank.source || ""
+              ) === String(fileName)
+          );
 
-        const questionCount = bank?.questions?.length || 0;
-        const visibility = bank?.visibility === "shared" ? "Shared" : "Private";
-        const shared = visibility === "Shared";
+        const questionCount =
+          bank?.questions?.length || 0;
 
-        const safeName = String(fileName)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+        const safeName =
+          String(fileName)
+            .replace(
+              /&/g,
+              "&amp;"
+            )
+            .replace(
+              /</g,
+              "&lt;"
+            )
+            .replace(
+              />/g,
+              "&gt;"
+            )
+            .replace(
+              /"/g,
+              "&quot;"
+            )
+            .replace(
+              /'/g,
+              "&#039;"
+            );
 
-        const encodedFile = encodeURIComponent(fileName);
+        const encodedFile =
+          encodeURIComponent(
+            fileName
+          );
 
         return `
           <div
@@ -10564,12 +10197,12 @@ async function loadImportedJsonFiles(){
             style="
               position:relative;
               overflow:hidden;
-              margin-top:9px;
-              border-radius:13px;
-              background:#f4e8e5;
-              border:1px solid #ead7d2;
+              margin-top:10px;
+              border-radius:14px;
+              background:#d9534f;
             "
           >
+
             <div
               style="
                 position:absolute;
@@ -10580,21 +10213,23 @@ async function loadImportedJsonFiles(){
                 padding-right:8px;
               "
             >
+
               <button
                 type="button"
                 onclick='window.__floDeleteImportedJson("${encodedFile}")'
                 style="
-                  border:1px solid #e7c8c2;
-                  border-radius:9px;
-                  background:#fffaf8;
-                  color:#a34e46;
-                  font-weight:600;
-                  padding:8px 11px;
+                  border:0;
+                  border-radius:10px;
+                  background:#fff;
+                  color:#b52b2b;
+                  font-weight:700;
+                  padding:10px 14px;
                   cursor:pointer;
                 "
               >
                 Delete
               </button>
+
             </div>
 
             <div
@@ -10603,85 +10238,51 @@ async function loadImportedJsonFiles(){
               style="
                 position:relative;
                 z-index:2;
-                padding:11px 13px;
-                background:#fbf9f4;
-                border:1px solid #e9e4da;
-                border-radius:12px;
+                padding:14px;
+                background:rgba(255,255,255,.82);
+                border:1px solid rgba(0,0,0,.08);
+                border-radius:14px;
                 transition:transform .2s ease;
                 touch-action:pan-y;
               "
             >
-              <div style="display:flex;align-items:center;gap:11px;">
+
+              <div
+                style="
+                  display:flex;
+                  align-items:center;
+                  justify-content:space-between;
+                  gap:12px;
+                "
+              >
+
                 <div
-                  aria-hidden="true"
                   style="
-                    width:38px;
-                    height:38px;
-                    flex:0 0 38px;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    border-radius:10px;
-                    background:#e8eef6;
-                    color:#54749b;
-                    font-size:11px;
-                    font-weight:700;
-                    letter-spacing:.2px;
+                    min-width:0;
+                    flex:1;
                   "
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="21"
-                    height="21"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.7"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/>
-                    <path d="M13 3v7h7"/>
-                    <path d="M8 15h8M8 18h6"/>
-                  </svg>
-                </div>
 
-                <div style="min-width:0;flex:1;">
                   <div
                     style="
-                      color:var(--text-primary, #373d46);
-                      font-weight:650;
-                      font-size:13px;
-                      line-height:1.4;
-                      overflow-wrap:anywhere;
-                      word-break:break-word;
+                      font-weight:700;
+                      overflow:hidden;
+                      text-overflow:ellipsis;
+                      white-space:nowrap;
                     "
                     title="${safeName}"
                   >
                     ${safeName}
                   </div>
 
-                  <div class="small" style="margin-top:3px;color:#85847d;font-size:12px;">
+                  <div
+                    class="small"
+                    style="margin-top:4px"
+                  >
                     ${questionCount.toLocaleString()}
                     question${questionCount === 1 ? "" : "s"}
                   </div>
 
-                  <span
-                    style="
-                      display:inline-flex;
-                      align-items:center;
-                      margin-top:6px;
-                      padding:3px 8px;
-                      border-radius:999px;
-                      background:${shared ? "#e6f0e7" : "#eeeae2"};
-                      color:${shared ? "#477451" : "#776c59"};
-                      font-size:10px;
-                      font-weight:650;
-                      letter-spacing:.2px;
-                    "
-                  >
-                    ${visibility}
-                  </span>
                 </div>
 
                 <button
@@ -10689,26 +10290,26 @@ async function loadImportedJsonFiles(){
                   aria-label="File actions"
                   onclick='window.__floToggleImportedJsonDelete("${encodedFile}")'
                   style="
-                    flex:0 0 31px;
-                    width:31px;
-                    height:31px;
-                    border:1px solid #e8e3d9;
-                    border-radius:9px;
-                    background:#fffdf9;
-                    color:#77766f;
-                    font-size:20px;
+                    flex:0 0 auto;
+                    border:0;
+                    background:transparent;
+                    font-size:22px;
                     line-height:1;
-                    padding:0;
+                    padding:4px 8px;
                     cursor:pointer;
                   "
                 >
                   ⋯
                 </button>
+
               </div>
+
             </div>
+
           </div>
         `;
       }).join("");
+
 
     installImportedJsonSwipeHandlers();
 
@@ -10886,12 +10487,7 @@ window.__floDeleteImportedJson =
         await fetch(
           `/api/question-banks/${encodeURIComponent(fileName)}`,
           {
-            method: "DELETE",
-            headers: {
-              ...(supabaseSession?.access_token
-                ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
-                : {})
-            }
+            method:"DELETE"
           }
         );
 
@@ -10959,17 +10555,15 @@ async function importJSON(event){
           method:"POST",
 
           headers:{
-            "Content-Type": "application/json",
-            ...(supabaseSession?.access_token
-              ? { "Authorization": `Bearer ${supabaseSession.access_token}` }
-              : {})
+            "Content-Type":
+              "application/json"
           },
 
-          body: JSON.stringify({
-            filename: file.name,
-            data,
-            visibility: document.getElementById("jsonImportVisibility")?.value || "private"
-          })
+          body:
+            JSON.stringify({
+              filename:file.name,
+              data
+            })
         }
       );
 
@@ -10988,12 +10582,6 @@ async function importJSON(event){
     );
 
     await loadBanks();
-    await loadImportedJsonFiles();
-
-    // Show the updated subject catalog after a successful import.
-    navigate("home");
-
-    event.target.value = "";
 
   }catch(error){
 
@@ -11064,6 +10652,8 @@ window.addEventListener(
 /* =========================================================
    START APPLICATION
    ========================================================= */
+
+loadBanks();
 
 
 
@@ -11188,14 +10778,6 @@ updateMuteButton();
 
 
 
-
-// Load question banks only after Supabase has restored the session.
-window.supabaseInitializationPromise
-  .then(() => loadBanks())
-  .catch(error => {
-    console.error("Question bank startup failed:", error);
-  });
-
 </script>
 
 <div
@@ -11276,62 +10858,6 @@ window.supabaseInitializationPromise
 
 
 <script>
-
-// Swipe gestures for the existing sidebar.
-// Swipe left on the open sidebar to collapse it;
-// swipe right from the left edge to reopen it.
-(function installSidebarSwipeGestures(){
-  if (window.__floSidebarSwipeInstalled) return;
-  window.__floSidebarSwipeInstalled = true;
-
-  let startX = 0;
-  let startY = 0;
-  let tracking = false;
-
-  document.addEventListener("touchstart", function(event){
-    if (!event.touches || event.touches.length !== 1) return;
-
-    const touch = event.touches[0];
-    startX = touch.clientX;
-    startY = touch.clientY;
-
-    const app = document.querySelector(".app");
-    const collapsed = app?.classList.contains("sidebar-collapsed");
-    const sidebar = document.querySelector(".sidebar");
-
-    tracking = collapsed
-      ? startX <= 28
-      : !!sidebar && sidebar.contains(event.target);
-  }, { passive: true });
-
-  document.addEventListener("touchend", function(event){
-    if (!tracking || !event.changedTouches?.length) return;
-    tracking = false;
-
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - startX;
-    const dy = touch.clientY - startY;
-
-    // Ignore vertical scrolling and short movements.
-    if (Math.abs(dx) < 75 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
-
-    const app = document.querySelector(".app");
-    if (!app) return;
-
-    const collapsed = app.classList.contains("sidebar-collapsed");
-
-    if (!collapsed && dx < 0) {
-      toggleSidebar();
-    } else if (collapsed && dx > 0) {
-      toggleSidebar();
-    }
-  }, { passive: true });
-
-  document.addEventListener("touchcancel", function(){
-    tracking = false;
-  }, { passive: true });
-})();
-
 function toggleSidebar() {
     const app = document.querySelector(".app");
     const toggle = document.getElementById("sidebarToggle");
@@ -11432,174 +10958,6 @@ function updateTopUserProfile(username) {
   }
 }
 
-
-function toggleAvatarPicker() {
-  const picker = document.getElementById("avatarPicker");
-  const grid = document.getElementById("avatarPickerGrid");
-  if (!picker || !grid) return;
-
-  picker.hidden = !picker.hidden;
-  if (!picker.hidden && !grid.children.length) {
-    renderAvatarPicker();
-  }
-}
-
-async function renderAvatarPicker() {
-  const grid = document.getElementById("avatarPickerGrid");
-  const status = document.getElementById("avatarPickerStatus");
-  if (!grid) return;
-
-  grid.innerHTML = "";
-  if (status) status.textContent = "Loading avatars...";
-
-  try {
-    const response = await fetch(
-      STUDY_SPACE_AVATAR_BASE + "manifest.json",
-      { cache: "no-store" }
-    );
-
-    if (!response.ok) {
-      throw new Error("Could not load avatar manifest.");
-    }
-
-    const manifest = await response.json();
-    const avatars = Array.isArray(manifest)
-      ? manifest
-      : manifest.avatars;
-
-    if (!Array.isArray(avatars)) {
-      throw new Error("Manifest must contain an avatars array.");
-    }
-
-    for (const item of avatars) {
-      const filename = typeof item === "string" ? item : item.filename;
-      const id = typeof item === "string"
-        ? item.replace(/\.png$/i, "")
-        : item.id;
-
-      if (
-        typeof id !== "string" ||
-        !/^[a-zA-Z0-9_-]+$/.test(id) ||
-        typeof filename !== "string" ||
-        !/^[a-zA-Z0-9_-]+\.png$/i.test(filename)
-      ) {
-        console.warn("Skipping invalid avatar entry:", item);
-        continue;
-      }
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className =
-        "avatar-choice" +
-        (selectedAvatarId === id ? " selected" : "");
-      button.setAttribute("aria-label", "Choose avatar " + id);
-      button.setAttribute(
-        "aria-pressed",
-        selectedAvatarId === id ? "true" : "false"
-      );
-
-      const img = document.createElement("img");
-      img.src = STUDY_SPACE_AVATAR_BASE + filename;
-      img.alt = "";
-      img.loading = "lazy";
-
-      img.onerror = () => {
-        button.remove();
-        console.warn("Could not load avatar:", filename);
-      };
-
-      button.appendChild(img);
-      button.addEventListener("click", () => saveSelectedAvatar(id));
-      grid.appendChild(button);
-    }
-
-    if (status) {
-      status.textContent = grid.children.length
-        ? "Choose an avatar."
-        : "No avatars found in the manifest.";
-    }
-  } catch (error) {
-    console.error("Avatar picker error:", error);
-    if (status) {
-      status.textContent =
-        "Could not load avatars. Check avatars/manifest.json.";
-    }
-  }
-}
-
-async function saveSelectedAvatar(avatarId) {
-  if (typeof avatarId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(avatarId)) return;
-
-  const status = document.getElementById("avatarPickerStatus");
-  if (!supabaseClient || !supabaseSession?.user) {
-    if (status) status.textContent = "Please sign in before choosing an avatar.";
-    return;
-  }
-
-  if (status) status.textContent = "Saving...";
-
-  const { error } = await supabaseClient
-    .from("profiles")
-    .upsert({
-      id: supabaseSession.user.id,
-      username: currentUsername,
-      avatar_id: avatarId,
-      updated_at: new Date().toISOString()
-    });
-
-  if (error) {
-    console.error("Could not save avatar:", error);
-    if (status) status.textContent = "Could not save avatar. Please try again.";
-    return;
-  }
-
-  selectedAvatarId = avatarId;
-  renderSelectedAvatar();
-  renderAvatarPicker();
-  if (status) status.textContent = "Avatar saved.";
-
-  const picker = document.getElementById("avatarPicker");
-  if (picker) picker.hidden = true;
-}
-
-function renderSelectedAvatar() {
-  const validAvatarId = typeof selectedAvatarId === "string" && /^[a-zA-Z0-9_-]+$/.test(selectedAvatarId);
-
-  const avatarUrl = validAvatarId
-    ? STUDY_SPACE_AVATAR_BASE + selectedAvatarId + ".png"
-    : null;
-
-  const button = document.getElementById("authButton");
-  const panelAvatar = document.getElementById("accountPanelAvatar");
-  const fallback = document.getElementById("accountPanelAvatarFallback");
-
-  if (button && avatarUrl) {
-    button.innerHTML = "";
-    const img = document.createElement("img");
-    img.className = "auth-google-avatar";
-    img.src = avatarUrl;
-    img.alt = "Selected profile avatar";
-    img.referrerPolicy = "no-referrer";
-    button.appendChild(img);
-    button.title = "Account";
-  }
-
-  if (panelAvatar && fallback) {
-    if (avatarUrl) {
-      panelAvatar.src = avatarUrl;
-      panelAvatar.alt = "Selected profile avatar";
-      panelAvatar.style.display = "block";
-      fallback.style.display = "none";
-    } else {
-      panelAvatar.style.display = "none";
-      fallback.style.display = "flex";
-    }
-  }
-}
-
-let selectedAvatarId = null;
-const STUDY_SPACE_AVATAR_BASE = "/avatars/";
-
 async function loadCurrentUsername() {
   if (!supabaseClient || !supabaseSession?.user) {
     currentUsername = null;
@@ -11609,7 +10967,7 @@ async function loadCurrentUsername() {
 
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("username, avatar_id")
+    .select("username")
     .eq("id", supabaseSession.user.id)
     .maybeSingle();
 
@@ -11619,10 +10977,8 @@ async function loadCurrentUsername() {
   }
 
   currentUsername = data?.username || null;
-  selectedAvatarId = data?.avatar_id || null;
 
   updateTopUserProfile(currentUsername);
-  renderSelectedAvatar();
 
   const authUsernameLabel =
     document.getElementById("authUsernameLabel");
@@ -11773,14 +11129,6 @@ async function ensureUsername() {
 
 .flo-quiz-overlay.open{
   display:flex;
-}
-
-/* Keep the question selector above the challenge lobby. */
-#floQuizModeModal{
-  z-index:100002;
-}
-#floChallengeModal{
-  z-index:100001;
 }
 
 .flo-quiz-card{
@@ -12429,78 +11777,9 @@ async function ensureUsername() {
     options = {}
   ){
 
-    if(!supabaseClient){
-      throw new Error(
-        "Supabase is not initialized. Refresh the page and sign in again."
-      );
+    if(!supabaseSession?.access_token){
+      throw new Error("You must be signed in.");
     }
-
-    let sessionResult =
-      await supabaseClient.auth.getSession();
-
-    let session =
-      sessionResult?.data?.session || null;
-
-    if(sessionResult?.error){
-      console.warn(
-        "Could not retrieve the Supabase session:",
-        sessionResult.error.message
-      );
-    }
-
-    // Verify that Supabase still accepts the access token.
-    let verifiedUser = null;
-
-    if(session?.access_token){
-      const verification =
-        await supabaseClient.auth.getUser(session.access_token);
-
-      if(!verification.error && verification.data?.user){
-        verifiedUser = verification.data.user;
-      }else{
-        console.warn(
-          "Multiplayer session token was rejected; attempting refresh.",
-          verification.error?.message || "No user returned."
-        );
-      }
-    }
-
-    // Refresh both missing and rejected access tokens.
-    if(!verifiedUser){
-      const refreshed =
-        await supabaseClient.auth.refreshSession();
-
-      if(refreshed?.error){
-        console.error(
-          "Multiplayer session refresh failed:",
-          refreshed.error.message
-        );
-
-        throw new Error(
-          "Your sign-in session is no longer valid. Sign out, sign in again, and retry."
-        );
-      }
-
-      session =
-        refreshed?.data?.session || null;
-
-      if(session?.access_token){
-        const verification =
-          await supabaseClient.auth.getUser(session.access_token);
-
-        if(!verification.error && verification.data?.user){
-          verifiedUser = verification.data.user;
-        }
-      }
-    }
-
-    if(!session?.access_token || !verifiedUser){
-      throw new Error(
-        "Supabase could not verify your sign-in. Sign out and sign in again before using multiplayer."
-      );
-    }
-
-    supabaseSession = session;
 
     const response =
       await fetch(
@@ -12508,10 +11787,10 @@ async function ensureUsername() {
         {
           ...options,
           headers:{
-            ...(options.headers || {}),
             "Content-Type":"application/json",
             "Authorization":
-              `Bearer ${session.access_token}`
+              `Bearer ${supabaseSession.access_token}`,
+            ...(options.headers || {})
           }
         }
       );
@@ -12531,6 +11810,7 @@ async function ensureUsername() {
 
     return data;
   }
+
 
   async function createPersistentChallengeRoom(){
 
@@ -12881,142 +12161,6 @@ async function ensureUsername() {
     );
   }
 
-
-
-  /*
-   * Active-game recovery: Realtime broadcasts are fast, but not guaranteed.
-   * The room record is the recovery source for missed answers and advances.
-   */
-  let challengeGameplayPollTimer = null;
-  let challengeGameplayPollInFlight = false;
-
-  function stopChallengeGameplayPolling(){
-    if(challengeGameplayPollTimer){
-      clearInterval(challengeGameplayPollTimer);
-      challengeGameplayPollTimer = null;
-    }
-    challengeGameplayPollInFlight = false;
-  }
-
-  async function syncPersistentChallengeGame(){
-    if(
-      challengeGameplayPollInFlight ||
-      !challenge.active ||
-      challenge.finished ||
-      !challenge.roomCode
-    ){
-      return;
-    }
-
-    challengeGameplayPollInFlight = true;
-    const roomCodeAtStart = challenge.roomCode;
-
-    try{
-      const room = await loadPersistentChallengeRoom(roomCodeAtStart);
-
-      if(
-        !room ||
-        roomCodeAtStart !== challenge.roomCode ||
-        !challenge.active ||
-        challenge.finished
-      ){
-        return;
-      }
-
-      if(Array.isArray(room.question_ids) && room.question_ids.length){
-        const idsMatch =
-          Array.isArray(challenge.questionIds) &&
-          room.question_ids.length === challenge.questionIds.length &&
-          room.question_ids.every(
-            (id, i) => String(id) === String(challenge.questionIds[i])
-          );
-
-        // Do not reconcile a different challenge's room into this game.
-        if(!idsMatch){
-          console.warn("Challenge sync skipped: saved question IDs differ.");
-          return;
-        }
-      }
-
-      const hostAnswers =
-        room.host_answers && typeof room.host_answers === "object"
-          ? room.host_answers
-          : {};
-      const guestAnswers =
-        room.guest_answers && typeof room.guest_answers === "object"
-          ? room.guest_answers
-          : {};
-
-      const answerIndexes = new Set([
-        ...Object.keys(hostAnswers),
-        ...Object.keys(guestAnswers),
-        ...Object.keys(challenge.answers || {})
-      ]);
-
-      answerIndexes.forEach(key => {
-        const idx = Number(key);
-        if(!Number.isInteger(idx) || idx < 0) return;
-
-        const existing = challenge.answers[idx] || {me:null, opponent:null};
-        const savedMe = challenge.isHost ? hostAnswers[key] : guestAnswers[key];
-        const savedOpponent = challenge.isHost ? guestAnswers[key] : hostAnswers[key];
-
-        // Merge only missing slots: never replace a local answer with stale data.
-        challenge.answers[idx] = {
-          me: existing.me || savedMe || null,
-          opponent: existing.opponent || savedOpponent || null
-        };
-      });
-
-      // Scores are monotonic during a challenge; avoid rolling back a local answer.
-      const savedMyScore = Number(challenge.isHost ? room.host_score : room.guest_score);
-      const savedOpponentScore = Number(challenge.isHost ? room.guest_score : room.host_score);
-      const savedMyCorrect = Number(challenge.isHost ? room.host_correct : room.guest_correct);
-      const savedOpponentCorrect = Number(challenge.isHost ? room.guest_correct : room.host_correct);
-
-      if(Number.isFinite(savedMyScore)) challenge.myScore = Math.max(challenge.myScore || 0, savedMyScore);
-      if(Number.isFinite(savedOpponentScore)) challenge.opponentScore = Math.max(challenge.opponentScore || 0, savedOpponentScore);
-      if(Number.isFinite(savedMyCorrect)) challenge.myCorrect = Math.max(challenge.myCorrect || 0, savedMyCorrect);
-      if(Number.isFinite(savedOpponentCorrect)) challenge.opponentCorrect = Math.max(challenge.opponentCorrect || 0, savedOpponentCorrect);
-
-      let changed = false;
-      const savedIndex = Number(room.current_index);
-
-      // The host is authoritative for progression; guests catch up to persisted state.
-      if(
-        !challenge.isHost &&
-        Number.isInteger(savedIndex) &&
-        savedIndex > challenge.index &&
-        savedIndex < challenge.questions.length
-      ){
-        challenge.index = savedIndex;
-        changed = true;
-      }
-
-      if(room.status === "completed"){
-        challenge.active = false;
-        challenge.finished = true;
-        stopChallengeGameplayPolling();
-        renderChallengeResults();
-        return;
-      }
-
-      if(changed || challenge.active){
-        renderChallengeQuiz();
-      }
-    }catch(error){
-      console.warn("Challenge gameplay recovery failed:", error);
-    }finally{
-      challengeGameplayPollInFlight = false;
-    }
-  }
-
-  function startChallengeGameplayPolling(){
-    stopChallengeGameplayPolling();
-    if(!challenge.roomCode || !challenge.active || challenge.finished) return;
-    syncPersistentChallengeGame();
-    challengeGameplayPollTimer = setInterval(syncPersistentChallengeGame, 1500);
-  }
 
   function restorePersistentChallengeRoom(
     room
@@ -14253,10 +13397,8 @@ async function ensureUsername() {
         return;
       }
 
-      // Keep a reference instead of copying the entire question bank.
-      // The selected questions are shuffled when the user confirms the count.
       window.__floQuestionCountQuestions =
-        questions;
+        [...questions];
 
       window.__floQuestionCountMode =
         mode;
@@ -14281,7 +13423,7 @@ async function ensureUsername() {
 
         <p class="flo-quiz-subtitle">
           Choose how many questions you want to answer.
-          They will be shuffled before the quiz begins.
+          You will choose the question order next.
         </p>
 
         <div style="padding:10px 0 18px;">
@@ -14348,6 +13490,140 @@ async function ensureUsername() {
     };
 
 
+  // FLO_SOLO_QUIZ_ACCOUNT_SYNC_V1
+  window.__floOpenSoloResumePopup = function(savedSession){
+    const modal = document.getElementById("floQuizModeModal");
+    const content = document.getElementById("floQuizModeContent");
+    if(!modal || !content) return;
+
+    window.__floPendingRemoteSoloSession = savedSession;
+    const topicLabel = String(window.pendingQuizTopic || "this topic")
+      .replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[ch]));
+
+    content.innerHTML = `
+      <div class="flo-quiz-eyebrow">SAVED PROGRESS</div>
+      <h2 class="flo-quiz-title">Continue your quiz?</h2>
+      <p class="flo-quiz-subtitle">
+        An unfinished Solo Quiz for <strong>${topicLabel}</strong> was found.
+        You can continue where you stopped or begin again.
+      </p>
+      <div class="flo-quiz-actions" style="flex-direction:column;">
+        <button class="btn" type="button" style="width:100%;"
+          onclick="window.__floResumeSoloQuiz()">Resume Quiz</button>
+        <button class="btn light" type="button" style="width:100%;"
+          onclick="window.__floRestartSoloQuiz()">Start Again</button>
+        <button class="btn light" type="button" style="width:100%;"
+          onclick="window.__floCloseQuizMode()">Cancel</button>
+      </div>
+    `;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+  };
+
+  window.__floResumeSoloQuiz = function(){
+    const saved = window.__floPendingRemoteSoloSession;
+    const data = saved?.session_data;
+    if(!data || !Array.isArray(data.questions) || !data.questions.length){
+      toast("The saved quiz could not be restored.");
+      return;
+    }
+
+    currentQuiz = {
+      ...data,
+      questions: [...data.questions],
+      index: Math.min(Math.max(Number(data.index) || 0, 0), data.questions.length - 1),
+      answered: data.answered === true,
+      results: Array.isArray(data.results) ? [...data.results] : [],
+      soloSession: true,
+      quizKey: getSoloQuizKey()
+    };
+
+    try{
+      localStorage.setItem("flo_active_quiz", JSON.stringify(currentQuiz));
+    }catch(error){
+      console.warn("Could not cache restored quiz locally:", error);
+    }
+
+    window.__floPendingRemoteSoloSession = null;
+    window.__floCloseQuizMode();
+    renderQuiz();
+  };
+
+  window.__floRestartSoloQuiz = async function(){
+    const key = getSoloQuizKey();
+    window.__floCloseQuizMode();
+    try{
+      await soloQuizSaveQueue.catch(() => {});
+      await deleteRemoteSoloQuiz(key);
+    }catch(error){
+      console.error("Could not clear previous Solo Quiz:", error);
+      toast(error.message || "Could not reset the saved quiz.");
+      return;
+    }
+    clearSavedQuiz();
+    window.__floPendingRemoteSoloSession = null;
+    window.__floOpenQuestionCountSelector("solo", window.__floQuizQuestions || []);
+  };
+
+  window.__floOpenQuestionOrderSelector = function(){
+    const modal = document.getElementById("floQuizModeModal");
+    const content = document.getElementById("floQuizModeContent");
+    if(!modal || !content) return;
+
+    content.innerHTML = `
+      <div class="flo-quiz-eyebrow">QUESTION ORDER</div>
+      <h2 class="flo-quiz-title">Choose your question order</h2>
+      <p class="flo-quiz-subtitle">How would you like the questions to appear?</p>
+      <button class="flo-quiz-choice" type="button"
+        onclick="window.__floStartSoloQuizWithOrder('shuffle')">
+        <strong>Shuffled Order</strong>
+        <span>Questions appear in a random sequence.</span>
+      </button>
+      <button class="flo-quiz-choice" type="button"
+        onclick="window.__floStartSoloQuizWithOrder('original')">
+        <strong>Original Order</strong>
+        <span>Questions follow their sequence in the question bank.</span>
+      </button>
+      <div class="flo-quiz-actions">
+        <button class="btn light" type="button"
+          onclick="window.__floOpenQuestionCountSelector('solo', window.__floQuestionCountQuestions)">Back</button>
+      </div>
+    `;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+  };
+
+  window.__floStartSoloQuizWithOrder = function(order){
+    const source = window.__floQuestionCountQuestions || [];
+    const count = Number(window.__floSoloPendingCount) || Math.min(10, source.length);
+    if(!source.length || !["shuffle", "original"].includes(order)) return;
+
+    const ordered = [...source];
+    if(order === "shuffle"){
+      for(let i = ordered.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+      }
+    }
+
+    const selected = ordered.slice(0, Math.min(count, ordered.length));
+    const subject = SUBJECT_CATALOG.find(s =>
+      normalize(s.questionSubject || s.name) === normalize(window.pendingQuizSubject)
+    );
+    selectedSubject = subject || selectedSubject;
+
+    window.__floCloseQuizMode();
+    clearSavedQuiz();
+    startQuiz(selected);
+
+    currentQuiz.soloSession = true;
+    currentQuiz.quizKey = getSoloQuizKey();
+    currentQuiz.subject = window.pendingQuizSubject || "";
+    currentQuiz.topic = window.pendingQuizTopic || "";
+    currentQuiz.order = order;
+    saveCurrentQuiz();
+  };
+
   window.__floConfirmQuestionCount =
     async function(){
 
@@ -14377,6 +13653,13 @@ async function ensureUsername() {
             questions.length
           )
         );
+
+      if(mode === "solo"){
+        window.__floSoloPendingCount = count;
+        window.__floCloseQuizMode();
+        window.__floOpenQuestionOrderSelector();
+        return;
+      }
 
       const shuffled =
         [...questions];
@@ -14457,13 +13740,6 @@ async function ensureUsername() {
 
         try{
 
-          // Start the host's quiz immediately; do not wait for network requests.
-          beginChallenge(
-            challenge.questionIds,
-            { skipSave: true }
-          );
-
-          // Persist first, then notify the guest to avoid stale room data.
           await savePersistentChallengeRoom({
             status:"in_progress",
             currentIndex:0,
@@ -14483,6 +13759,10 @@ async function ensureUsername() {
               questionIds:
                 challenge.questionIds
             }
+          );
+
+          beginChallenge(
+            challenge.questionIds
           );
 
         }catch(error){
@@ -14532,30 +13812,26 @@ async function ensureUsername() {
        */
 
       if(mode === "solo"){
-
-        const subject =
-          SUBJECT_CATALOG.find(
-            s =>
-              normalize(
-                s.questionSubject ||
-                s.name
-              ) ===
-              normalize(
-                window.pendingQuizSubject
-              )
-          );
-
-        selectedSubject =
-          subject ||
-          selectedSubject;
-
-        window.__floOpenQuestionCountSelector(
-          "solo",
-          questions
+        const subject = SUBJECT_CATALOG.find(s =>
+          normalize(s.questionSubject || s.name) === normalize(window.pendingQuizSubject)
         );
+        selectedSubject = subject || selectedSubject;
 
+        try{
+          const saved = await getRemoteSoloQuiz(getSoloQuizKey());
+          if(saved && saved.status === "in_progress" &&
+             saved.session_data?.questions?.length){
+            window.__floOpenSoloResumePopup(saved);
+            return;
+          }
+        }catch(error){
+          console.error("Could not check saved Solo Quiz:", error);
+          toast(error.message || "Could not check your saved quiz. Please sign in and try again.");
+          return;
+        }
+
+        window.__floOpenQuestionCountSelector("solo", questions);
         return;
-
       }
 
 
@@ -15129,84 +14405,51 @@ async function ensureUsername() {
 
 
   window.__floDeleteChallengeRoom =
-  async function(roomCode){
+    async function(roomCode){
 
-    if(!roomCode) return;
-
-    const confirmed = window.confirm(
-      "Delete this saved room? This will permanently remove the room and its saved progress."
-    );
-
-    if(!confirmed) return;
-
-    // Remove the room from the visible list immediately.
-    const container = document.getElementById("floChallengeSavedRooms");
-    let removedCard = null;
-
-    if(container){
-      const buttons = [
-        ...container.querySelectorAll(
-          'button[onclick*="__floDeleteChallengeRoom"]'
-        )
-      ];
-
-      const button = buttons.find(btn =>
-        (btn.getAttribute("onclick") || "").includes(
-          JSON.stringify(String(roomCode))
-        )
-      );
-
-      if(button){
-        removedCard =
-          button.closest(".flo-saved-room-wrap") ||
-          button.closest('div[style*="margin-top:10px"]') ||
-          button.parentElement;
-
-        removedCard?.remove();
+      if(!roomCode){
+        return;
       }
 
-      if(container.querySelectorAll(
-        ".flo-saved-room-wrap, button[onclick*='__floDeleteChallengeRoom']"
-      ).length === 0){
-        container.innerHTML = `
-          <div class="flo-quiz-eyebrow" style="margin-top:24px;">
-            YOUR OPEN ROOMS
-          </div>
-          <div style="
-            padding:16px;
-            border:1px solid rgba(0,0,0,.08);
-            border-radius:14px;
-            text-align:center;
-            color:#777;
-          ">
-            Updating saved rooms…
-          </div>
-        `;
+      const confirmed =
+        window.confirm(
+          "Delete this saved room? This will permanently remove the room and its saved progress."
+        );
+
+      if(!confirmed){
+        return;
       }
-    }
 
-    try{
-      await floChallengeApi(
-        `/api/challenge-rooms/${encodeURIComponent(roomCode)}`,
-        { method:"DELETE" }
-      );
+      try{
 
-      toast("Saved room deleted.");
+        await floChallengeApi(
+          `/api/challenge-rooms/${encodeURIComponent(roomCode)}`,
+          {
+            method:"DELETE"
+          }
+        );
 
-      await renderPersistentChallengeRooms();
+        toast(
+          "Saved room deleted."
+        );
 
-    }catch(error){
-      console.error("Could not delete challenge room:", error);
+        await renderPersistentChallengeRooms();
 
-      toast(
-        error?.message ||
-        "Could not delete saved room. Refreshing the list…"
-      );
+      }catch(error){
 
-      // Restore the authoritative list if deletion failed.
-      await renderPersistentChallengeRooms();
-    }
-  };
+        console.error(
+          "Could not delete challenge room:",
+          error
+        );
+
+        toast(
+          error?.message ||
+          "Could not delete saved room."
+        );
+
+      }
+
+    };
 
 
   window.__floReturnToChallengeRoom =
@@ -15436,7 +14679,7 @@ async function ensureUsername() {
                   gap:12px;
                 ">
 
-                  <div style="min-width:0;flex:1;">
+                  <div style="min-width:0;">
 
                     <div style="
                       font-weight:700;
@@ -15465,48 +14708,16 @@ async function ensureUsername() {
 
                   </div>
 
-                  <div style="
-                    display:flex;
-                    align-items:center;
-                    justify-content:flex-end;
-                    gap:8px;
-                    flex-shrink:0;
-                    margin-left:auto;
-                  ">
-                    <button
-                      type="button"
-                      class="btn"
-                      onclick='
-                        window.__floReturnToChallengeRoom(
-                          ${JSON.stringify(code)}
-                        )
-                      '
-                    >
-                      Return to Room
-                    </button>
-
-                    <button
-                      type="button"
-                      onclick='
-                        window.__floDeleteChallengeRoom(
-                          ${JSON.stringify(code)}
-                        )
-                      '
-                      style="
-                        padding:9px 12px;
-                        border:1px solid #e7c8c2;
-                        border-radius:9px;
-                        background:#fffaf8;
-                        color:#a34e46;
-                        font-size:13px;
-                        font-weight:600;
-                        cursor:pointer;
-                        white-space:nowrap;
-                      "
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <button
+                    class="btn"
+                    onclick='
+                      window.__floReturnToChallengeRoom(
+                        ${JSON.stringify(code)}
+                      )
+                    '
+                  >
+                    Return to Room
+                  </button>
 
                 </div>
 
@@ -16299,22 +15510,27 @@ async function ensureUsername() {
   }
 
 
-  async function broadcast(event, payload){
-    if(!challenge.channel){
-      throw new Error("Challenge Realtime channel is not connected.");
+  async function broadcast(
+    event,
+    payload
+  ){
+
+    if(
+      !challenge.channel
+    ){
+      return;
     }
 
-    const result = await challenge.channel.send({
+    await challenge.channel.send({
+
       type:"broadcast",
+
       event,
+
       payload
+
     });
 
-    if(result && result.status && result.status !== "ok"){
-      throw new Error(`Challenge broadcast failed (${result.status}).`);
-    }
-
-    return result;
   }
 
 
@@ -16535,53 +15751,6 @@ async function ensureUsername() {
 
     };
 
-
-  /* FLO_JOIN_ROOM_CHOICE_CLICK_FIX */
-  document.addEventListener("click", function(event){
-    const button = event.target?.closest?.(
-      "#floChallengeContent button"
-    );
-
-    if(!button) return;
-
-    const label = button.innerText.trim();
-    const roomCodeInput = document.getElementById("floJoinRoomCode");
-
-    // Handle only the initial choice-screen button.
-    // The button inside the room-code form must still submit the join.
-    if(label !== "Join Room" || roomCodeInput) return;
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    try {
-      if(typeof window.__floShowJoinRoom !== "function"){
-        throw new Error("Join Room dialog function is unavailable.");
-      }
-
-      window.__floShowJoinRoom();
-
-      const modal = document.getElementById("floChallengeModal");
-      const content = document.getElementById("floChallengeContent");
-      const input = document.getElementById("floJoinRoomCode");
-
-      if(!modal || !content || !input){
-        throw new Error("The Join Room dialog could not be rendered.");
-      }
-
-      modal.classList.add("open");
-      modal.setAttribute("aria-hidden", "false");
-      modal.style.display = "flex";
-      input.focus();
-
-    } catch(error) {
-      console.error("Could not open Join Room dialog:", error);
-
-      if(typeof toast === "function"){
-        toast(error.message || "Could not open Join Room.");
-      }
-    }
-  }, true);
 
   window.__floJoinRoom =
     async function(){
@@ -17419,49 +16588,21 @@ async function ensureUsername() {
   window.__floStartChallenge =
     async function(){
 
-      if (!challenge.isHost) {
-        toast("Only the room host can start the challenge.");
+      if(
+        !challenge.isHost ||
+        !challenge.opponentJoined ||
+        !challenge.ready ||
+        !challenge.opponentReady
+      ){
+
         return;
+
       }
 
-      if (!challenge.opponentJoined) {
-        toast("Wait for the other player to join.");
-        return;
-      }
-
-      if (!challenge.ready || !challenge.opponentReady) {
-        toast("Both players must be ready before starting.");
-        return;
-      }
-
-      const questions =
-        Array.isArray(challenge.questions) &&
-        challenge.questions.length
-          ? challenge.questions
-          : (
-              Array.isArray(window.__floQuizQuestions)
-                ? window.__floQuizQuestions
-                : []
-            );
-
-      if (!questions.length) {
-        toast("No questions are available for this challenge. Reopen the topic and create the room again.");
-        console.error("Start Challenge: both players are ready, but no challenge questions are available.");
-        return;
-      }
-
-      if (typeof window.__floOpenQuestionCountSelector !== "function") {
-        toast("The question selector could not be loaded. Refresh the page and try again.");
-        console.error("Missing window.__floOpenQuestionCountSelector");
-        return;
-      }
-
-      // Hide the lobby before opening the question-count selector.
-      window.__floCloseChallengeModal();
 
       window.__floOpenQuestionCountSelector(
         "challenge",
-        questions
+        window.__floQuizQuestions || []
       );
 
     };
@@ -17535,41 +16676,24 @@ async function ensureUsername() {
   }
 
 
-  function beginChallenge(ids, options = {}){
+  function beginChallenge(ids){
 
-    const requestedIds = ids || challenge.questionIds || [];
+    const all =
+      allQuestions();
 
-    // Reuse the already-selected questions when possible.
-    if (
-      Array.isArray(challenge.questions) &&
-      challenge.questions.length === requestedIds.length &&
-      challenge.questions.every(
-        (q, index) =>
-          String(q.id) === String(requestedIds[index])
-      )
-    ) {
-      challenge.questions = [...challenge.questions];
-    } else {
-      const all = allQuestions();
-      const questionsById = new Map(
-        all.map(q => [String(q.id), q])
-      );
 
-      challenge.questions = requestedIds
-        .map(id => questionsById.get(String(id)))
+    challenge.questions =
+      (ids || challenge.questionIds || [])
+        .map(
+          id =>
+            all.find(
+              q =>
+                String(q.id) ===
+                String(id)
+            )
+        )
         .filter(Boolean);
-    }
 
-
-    // Multiplayer quiz rendering requires four MCQ options.
-    // Leave the original question banks and other study modes untouched.
-    challenge.questions = challenge.questions.filter(q =>
-      q &&
-      q.options &&
-      ["A", "B", "C", "D"].every(
-        letter => q.options[letter] != null
-      )
-    );
 
     if(
       !challenge.questions.length
@@ -17638,27 +16762,23 @@ async function ensureUsername() {
     challenge.finished =
       false;
 
-    startChallengeGameplayPolling();
-
 
     window.__floCloseChallengeModal();
 
     renderChallengeQuiz();
 
 
-    if (!options.skipSave) {
-      savePersistentChallengeRoom({
-        status:"in_progress",
-        currentIndex:
-          challenge.index
-      }).catch(
-        error =>
-          console.error(
-            "Could not save challenge start:",
-            error
-          )
-      );
-    }
+    savePersistentChallengeRoom({
+      status:"in_progress",
+      currentIndex:
+        challenge.index
+    }).catch(
+      error =>
+        console.error(
+          "Could not save challenge start:",
+          error
+        )
+    );
 
   }
 
@@ -17808,220 +16928,177 @@ async function ensureUsername() {
     };
 
 
-  function onAnswer(payload) {
-    if (
+  function onAnswer(payload){
+
+    if(
       !payload ||
-      payload.playerId === challenge.playerId ||
-      !Number.isInteger(Number(payload.index))
-    ) {
+      payload.playerId ===
+      challenge.playerId
+    ){
+
       return;
+
     }
 
-    const index = Number(payload.index);
 
-    if (
-      index < 0 ||
-      index >= challenge.questions.length ||
-      !challenge.active ||
-      challenge.finished
-    ) {
+    if(
+      payload.index !==
+      challenge.index
+    ){
+
       return;
+
     }
 
-    const question = challenge.questions[index];
-    if (!question) return;
 
-    const validChoices = ["A", "B", "C", "D", "UNKNOWN"];
+    if(
+      !challenge.answers[
+        challenge.index
+      ]
+    ){
 
-    if (
-      !validChoices.includes(payload.choice) ||
-      !["correct", "wrong", "unknown"].includes(payload.result)
-    ) {
-      return;
-    }
+      challenge.answers[
+        challenge.index
+      ] = {
 
-    const expectedResult =
-      payload.choice === "UNKNOWN"
-        ? "unknown"
-        : payload.choice === question.answer
-          ? "correct"
-          : "wrong";
+        me:null,
 
-    if (payload.result !== expectedResult) {
-      console.warn("Challenge answer result did not match its question.");
-      return;
-    }
+        opponent:null
 
-    if (!challenge.answers[index]) {
-      challenge.answers[index] = {
-        me: null,
-        opponent: null
       };
+
     }
 
-    const slot = challenge.answers[index];
 
-    // A repeated broadcast must not award points twice.
-    if (slot.opponent) return;
+    const slot =
+      challenge.answers[
+        challenge.index
+      ];
+
+
+    if(slot.opponent){
+      return;
+    }
+
 
     challenge.opponentUsername =
-      payload.username || challenge.opponentUsername;
+      payload.username ||
+      challenge.opponentUsername;
+
 
     slot.opponent = {
-      choice: payload.choice,
-      result: expectedResult
+
+      choice:
+        payload.choice,
+
+      result:
+        payload.result
+
     };
 
-    if (expectedResult === "correct") {
+
+    if(
+      payload.result ===
+      "correct"
+    ){
+
       challenge.opponentScore++;
+
       challenge.opponentCorrect++;
+
     }
 
-    // A delayed answer must not redraw a different question.
-    if (index === challenge.index) {
-      renderChallengeQuiz();
 
-      if (slot.me && slot.opponent) {
-        window.requestAnimationFrame(() => {
-          flashChallengeScores();
-        });
-      }
+    renderChallengeQuiz();
+
+    if(
+      slot.me &&
+      slot.opponent
+    ){
+      window.requestAnimationFrame(() => {
+        flashChallengeScores();
+      });
     }
 
-    savePersistentChallengeRoom({
-      status: "in_progress",
-      currentIndex: challenge.index
-    }).catch(error => {
-      console.error("Could not save received challenge answer:", error);
-    });
   }
+
+
   /*
    * ========================================================
    * NEXT QUESTION
    * ========================================================
    */
 
-  window.__floNextChallengeQuestion = async function() {
-    if (
-      !challenge.active ||
-      challenge.finished ||
-      !challenge.isHost ||
-      challenge.advanceInFlight
-    ) {
-      return;
-    }
+  window.__floNextChallengeQuestion =
+    async function(){
 
-    const currentIndex = challenge.index;
-    const roomCodeAtStart = challenge.roomCode;
-
-    challenge.advanceInFlight = true;
-
-    try {
-      let slot = challenge.answers[currentIndex];
-
-      // If both answers are already registered locally, do not wait for
-      // a database read before advancing.
-      if (slot && slot.me && slot.opponent) {
-        // Continue directly to the advancement checks below.
-      } else if (roomCodeAtStart) {
-          const room = await loadPersistentChallengeRoom(roomCodeAtStart);
-
-          if (
-            !challenge.active ||
-            challenge.finished ||
-            challenge.roomCode !== roomCodeAtStart ||
-            challenge.index !== currentIndex
-          ) {
-            return;
-          }
-
-          if (room) {
-            const hostAnswers =
-              room.host_answers &&
-              typeof room.host_answers === "object"
-                ? room.host_answers
-                : {};
-
-            const guestAnswers =
-              room.guest_answers &&
-              typeof room.guest_answers === "object"
-                ? room.guest_answers
-                : {};
-
-            const key = String(currentIndex);
-            const savedMe = challenge.isHost
-              ? hostAnswers[key]
-              : guestAnswers[key];
-            const savedOpponent = challenge.isHost
-              ? guestAnswers[key]
-              : hostAnswers[key];
-
-            if (!challenge.answers[currentIndex]) {
-              challenge.answers[currentIndex] = {
-                me: null,
-                opponent: null
-              };
-            }
-
-            slot = challenge.answers[currentIndex];
-
-            if (!slot.me && savedMe) {
-              slot.me = savedMe;
-            }
-
-            if (!slot.opponent && savedOpponent) {
-              slot.opponent = savedOpponent;
-            }
-          }
-      }
-
-      if (!slot || !slot.me || !slot.opponent) {
-        renderChallengeQuiz();
-        console.warn(
-          "Cannot advance: both answers are not available.",
-          { questionIndex: currentIndex }
-        );
+      if(
+        !challenge.active
+      ){
         return;
       }
 
-      if (currentIndex >= challenge.questions.length - 1) {
+
+      const slot =
+        challenge.answers[
+          challenge.index
+        ];
+
+
+      if(
+        !slot ||
+        !slot.me ||
+        !slot.opponent
+      ){
+
+        return;
+
+      }
+
+
+      if(
+        challenge.index >=
+        challenge.questions.length - 1
+      ){
+
         finishChallenge();
+
         return;
+
       }
 
-      const next = currentIndex + 1;
 
-      // Advance locally and notify the guest without waiting for the database.
-      advanceChallenge(next);
+      /*
+       * Host advances the shared question.
+       * This keeps both devices synchronized.
+       */
 
-      const roomCodeAtAdvance = challenge.roomCode;
+      if(
+        !challenge.isHost
+      ){
 
-      // Send the advance and save independently; neither network request
-      // should block the host's local question transition.
-      Promise.resolve()
-        .then(() => broadcast("flo-advance", { index: next }))
-        .catch(error => {
-          console.error("Could not broadcast challenge advance:", error);
-          challenge.realtimeStatus =
-            "Sync issue: recovering question progress.";
-        });
+        return;
 
-      savePersistentChallengeRoom({
-        status: "in_progress",
-        currentIndex: next
-      }).catch(error => {
-        console.error("Could not persist challenge advance:", error);
-        challenge.realtimeStatus =
-          "Sync issue: recovering question progress.";
-      });
-    } catch (error) {
-      console.error("Could not advance challenge question:", error);
-      challenge.realtimeStatus =
-        "Sync issue: question advance. Please wait for recovery.";
-    } finally {
-      challenge.advanceInFlight = false;
-    }
-  };
+      }
+
+
+      const next =
+        challenge.index + 1;
+
+
+      await broadcast(
+        "flo-advance",
+        {
+          index:next
+        }
+      );
+
+
+      advanceChallenge(
+        next
+      );
+
+    };
 
 
   function onAdvance(payload){
@@ -18418,7 +17495,7 @@ async function ensureUsername() {
 
 
             ${
-              (challenge.isHost && myAnswered)
+              bothAnswered
                 ? (
                     challenge.index <
                     challenge.questions.length - 1
@@ -18936,7 +18013,6 @@ async function ensureUsername() {
 
     challenge.active = false;
     challenge.finished = true;
-    stopChallengeGameplayPolling();
 
     if(
       typeof playAppSound ===
@@ -18961,7 +18037,6 @@ async function ensureUsername() {
 
       challenge.active = false;
       challenge.finished = true;
-      stopChallengeGameplayPolling();
 
       try{
 
@@ -19033,8 +18108,6 @@ async function ensureUsername() {
 
   window.__floLeaveChallenge =
     async function(){
-
-      stopChallengeGameplayPolling();
 
       /*
        * IMPORTANT:
@@ -19317,7 +18390,6 @@ async function ensureUsername() {
 
 </script>
 
-  <script src="ludo.js"></script>
 </body>
 </html>
 

@@ -2470,6 +2470,132 @@ app.use(
 
 
 /* =========================================================
+   FLO_SOLO_QUIZ_ACCOUNT_SYNC_V1
+   SOLO QUIZ SESSION API
+   ========================================================= */
+
+app.get("/api/solo-quiz-session", async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({
+        error: "Solo Quiz storage is not configured on the server."
+      });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return res.status(401).json({
+        error: "Please sign in to access saved Solo Quizzes."
+      });
+    }
+
+    const quizKey = String(req.query.quizKey || "").trim();
+    if (!quizKey || quizKey.length > 500) {
+      return res.status(400).json({ error: "Invalid quiz key." });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("solo_quiz_sessions")
+      .select("session_data, status, updated_at")
+      .eq("user_id", user.id)
+      .eq("quiz_key", quizKey)
+      .maybeSingle();
+
+    if (error) throw error;
+    return res.json({ session: data || null });
+  } catch (error) {
+    console.error("Solo Quiz fetch error:", error);
+    return res.status(500).json({
+      error: error?.message || "Could not retrieve saved Solo Quiz."
+    });
+  }
+});
+
+app.put("/api/solo-quiz-session", async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({
+        error: "Solo Quiz storage is not configured on the server."
+      });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return res.status(401).json({
+        error: "Please sign in to save Solo Quiz progress."
+      });
+    }
+
+    const quizKey = String(req.body?.quizKey || "").trim();
+    const sessionData = req.body?.sessionData;
+    if (
+      !quizKey || quizKey.length > 500 ||
+      !sessionData || typeof sessionData !== "object" ||
+      !Array.isArray(sessionData.questions) ||
+      sessionData.questions.length < 1 ||
+      sessionData.questions.length > 1000
+    ) {
+      return res.status(400).json({ error: "Invalid Solo Quiz session data." });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("solo_quiz_sessions")
+      .upsert({
+        user_id: user.id,
+        quiz_key: quizKey,
+        session_data: sessionData,
+        status: "in_progress",
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id,quiz_key" })
+      .select("updated_at")
+      .single();
+
+    if (error) throw error;
+    return res.json({ success: true, updated_at: data.updated_at });
+  } catch (error) {
+    console.error("Solo Quiz save error:", error);
+    return res.status(500).json({
+      error: error?.message || "Could not save Solo Quiz progress."
+    });
+  }
+});
+
+app.delete("/api/solo-quiz-session", async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({
+        error: "Solo Quiz storage is not configured on the server."
+      });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return res.status(401).json({ error: "Please sign in." });
+    }
+
+    const quizKey = String(req.query.quizKey || "").trim();
+    if (!quizKey || quizKey.length > 500) {
+      return res.status(400).json({ error: "Invalid quiz key." });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("solo_quiz_sessions")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("quiz_key", quizKey);
+
+    if (error) throw error;
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Solo Quiz delete error:", error);
+    return res.status(500).json({
+      error: error?.message || "Could not delete Solo Quiz session."
+    });
+  }
+});
+
+
+/* =========================================================
    CHALLENGE ROOM API ROUTES
    ========================================================= */
 

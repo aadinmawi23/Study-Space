@@ -2380,6 +2380,52 @@ app.post(
         });
       }
 
+      let storedBankData = data;
+
+      const requestedPlacement = req.body?.placement;
+
+      if (requestedPlacement !== undefined && requestedPlacement !== null) {
+
+        const placementSubject = cleanString(requestedPlacement.subject);
+        const placementTopic = cleanString(requestedPlacement.topic);
+
+        if (!placementSubject || !placementTopic) {
+          return res.status(400).json({
+            error: "Both a subject and topic are required for manual placement."
+          });
+        }
+
+        normalized.subject = placementSubject;
+        normalized.topic = placementTopic;
+
+        normalized.questions = normalized.questions.map(question => ({
+          ...question,
+          subject: placementSubject,
+          topic: placementTopic
+        }));
+
+        const originalQuestions = Array.isArray(data)
+          ? data
+          : data.questions;
+
+        storedBankData = {
+          ...(Array.isArray(data) ? {} : data),
+          subject: placementSubject,
+          topic: placementTopic,
+          questions: Array.isArray(originalQuestions)
+            ? originalQuestions.map(question =>
+                question && typeof question === "object"
+                  ? {
+                      ...question,
+                      subject: placementSubject,
+                      topic: placementTopic
+                    }
+                  : question
+              )
+            : normalized.questions
+        };
+      }
+
       if (!String(normalized.subject || "").trim() ||
           !String(normalized.topic || "").trim()) {
         return res.status(400).json({
@@ -2395,7 +2441,7 @@ app.post(
           topic: normalized.topic,
           visibility,
           owner_id: user.id,
-          bank_data: data,
+          bank_data: storedBankData,
           updated_at: new Date().toISOString()
         }, { onConflict: "owner_id,filename" })
         .select("id, filename, subject, topic, visibility, owner_id")

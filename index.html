@@ -4774,14 +4774,16 @@ function topicStats(subject,topic){
    LOAD QUESTION BANKS
    ========================================================= */
 
-async function loadBanks(){
+async function loadBanks({ renderUI = true } = {}){
 
   let data;
 
   try{
 
     const response =
-      await fetch("/api/question-banks");
+      await fetch("/api/question-banks", {
+        cache: "no-store"
+      });
 
     if(!response.ok){
       throw new Error(
@@ -4793,6 +4795,10 @@ async function loadBanks(){
     data =
       await response.json();
 
+    if(!Array.isArray(data.banks)){
+      throw new Error("Invalid question-bank response.");
+    }
+
   }catch(error){
 
     console.error(
@@ -4802,20 +4808,20 @@ async function loadBanks(){
 
     banks = [];
 
-    render();
+    if(renderUI){
+      render();
+      toast(
+        "Could not load question banks. Check the server connection."
+      );
+    }
 
-    toast(
-      "Could not load question banks. Check the server connection."
-    );
-
-    return;
+    return false;
   }
 
   banks =
-    data.banks || [];
+    data.banks;
 
   if(data.errors?.length){
-
     console.warn(
       "Question bank errors:",
       data.errors
@@ -4838,25 +4844,25 @@ async function loadBanks(){
     )
   );
 
-  // The question banks have successfully loaded.
-  // UI/authentication errors must not erase them.
-  try{
+  if(renderUI){
 
-    render();
+    try{
 
-    updateAuthenticationUI();
+      render();
+      updateAuthenticationUI();
 
-  }catch(error){
+    }catch(error){
 
-    console.error(
-      "Dashboard rendering/auth UI error:",
-      error
-    );
+      console.error(
+        "Dashboard rendering/auth UI error:",
+        error
+      );
 
-    // Keep the successfully loaded banks.
-    // Do not replace them with an empty array.
-    render();
+      render();
+    }
   }
+
+  return true;
 }
 
 
@@ -7984,7 +7990,7 @@ function reviewItem(q){
    ========================================================= */
 
 
-function startQuizFor(
+async function startQuizFor(
   subjectName,
   topic
 ){
@@ -7994,6 +8000,17 @@ function startQuizFor(
 
   window.pendingQuizTopic =
     topic;
+
+  // Always wait for the latest question-bank data.
+  toast("Loading questions...");
+
+  const loaded =
+    await loadBanks({ renderUI:false });
+
+  if(!loaded){
+    toast("Could not load question banks. Please try again.");
+    return;
+  }
 
   const subject =
     SUBJECT_CATALOG.find(
@@ -8019,15 +8036,9 @@ function startQuizFor(
             normalize(topic)
         );
 
-  if(
-    !questions ||
-    !questions.length
-  ){
+  if(!questions || !questions.length){
 
-    toast(
-      "No JSON questions loaded for this topic."
-    );
-
+    toast("No JSON questions found for this topic.");
     return;
   }
 
@@ -10039,6 +10050,19 @@ function renderSettings(){
             Upload a JSON question bank.
           </div>
 
+          <label for="jsonImportVisibility"
+            class="small"
+            style="display:block;margin:0 0 7px;font-weight:700;color:var(--ink)">
+            Who can access this bank?
+          </label>
+
+          <select
+            id="jsonImportVisibility"
+            style="display:block;width:100%;max-width:260px;padding:10px 12px;margin:0 0 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit">
+            <option value="private">Private — only me</option>
+            <option value="shared">Shared — all logged-in users</option>
+          </select>
+
           <input
             class="file-input"
             id="jsonInput"
@@ -10108,7 +10132,14 @@ async function loadImportedJsonFiles(){
 
     const response =
       await fetch(
-        "/api/question-banks"
+        "/api/question-banks",
+        {
+          headers: supabaseSession?.access_token
+            ? {
+                "Authorization": `Bearer ${supabaseSession.access_token}`
+              }
+            : {}
+        }
       );
 
     const data =
@@ -10481,13 +10512,24 @@ window.__floDeleteImportedJson =
       return;
     }
 
+    const token =
+      supabaseSession?.access_token;
+
+    if(!token){
+      toast("Please sign in to delete an imported question bank.");
+      return;
+    }
+
     try{
 
       const response =
         await fetch(
           `/api/question-banks/${encodeURIComponent(fileName)}`,
           {
-            method:"DELETE"
+            method:"DELETE",
+            headers:{
+              "Authorization":`Bearer ${token}`
+            }
           }
         );
 
@@ -10534,64 +10576,61 @@ window.__floDeleteImportedJson =
 
 async function importJSON(event){
 
-  const file =
-    event.target.files[0];
+  const file = event.target.files?.[0];
+  if(!file) return;
 
-  if(!file){
+  const token = supabaseSession?.access_token;
+
+  if(!token){
+    toast("Please sign in before importing a JSON question bank.");
+    event.target.value = "";
     return;
   }
 
+  const visibility =
+    document.getElementById("jsonImportVisibility")?.value === "shared"
+      ? "shared"
+      : "private";
+
   try{
 
-    const data =
-      JSON.parse(
-        await file.text()
-      );
+    const data = JSON.parse(await file.text());
 
-    const response =
-      await fetch(
-        "/api/question-banks/import",
-        {
-          method:"POST",
+    const response = await fetch("/api/question-banks/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        data,
+        visibility
+      })
+    });
 
-          headers:{
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              filename:file.name,
-              data
-            })
-        }
-      );
-
-    const result =
-      await response.json();
+    const result = await response.json();
 
     if(!response.ok){
-      throw new Error(
-        result.error ||
-        "Import failed"
-      );
+      throw new Error(result.error || "Import failed");
     }
 
-    toast(
-      `${result.questionCount} questions imported`
-    );
+    toast(`${result.questionCount} questions imported as ${visibility}.`);
 
     await loadBanks();
+    await loadImportedJsonFiles();
 
   }catch(error){
 
-    toast(
-      error.message
-    );
+    console.error("JSON import failed:", error);
+    toast(error.message || "Could not import JSON.");
+
+  }finally{
+
+    event.target.value = "";
+
   }
 }
-
-
 /* =========================================================
    MODAL
    ========================================================= */

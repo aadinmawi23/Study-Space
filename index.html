@@ -40,6 +40,106 @@ h2{font:42px Georgia,serif;margin:0 0 30px;letter-spacing:-1px}
 .page-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
 .page-head h2{margin-bottom:0}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+
+/* Nested subject folders */
+.flo-folder-section{
+  margin:0 0 30px;
+  padding:20px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+}
+.flo-folder-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.flo-folder-heading h2{
+  margin:0 0 5px;
+  font:24px Georgia,serif;
+}
+.flo-folder-heading p{
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+}
+.flo-folder-tree{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.flo-folder-node{
+  min-width:0;
+}
+.flo-folder-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:44px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:rgba(255,255,255,.35);
+}
+.flo-folder-grip{
+  color:var(--muted);
+  cursor:grab;
+  user-select:none;
+  font-size:18px;
+}
+.flo-folder-icon{
+  font-size:16px;
+}
+.flo-folder-name{
+  flex:1;
+  min-width:0;
+  overflow-wrap:anywhere;
+  font-weight:600;
+}
+.flo-folder-count{
+  color:var(--muted);
+  font-size:12px;
+}
+.flo-folder-action{
+  width:30px;
+  height:30px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--ink);
+  cursor:pointer;
+  font-size:19px;
+}
+.flo-folder-action:hover{
+  background:var(--line);
+}
+.flo-folder-children{
+  margin:7px 0 3px 25px;
+  padding-left:13px;
+  border-left:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.flo-folder-empty{
+  padding:15px;
+  border:1px dashed var(--line);
+  border-radius:11px;
+  color:var(--muted);
+  font-size:13px;
+}
+.flo-folder-dragging{
+  opacity:.4;
+}
+@media(max-width:600px){
+  .flo-folder-section{padding:14px}
+  .flo-folder-children{margin-left:12px;padding-left:9px}
+  .flo-folder-row{gap:7px;padding:7px}
+}
+
 .subject-card{padding:20px;background:var(--card);border:1px solid rgba(220,211,201,.6);border-radius:22px;height:184px;min-height:184px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden}
 .subject-card:before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:var(--card-accent,#d9a27f)}
 .subject-card:hover{transform:translateY(-2px);transition:.15s}
@@ -76,7 +176,42 @@ h2{font:42px Georgia,serif;margin:0 0 30px;letter-spacing:-1px}
 .btn.light{background:var(--card);color:var(--ink);border:1px solid var(--line)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.topic-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:21px}
+.topic-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:21px 21px 21px 25px;
+  position:relative;
+  overflow:visible;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.topic-card:before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:7px;
+  background:var(--card-accent,#d9a27f);
+}
+.topic-card:hover{
+  transform:translateY(-2px);
+  z-index:2;
+}
+.topic-card.flo-menu-open{
+  z-index:1000 !important;
+}
+.topic-card:before{
+  border-radius:18px 0 0 18px;
+  pointer-events:none;
+}
+.flo-topic-menu{
+  z-index:10001 !important;
+  min-width:145px;
+}
+.flo-topic-menu button:hover{
+  background:var(--soft, #f1ece6) !important;
+}
 .topic-card h3{font:20px Georgia,serif;margin:0 0 10px}
 .topic-card .topic-meta{font-size:13px;color:var(--muted);margin-bottom:14px}
 .topic-actions{display:flex;gap:8px;margin-top:15px}
@@ -6317,364 +6452,1016 @@ function renderSubject(
    TOPICS
    ========================================================= */
 
-function renderSubjectTopics(
-  container,
-  subject
-){
 
-  if(!subject.topics.length){
+/* =========================================================
+   NESTED SUBJECT FOLDERS
+   Folders are organizational only; they do not alter topics.
+   ========================================================= */
 
-    const matchingBanks =
-      banks.filter(
-        bank =>
-          normalize(bank.subject) ===
-          normalize(
-            subject.questionSubject ||
-            subject.name
-          )
-      );
+function floEnsureSubjectFolders(subject){
+  if(!Array.isArray(subject.folders)){
+    subject.folders = [];
+  }
+  return subject.folders;
+}
 
-    if(matchingBanks.length){
+function floFolderParentList(subject,parentId){
+  const roots = floEnsureSubjectFolders(subject);
+  if(!parentId) return roots;
 
-      subject.topics =
-        [
-          ...new Set(
-            matchingBanks.map(
-              bank => bank.topic
-            )
-          )
-        ];
+  const folder = floFindFolder(roots,parentId);
+  if(!folder) return roots;
+
+  if(!Array.isArray(folder.children)) folder.children = [];
+  return folder.children;
+}
+
+function floFindFolder(list,id){
+  for(const folder of (list || [])){
+    if(folder.id === id) return folder;
+
+    const found = floFindFolder(folder.children || [],id);
+    if(found) return found;
+  }
+  return null;
+}
+
+function floFolderCount(folder){
+  return (folder.children || []).length;
+}
+
+function floRenderFolderNodes(subject,folders,parentId=""){
+  if(!folders || !folders.length) return "";
+
+  return folders.map((folder,index)=>{
+    const id = String(folder.id || "");
+    const safeId = escapeHTML(id);
+    const name = escapeHTML(folder.name || "Untitled folder");
+    const color = /^#[0-9a-fA-F]{6}$/.test(folder.color || "")
+      ? folder.color
+      : "#b99ac7";
+
+    return `
+      <div
+        class="flo-folder-node"
+        draggable="true"
+        data-folder-id="${safeId}"
+        data-folder-parent="${escapeHTML(parentId)}"
+        ondragstart="floFolderDragStart(event,'${safeId}')"
+        ondragover="floFolderDragOver(event)"
+        ondrop="floFolderDrop(event,'${safeId}','${escapeHTML(parentId)}')"
+      >
+        <div class="flo-folder-row">
+          <span class="flo-folder-grip" title="Drag to reorder">⠿</span>
+          <span class="flo-folder-icon" style="color:${color}">▰</span>
+          <span class="flo-folder-name">${name}</span>
+          <span class="flo-folder-count">${floFolderCount(folder)}</span>
+          <button type="button" class="flo-folder-action"
+            onclick="floAddFolder('${escapeHTML(subject.key)}','${safeId}')"
+            title="Add subfolder">＋</button>
+          <button type="button" class="flo-folder-action"
+            onclick="floFolderOptions('${escapeHTML(subject.key)}','${safeId}')"
+            title="Folder options">⋯</button>
+        </div>
+        <div class="flo-folder-children">
+          ${floRenderFolderNodes(subject,folder.children || [],id)}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderFolderSection(subject){
+  floEnsureSubjectFolders(subject);
+
+  return `
+    <section class="flo-folder-section">
+      <div class="flo-folder-heading">
+        <div>
+          <h2>Folders</h2>
+          <p>Organise your subject into folders and subfolders</p>
+        </div>
+        <button class="btn" type="button"
+          onclick="floAddFolder('${escapeHTML(subject.key)}','')">
+          + Add Folder
+        </button>
+      </div>
+
+      <div class="flo-folder-tree">
+        ${
+          subject.folders.length
+            ? floRenderFolderNodes(subject,subject.folders)
+            : `<div class="flo-folder-empty">No folders yet. Create one to organise this subject.</div>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function floAddFolder(subjectKey,parentId=""){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const name = prompt(parentId ? "Name of the new subfolder:" : "Name of the new folder:");
+  if(name === null) return;
+
+  const cleanName = name.trim();
+  if(!cleanName){
+    toast("Enter a folder name.");
+    return;
+  }
+
+  const list = floFolderParentList(subject,parentId);
+  list.push({
+    id:"folder-" + Date.now() + "-" + Math.random().toString(36).slice(2,8),
+    name:cleanName,
+    color:"#b99ac7",
+    children:[]
+  });
+
+  saveSubjects();
+  renderSubject(subject,"topics");
+}
+
+function floFolderOptions(subjectKey,folderId){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const folder = floFindFolder(floEnsureSubjectFolders(subject),folderId);
+  if(!folder) return;
+
+  const action = prompt(
+    "Folder: " + folder.name +
+    "\n\nEnter an option:\n1 - Rename\n2 - Change colour\n3 - Delete"
+  );
+
+  if(action === null) return;
+
+  if(action.trim() === "1"){
+    const name = prompt("New folder name:",folder.name);
+    if(name === null) return;
+    if(!name.trim()){
+      toast("Folder name cannot be empty.");
+      return;
+    }
+    folder.name = name.trim();
+    saveSubjects();
+    renderSubject(subject,"topics");
+    return;
+  }
+
+  if(action.trim() === "2"){
+    const color = prompt("Enter a HEX colour (example: #b99ac7):",folder.color || "#b99ac7");
+    if(color === null) return;
+    if(!/^#[0-9a-fA-F]{6}$/.test(color.trim())){
+      toast("Enter a valid HEX colour, such as #b99ac7.");
+      return;
+    }
+    folder.color = color.trim();
+    saveSubjects();
+    renderSubject(subject,"topics");
+    return;
+  }
+
+  if(action.trim() === "3"){
+    const hasChildren = (folder.children || []).length > 0;
+    const message = hasChildren
+      ? "Delete this folder and all its nested subfolders?"
+      : "Delete this folder?";
+
+    if(!confirm(message)) return;
+
+    floRemoveFolder(floEnsureSubjectFolders(subject),folderId);
+    saveSubjects();
+    renderSubject(subject,"topics");
+  }
+}
+
+function floRemoveFolder(list,id){
+  const index = list.findIndex(folder=>folder.id === id);
+  if(index !== -1){
+    list.splice(index,1);
+    return true;
+  }
+
+  for(const folder of list){
+    if(floRemoveFolder(folder.children || [],id)) return true;
+  }
+  return false;
+}
+
+let floDraggingFolderId = "";
+
+function floFolderDragStart(event,folderId){
+  floDraggingFolderId = folderId;
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain",folderId);
+  event.currentTarget.classList.add("flo-folder-dragging");
+}
+
+function floFolderDragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+}
+
+function floFolderDrop(event,targetId,targetParentId){
+  event.preventDefault();
+  event.stopPropagation();
+
+  const sourceId = event.dataTransfer.getData("text/plain") || floDraggingFolderId;
+  if(!sourceId || sourceId === targetId) return;
+
+  const subject = window.selectedSubject;
+  if(!subject) return;
+
+  const roots = floEnsureSubjectFolders(subject);
+  const sourceFolder = floFindFolder(roots,sourceId);
+  const targetFolder = floFindFolder(roots,targetId);
+  if(!sourceFolder || !targetFolder) return;
+
+  // Reordering is deliberately limited to folders with the same parent.
+  const sourceParent = floFindFolderParentId(roots,sourceId);
+  if(sourceParent !== targetParentId) return;
+
+  const siblings = floFolderParentList(subject,sourceParent);
+  const fromIndex = siblings.findIndex(folder=>folder.id === sourceId);
+  const toIndex = siblings.findIndex(folder=>folder.id === targetId);
+  if(fromIndex < 0 || toIndex < 0) return;
+
+  const [moved] = siblings.splice(fromIndex,1);
+  siblings.splice(toIndex,0,moved);
+
+  saveSubjects();
+  renderSubject(subject,"topics");
+}
+
+function floFindFolderParentId(list,id,parentId=""){
+  for(const folder of (list || [])){
+    if(folder.id === id) return parentId;
+    const found = floFindFolderParentId(folder.children || [],id,folder.id);
+    if(found !== null) return found;
+  }
+  return null;
+}
+
+
+function floTopicQuestions(subject, topic, subtopic=""){
+  const subjectName = subject.questionSubject || subject.name;
+
+  return allQuestions().filter(q =>
+    normalize(q.subject) === normalize(subjectName) &&
+    normalize(q.topic) === normalize(topic) &&
+    normalize(q.subtopic || "") === normalize(subtopic || "")
+  );
+}
+
+function floTopicTypeList(questions){
+  const matches = window.__floQuestionMatchesType || function(q,type){
+    const mode = String(q?.mode || "mcq").toLowerCase().replace(/[ -]/g,"_");
+    if(type === "mcq") return ["mcq","multiple_choice","multiple_choice_question"].includes(mode);
+    if(type === "fill") return ["fill","fitb","fill_in_the_blanks","fill_in_the_blank"].includes(mode);
+    if(type === "match") return ["match","mtc","match_the_column","match_columns"].includes(mode);
+    return false;
+  };
+
+  return [
+    {key:"mcq",label:"MCQ",color:"#2196f3"},
+    {key:"fill",label:"Fill in the Blanks",color:"#16a34a"},
+    {key:"match",label:"Match the Column",color:"#a855f7"}
+  ].filter(type => questions.some(q => matches(q,type)));
+}
+
+function floRenderTopicTypeButtons(subject,topic,subtopic,questions){
+  return floTopicTypeList(questions).map(type => `
+    <button
+      type="button"
+      class="flo-topic-type-btn"
+      onclick='event.stopPropagation();floLaunchTopicQuiz(
+        ${JSON.stringify(subject.name)},
+        ${JSON.stringify(topic)},
+        ${JSON.stringify(subtopic || "")},
+        ${JSON.stringify(type.key)}
+      )'
+      style="
+        border:0;
+        border-radius:999px;
+        padding:7px 14px;
+        font:500 14px inherit;
+        white-space:nowrap;
+        cursor:pointer;
+        color:${type.color};
+        background:${type.color}20;
+      "
+    >${type.label}</button>
+  `).join("");
+}
+
+function floLaunchTopicQuiz(subjectName,topic,subtopic,type){
+  const subject = SUBJECT_CATALOG.find(s =>
+    normalize(s.questionSubject || s.name) === normalize(subjectName)
+  );
+
+  if(!subject) return;
+
+  const questions = floTopicQuestions(subject,topic,subtopic);
+  const matches = window.__floQuestionMatchesType || function(q,t){
+    const mode = String(q?.mode || "mcq").toLowerCase().replace(/[ -]/g,"_");
+    if(t === "mcq") return ["mcq","multiple_choice","multiple_choice_question"].includes(mode);
+    if(t === "fill") return ["fill","fitb","fill_in_the_blanks","fill_in_the_blank"].includes(mode);
+    if(t === "match") return ["match","mtc","match_the_column","match_columns"].includes(mode);
+    return false;
+  };
+
+  const selected = questions.filter(q => matches(q,type));
+
+  if(!selected.length){
+    toast("No questions of this type are available here.");
+    return;
+  }
+
+  selectedSubject = subject;
+  window.pendingQuizSubject = subject.name;
+  window.pendingQuizTopic = topic;
+  window.pendingQuizSubtopic = subtopic || "";
+  window.__floSelectedQuizType = type;
+  window.__floQuizQuestions = [...selected];
+
+  window.openQuizModeModal();
+}
+
+function floAddSubtopic(subjectKey,topic){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const name = prompt("Enter the subtopic name:");
+  if(name === null) return;
+
+  const cleanName = name.trim();
+  if(!cleanName){
+    toast("Subtopic name cannot be empty.");
+    return;
+  }
+
+  if(!subject.subtopics || typeof subject.subtopics !== "object"){
+    subject.subtopics = {};
+  }
+
+  if(!Array.isArray(subject.subtopics[topic])){
+    subject.subtopics[topic] = [];
+  }
+
+  if(subject.subtopics[topic].some(x => normalize(x) === normalize(cleanName))){
+    toast("This subtopic already exists.");
+    return;
+  }
+
+  subject.subtopics[topic].push(cleanName);
+  saveSubjects();
+  renderSubject(subject,"topics");
+}
+
+
+
+const FLO_TOPIC_COLORS = [
+  "#d9b7a8", "#c9b6d9", "#b7cdbd", "#b8c9e2",
+  "#e5d3a6", "#b7d2dc", "#d8b7c5", "#c7c6a8",
+  "#d6c0a8", "#b9c8bd", "#d4b6ae", "#c1bfdc"
+];
+
+function floRandomTopicColor(){
+  return FLO_TOPIC_COLORS[
+    Math.floor(Math.random() * FLO_TOPIC_COLORS.length)
+  ];
+}
+
+function floEnsureTopicColor(subject, topic){
+  if(!subject.topicColors) subject.topicColors = {};
+  if(!subject.topicColors[topic]){
+    subject.topicColors[topic] = floRandomTopicColor();
+    saveSubjects();
+  }
+  return subject.topicColors[topic];
+}
+
+function floEnsureSubtopicColor(subject, topic, subtopic){
+  if(!subject.subtopicColors) subject.subtopicColors = {};
+  if(!subject.subtopicColors[topic]) subject.subtopicColors[topic] = {};
+  if(!subject.subtopicColors[topic][subtopic]){
+    subject.subtopicColors[topic][subtopic] = floRandomTopicColor();
+    saveSubjects();
+  }
+  return subject.subtopicColors[topic][subtopic];
+}
+
+function floOpenCardColorEditor(kind, subjectKey, topic, subtopic=""){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const current = kind === "subtopic"
+    ? floEnsureSubtopicColor(subject, topic, subtopic)
+    : floEnsureTopicColor(subject, topic);
+
+  showModal(`
+    <h3>Change Colour</h3>
+    <p>Choose an accent colour for
+      <strong>${escapeHTML(kind === "subtopic" ? subtopic : topic)}</strong>.
+    </p>
+    <input id="floCardColorInput" type="color"
+      value="${escapeHTML(current)}"
+      style="width:100%;height:70px;border:1px solid #e6ddd1;
+      border-radius:14px;padding:5px;background:#fffdfa;cursor:pointer;">
+    <div class="modal-actions">
+      <button class="btn light" type="button" id="floCardColorCancel">Cancel</button>
+      <button class="btn" type="button" id="floCardColorSave">Save Colour</button>
+    </div>
+  `);
+
+  document.getElementById("floCardColorCancel")
+    ?.addEventListener("click", closeModal);
+
+  document.getElementById("floCardColorSave")
+    ?.addEventListener("click", () => {
+      const value = document.getElementById("floCardColorInput")?.value;
+      if(!value) return;
+
+      if(kind === "subtopic"){
+        if(!subject.subtopicColors) subject.subtopicColors = {};
+        if(!subject.subtopicColors[topic]) subject.subtopicColors[topic] = {};
+        subject.subtopicColors[topic][subtopic] = value;
+      } else {
+        if(!subject.topicColors) subject.topicColors = {};
+        subject.topicColors[topic] = value;
+      }
 
       saveSubjects();
+      closeModal();
 
+      if(window.floActiveTopicSubjectKey === subjectKey &&
+         window.floActiveTopic === topic){
+        openSubjectTopicPage(subjectKey, topic);
+      } else {
+        renderSubject(subject, "topics");
+      }
+      toast("Colour updated.");
+    });
+}
+
+function floRenameSubtopic(subjectKey, topic, oldName){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const answer = prompt("Rename subtopic:", oldName);
+  if(answer === null) return;
+
+  const newName = answer.trim();
+  if(!newName){
+    toast("Subtopic name cannot be empty.");
+    return;
+  }
+
+  if(normalize(newName) !== normalize(oldName)){
+    const names = [
+      ...(subject.subtopics?.[topic] || []),
+      ...allQuestions()
+        .filter(q =>
+          normalize(q.subject) === normalize(subject.questionSubject || subject.name) &&
+          normalize(q.topic) === normalize(topic)
+        )
+        .map(q => q.subtopic || "")
+    ];
+
+    if(names.some(name => normalize(name) === normalize(newName))){
+      toast("That subtopic already exists.");
+      return;
+    }
+  }
+
+  if(!subject.subtopicRenames) subject.subtopicRenames = {};
+  if(!subject.subtopicRenames[topic]) subject.subtopicRenames[topic] = {};
+
+  // Keep the original imported label mapped to the new display label.
+  const original = Object.entries(subject.subtopicRenames[topic])
+    .find(([, value]) => normalize(value) === normalize(oldName))?.[0]
+    || oldName;
+
+  subject.subtopicRenames[topic][original] = newName;
+
+  if(!subject.subtopics) subject.subtopics = {};
+  if(!Array.isArray(subject.subtopics[topic])) subject.subtopics[topic] = [];
+
+  subject.subtopics[topic] = subject.subtopics[topic]
+    .map(name => normalize(name) === normalize(oldName) ? newName : name);
+
+  if(subject.subtopicColors?.[topic]?.[oldName]){
+    subject.subtopicColors[topic][newName] =
+      subject.subtopicColors[topic][oldName];
+    delete subject.subtopicColors[topic][oldName];
+  }
+
+  saveSubjects();
+  openSubjectTopicPage(subjectKey, topic);
+  toast("Subtopic renamed.");
+}
+
+function floDeleteSubtopic(subjectKey, topic, subtopic){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  if(!confirm(`Hide "${subtopic}" from this topic? Its imported questions will remain in the question bank.`)){
+    return;
+  }
+
+  if(!subject.hiddenSubtopics) subject.hiddenSubtopics = {};
+  if(!subject.hiddenSubtopics[topic]) subject.hiddenSubtopics[topic] = [];
+
+  const original = Object.entries(subject.subtopicRenames?.[topic] || {})
+    .find(([, value]) => normalize(value) === normalize(subtopic))?.[0]
+    || subtopic;
+
+  [subtopic, original].forEach(name => {
+    if(!subject.hiddenSubtopics[topic].some(x => normalize(x) === normalize(name))){
+      subject.hiddenSubtopics[topic].push(name);
+    }
+  });
+
+  if(subject.subtopics?.[topic]){
+    subject.subtopics[topic] = subject.subtopics[topic]
+      .filter(name => normalize(name) !== normalize(subtopic));
+  }
+
+  saveSubjects();
+  openSubjectTopicPage(subjectKey, topic);
+  toast("Subtopic hidden.");
+}
+
+function renderSubjectTopics(container,subject){
+
+  if(!subject.topics.length){
+    const matchingBanks = banks.filter(bank =>
+      normalize(bank.subject) === normalize(subject.questionSubject || subject.name)
+    );
+
+    if(matchingBanks.length){
+      subject.topics = [...new Set(matchingBanks.map(bank => bank.topic))];
+      saveSubjects();
     }
   }
 
   container.innerHTML = `
-
-    <div
-      style="
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:14px;
-        margin-bottom:22px;
-        flex-wrap:wrap;
-      "
-    >
-
+    <div style="
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:22px;
+      flex-wrap:wrap;
+    ">
       <div>
-        <h2
-          style="
-            font:28px Georgia,serif;
-            margin:0 0 5px;
-          "
-        >
-          Topics
-        </h2>
-
-        <div class="small">
-          Drag to reorder your topics
-        </div>
+        <h2 style="font:28px Georgia,serif;margin:0 0 5px;">Topics</h2>
       </div>
 
-      <button
-        class="btn"
-        type="button"
-        onclick="addSubjectTopic('${escapeHTML(subject.key)}')"
-      >
+      <button class="btn" type="button"
+        onclick="addSubjectTopic('${escapeHTML(subject.key)}')">
         + Add Topic
       </button>
-
     </div>
 
     ${
       subject.topics.length
-        ? `
-          <div
-            id="floTopicGrid"
-            class="topic-grid"
-          >
+      ? `
+        <div id="floTopicGrid" class="topic-grid">
+          ${subject.topics.map((topic,index) => `
+            <div
+              class="topic-card"
+              draggable="true"
+              data-topic-index="${index}"
+              onclick='openSubjectTopicPage(
+                ${JSON.stringify(subject.key)},
+                ${JSON.stringify(topic)}
+              )'
+              style="position:relative;cursor:pointer;--card-accent:${escapeHTML(floEnsureTopicColor(subject,topic))};"
+            >
+              <div style="
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:14px;
+              ">
+                <h3 style="
+                  margin:0;
+                  min-width:0;
+                  flex:1;
+                  word-break:break-word;
+                ">
+                  ${escapeHTML(topic)}
+                </h3>
 
-            ${subject.topics.map((topic,index)=>{
-
-              const stats =
-                topicStats(
-                  subject,
-                  topic
-                );
-
-              return `
-
-                <div
-                  class="topic-card"
-                  draggable="true"
-                  data-topic-index="${index}"
-                  style="
-                    cursor:grab;
-                    position:relative;
-                  "
-                >
-
-                  <div
+                <div style="position:relative;flex:0 0 auto;">
+                  <button
+                    type="button"
+                    aria-label="Topic options"
+                    title="Topic options"
+                    onclick='event.stopPropagation();toggleSubjectTopicMenu(this)'
                     style="
+                      width:32px;
+                      height:32px;
+                      padding:0;
+                      border:1px solid var(--line);
+                      border-radius:9px;
+                      background:var(--card);
+                      color:var(--muted);
+                      cursor:pointer;
                       display:flex;
-                      align-items:flex-start;
-                      justify-content:space-between;
-                      gap:12px;
+                      align-items:center;
+                      justify-content:center;
+                      font-size:20px;
+                      line-height:1;
                     "
-                  >
+                  >⋮</button>
 
-                    <div style="min-width:0;flex:1;">
-
-                      <h3
-                        style="
-                          word-break:break-word;
-                        "
-                      >
-                        ${escapeHTML(topic)}
-                      </h3>
-
-                      <div class="topic-meta">
-
-                        ${stats.questions}
-                        questions
-                        ·
-                        ${stats.mastery}%
-                        mastery
-
-                        ${
-                          stats.due
-                            ? ` · ${stats.due} due`
-                            : ""
-                        }
-
-                      </div>
-
-                    </div>
-
-                    <div
-                      style="
-                        position:relative;
-                        flex:0 0 auto;
-                      "
-                    >
-
-                      <button
-                        type="button"
-                        aria-label="Topic options"
-                        title="Topic options"
-                        onclick='event.stopPropagation();toggleSubjectTopicMenu(this)'
-                        style="
-                          width:32px;
-                          height:32px;
-                          padding:0;
-                          border:1px solid var(--line);
-                          border-radius:9px;
-                          background:var(--card);
-                          color:var(--muted);
-                          cursor:pointer;
-                          display:flex;
-                          align-items:center;
-                          justify-content:center;
-                          font-size:20px;
-                          line-height:1;
-                        "
-                      >
-                        ⋮
-                      </button>
-
-                      <div
-                        class="flo-topic-menu"
-                        style="
-                          display:none;
-                          position:absolute;
-                          top:38px;
-                          right:0;
-                          z-index:50;
-                          min-width:120px;
-                          padding:5px;
-                          background:var(--card);
-                          border:1px solid var(--line);
-                          border-radius:12px;
-                          box-shadow:0 8px 24px rgba(0,0,0,.10);
-                        "
-                      >
-
-                        <button
-                          type="button"
-                          onclick='event.stopPropagation();closeSubjectTopicMenus();editSubjectTopic(
-                            ${JSON.stringify(subject.key)},
-                            ${JSON.stringify(topic)}
-                          )'
-                          style="
-                            display:block;
-                            width:100%;
-                            padding:9px 11px;
-                            border:0;
-                            border-radius:8px;
-                            background:transparent;
-                            color:var(--ink);
-                            text-align:left;
-                            cursor:pointer;
-                            font:inherit;
-                          "
-                        >
-                          Rename
-                        </button>
-
-                        <button
-                          type="button"
-                          onclick='event.stopPropagation();closeSubjectTopicMenus();deleteSubjectTopic(
-                            ${JSON.stringify(subject.key)},
-                            ${JSON.stringify(topic)}
-                          )'
-                          style="
-                            display:block;
-                            width:100%;
-                            padding:9px 11px;
-                            border:0;
-                            border-radius:8px;
-                            background:transparent;
-                            color:var(--ink);
-                            text-align:left;
-                            cursor:pointer;
-                            font:inherit;
-                          "
-                        >
-                          Delete
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  <div class="bar">
-
-                    <div
-                      class="fill"
-                      style="
-                        width:${stats.mastery}%
-                      "
-                    ></div>
-
-                  </div>
-
-                  <div
-                    class="topic-actions"
-                    style="
-                      display:flex;
-                      gap:8px;
-                      margin-top:14px;
-                    "
-                  >
-
+                  <div class="flo-topic-menu" style="
+                    display:none;
+                    position:absolute;
+                    top:38px;
+                    right:0;
+                    z-index:50;
+                    min-width:120px;
+                    padding:5px;
+                    background:var(--card);
+                    border:1px solid var(--line);
+                    border-radius:12px;
+                    box-shadow:0 8px 24px rgba(0,0,0,.10);
+                  ">
                     <button
-                      class="btn"
                       type="button"
-                      onclick='event.stopPropagation();openTopicAIImportModal(
+                      onclick='event.stopPropagation();closeSubjectTopicMenus();editSubjectTopic(
                         ${JSON.stringify(subject.key)},
-                        ${JSON.stringify(subject.name)},
                         ${JSON.stringify(topic)}
                       )'
-                    >
-                      Import
-                    </button>
+                      style="
+                        display:block;width:100%;padding:9px 11px;
+                        border:0;border-radius:8px;background:transparent;
+                        color:var(--ink);text-align:left;cursor:pointer;font:inherit;
+                      "
+                    >Rename</button>
 
-                    ${
-                      stats.questions
-                        ? `
-                          <button
-                            class="btn light"
-                            type="button"
-                            onclick='event.stopPropagation();startQuizFor(
-                              ${JSON.stringify(subject.name)},
-                              ${JSON.stringify(topic)}
-                            )'
-                          >
-                            Study
-                          </button>
-                        `
-                        : ""
-                    }
-
+                    <button
+                      type="button"
+                      onclick='event.stopPropagation();closeSubjectTopicMenus();floOpenCardColorEditor("topic",${JSON.stringify(subject.key)},${JSON.stringify(topic)})'
+                      style="display:block;width:100%;padding:9px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit;"
+                    >Change Colour</button>
+                    <button
+                      type="button"
+                      onclick='event.stopPropagation();closeSubjectTopicMenus();deleteSubjectTopic(
+                        ${JSON.stringify(subject.key)},
+                        ${JSON.stringify(topic)}
+                      )'
+                      style="
+                        display:block;width:100%;padding:9px 11px;
+                        border:0;border-radius:8px;background:transparent;
+                        color:var(--ink);text-align:left;cursor:pointer;font:inherit;
+                      "
+                    >Delete</button>
                   </div>
-
                 </div>
-              `;
-
-            }).join("")}
-
-          </div>
-        `
-        : `
-          <div class="empty-state">
-
-            <h3
-              style="
-                font:24px Georgia,serif;
-                margin-top:0
-              "
-            >
-              No topics yet
-            </h3>
-
-            <p>
-              Add your first topic using the button above.
-            </p>
-
-          </div>
-        `
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `
+      : `
+        <div class="empty-state">
+          <h3 style="font:24px Georgia,serif;margin-top:0;">No topics yet</h3>
+          <p>Add your first topic using the button above.</p>
+        </div>
+      `
     }
   `;
 
   installSubjectTopicDragHandlers(subject);
-
 }
 
+function floGetTopicQuestions(subject, topic, subtopic = ""){
+  const questionSubject = subject.questionSubject || subject.name;
+
+  const renames = subject.subtopicRenames?.[topic] || {};
+  return allQuestions().filter(question => {
+    const originalSubtopic = String(question.subtopic || "");
+    const displayedSubtopic = renames[originalSubtopic] || originalSubtopic;
+    return normalize(question.subject) === normalize(questionSubject) &&
+      normalize(question.topic) === normalize(topic) &&
+      (
+        !subtopic ||
+        normalize(displayedSubtopic) === normalize(subtopic)
+      );
+  });
+}
+
+function floGetAvailableQuizTypes(questions){
+  const matches = window.__floQuestionMatchesType;
+  if(typeof matches !== "function") return [];
+
+  return [
+    {type:"mcq", label:"MCQ"},
+    {type:"fill", label:"FITB"},
+    {type:"match", label:"MTC"}
+  ].filter(item =>
+    questions.some(question => matches(question, item.type))
+  );
+}
+
+function floRenderTopicQuizButtons(questions, subtopic = ""){
+  const types = floGetAvailableQuizTypes(questions);
+
+  if(!types.length){
+    return `<span style="font-size:12px;color:var(--muted);">No questions</span>`;
+  }
+
+  return `
+    <div style="
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:7px;
+      flex-wrap:wrap;
+      flex:0 0 auto;
+    ">
+      ${types.map(item => `
+        <button
+          type="button"
+          class="btn light"
+          data-flo-topic-quiz="true"
+          data-flo-quiz-type="${item.type}"
+          data-flo-subtopic="${escapeHTML(subtopic)}"
+          style="padding:7px 12px;font-size:12px;"
+        >${item.label}</button>
+      `).join("")}
+    </div>
+  `;
+}
+
+function floStartTopicQuiz(subjectKey, topic, subtopic, type){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const questions = floGetTopicQuestions(subject, topic, subtopic);
+  const matches = window.__floQuestionMatchesType;
+
+  if(typeof matches !== "function"){
+    toast("Quiz system is not ready. Please try again.");
+    return;
+  }
+
+  const selected = questions.filter(question =>
+    matches(question, type)
+  );
+
+  if(!selected.length){
+    toast("No questions of this type are available here.");
+    return;
+  }
+
+  selectedSubject = subject;
+
+  window.pendingQuizSubject =
+    subject.questionSubject || subject.name;
+
+  window.pendingQuizTopic = topic;
+  window.pendingQuizSubtopic = subtopic || "";
+
+  window.__floSelectedQuizType = type;
+  window.__floQuizQuestions = [...selected];
+
+  if(typeof window.openQuizModeModalFinal === "function"){
+    window.openQuizModeModalFinal();
+  }else{
+    toast("Quiz mode is not available. Please refresh and try again.");
+  }
+}
+
+function floAddTopicSubtopic(subjectKey, topic){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  const name = prompt("Enter subtopic name:");
+  if(name === null) return;
+
+  const cleanName = name.trim();
+  if(!cleanName){
+    toast("Please enter a subtopic name.");
+    return;
+  }
+
+  if(!subject.subtopics || typeof subject.subtopics !== "object"){
+    subject.subtopics = {};
+  }
+
+  if(!Array.isArray(subject.subtopics[topic])){
+    subject.subtopics[topic] = [];
+  }
+
+  const exists = subject.subtopics[topic].some(item =>
+    normalize(item) === normalize(cleanName)
+  );
+
+  if(exists){
+    toast("This subtopic already exists.");
+    return;
+  }
+
+  subject.subtopics[topic].push(cleanName);
+  saveSubjects();
+
+  openSubjectTopicPage(subjectKey, topic);
+}
+
+function openSubjectTopicPage(subjectKey, topic){
+  const subject = getSubject(subjectKey);
+  if(!subject) return;
+
+  window.floActiveTopic = topic;
+  window.floActiveTopicSubjectKey = subjectKey;
+
+  const content = document.getElementById("subjectContent");
+  if(!content) return;
+
+  if(!subject.subtopics || typeof subject.subtopics !== "object"){
+    subject.subtopics = {};
+  }
+  if(!Array.isArray(subject.subtopics[topic])){
+    subject.subtopics[topic] = [];
+  }
+
+  let mainQuestions = floGetTopicQuestions(subject, topic, "");
+
+  // Harappan main topic card: show MCQs only.
+  if(normalize(topic).includes("harappan")){
+    const matches = window.__floQuestionMatchesType;
+    if(typeof matches === "function"){
+      mainQuestions = mainQuestions.filter(q => matches(q, "mcq"));
+    }
+  }
+
+  const renames = subject.subtopicRenames?.[topic] || {};
+  const hidden = subject.hiddenSubtopics?.[topic] || [];
+
+  const importedSubtopics = allQuestions()
+    .filter(question =>
+      normalize(question.subject) === normalize(subject.questionSubject || subject.name) &&
+      normalize(question.topic) === normalize(topic)
+    )
+    .map(question => {
+      const original = String(question.subtopic || "").trim();
+      return renames[original] || original;
+    })
+    .filter(Boolean);
+
+  const subtopicMap = new Map();
+  [...importedSubtopics, ...subject.subtopics[topic]].forEach(name => {
+    const cleanName = String(name || "").trim();
+    const key = normalize(cleanName);
+    if(cleanName && !subtopicMap.has(key)){
+      subtopicMap.set(key, cleanName);
+    }
+  });
+
+  let subtopics = [...subtopicMap.values()]
+    .filter(name => !hidden.some(item => normalize(item) === normalize(name)));
+
+  // Harappan / Indus Civilization: show only Archaeological finds.
+  const visibleSubtopics = normalize(topic).includes("harappan")
+    ? subtopics.filter(name => normalize(name) === "archaeological finds")
+    : subtopics;
+
+  const topicAccent = escapeHTML(floEnsureTopicColor(subject, topic));
+
+  content.innerHTML = `
+    <div style="margin-bottom:22px;">
+      <button class="btn light" type="button"
+        onclick="renderSubject(selectedSubject,'topics')">
+        ← Back to Topics
+      </button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font:28px Georgia,serif;margin:0;">${escapeHTML(topic)}</h2>
+    </div>
+
+    <div class="topic-card" style="
+      --card-accent:${topicAccent};
+      margin-bottom:16px;
+      cursor:default;
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+        <h3 style="margin:0;min-width:0;flex:1;word-break:break-word;">
+          ${escapeHTML(topic)}
+        </h3>
+
+        <div style="display:flex;align-items:center;gap:10px;position:relative;">
+          ${floRenderTopicQuizButtons(mainQuestions, "")}
+          <div style="position:relative;flex:0 0 auto;">
+            <button type="button" aria-label="Topic options"
+              onclick="event.stopPropagation();toggleSubjectTopicMenu(this)"
+              style="width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--muted);cursor:pointer;font-size:20px;">⋮</button>
+            <div class="flo-topic-menu" style="display:none;position:absolute;top:38px;right:0;min-width:145px;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);">
+              <button type="button"
+                onclick='event.stopPropagation();closeSubjectTopicMenus();floOpenCardColorEditor("topic",${JSON.stringify(subjectKey)},${JSON.stringify(topic)})'
+                style="display:block;width:100%;padding:9px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit;">Change Colour</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:13px;margin-top:8px;">
+      ${visibleSubtopics.map(subtopic => {
+        const questions = floGetTopicQuestions(subject, topic, subtopic);
+        const subtopicAccent = escapeHTML(
+          floEnsureSubtopicColor(subject, topic, subtopic)
+        );
+
+        return `
+          <div class="topic-card" style="
+            --card-accent:${subtopicAccent};
+            margin-left:30px;
+            cursor:default;
+          ">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+              <div style="min-width:0;flex:1;">
+                <h3 style="margin:0 0 6px;word-break:break-word;">
+                  ${escapeHTML(subtopic)}
+                </h3>
+                <div class="topic-meta" style="margin:0;">
+                  ${questions.length} ${questions.length === 1 ? "question" : "questions"}
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:10px;position:relative;">
+                ${floRenderTopicQuizButtons(questions, subtopic)}
+                <div style="position:relative;flex:0 0 auto;">
+                  <button type="button" aria-label="Subtopic options"
+                    onclick="event.stopPropagation();toggleSubjectTopicMenu(this)"
+                    style="width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--muted);cursor:pointer;font-size:20px;">⋮</button>
+                  <div class="flo-topic-menu" style="display:none;position:absolute;top:38px;right:0;min-width:145px;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);">
+                    <button type="button"
+                      onclick='event.stopPropagation();closeSubjectTopicMenus();floRenameSubtopic(${JSON.stringify(subjectKey)},${JSON.stringify(topic)},${JSON.stringify(subtopic)})'
+                      style="display:block;width:100%;padding:9px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit;">Rename</button>
+                    <button type="button"
+                      onclick='event.stopPropagation();closeSubjectTopicMenus();floOpenCardColorEditor("subtopic",${JSON.stringify(subjectKey)},${JSON.stringify(topic)},${JSON.stringify(subtopic)})'
+                      style="display:block;width:100%;padding:9px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit;">Change Colour</button>
+                    <button type="button"
+                      onclick='event.stopPropagation();closeSubjectTopicMenus();floDeleteSubtopic(${JSON.stringify(subjectKey)},${JSON.stringify(topic)},${JSON.stringify(subtopic)})'
+                      style="display:block;width:100%;padding:9px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit;">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+      <button class="btn light" type="button" id="floAddTopicSubtopicButton">
+        + Add Subtopic
+      </button>
+    </div>
+  `;
+
+  content.querySelectorAll("[data-flo-topic-quiz]").forEach(button => {
+    button.addEventListener("click", () => {
+      floStartTopicQuiz(
+        subjectKey,
+        topic,
+        button.dataset.floSubtopic || "",
+        button.dataset.floQuizType
+      );
+    });
+  });
+
+  document.getElementById("floAddTopicSubtopicButton")
+    ?.addEventListener("click", () => floAddTopicSubtopic(subjectKey, topic));
+}
 
 function closeSubjectTopicMenus(){
-
-  document
-    .querySelectorAll(
-      ".flo-topic-menu"
-    )
-    .forEach(menu => {
-
-      menu.style.display =
-        "none";
-
-    });
-
+  document.querySelectorAll(".flo-topic-menu").forEach(menu => {
+    menu.style.display = "none";
+    menu.closest(".topic-card")?.classList.remove("flo-menu-open");
+  });
 }
 
 
 function toggleSubjectTopicMenu(button){
+  const menu = button.parentElement?.querySelector(".flo-topic-menu");
+  if(!menu) return;
 
-  const menu =
-    button.parentElement
-      ?.querySelector(
-        ".flo-topic-menu"
-      );
-
-  if(!menu){
-    return;
-  }
-
-  const wasOpen =
-    menu.style.display === "block";
-
+  const wasOpen = menu.style.display === "block";
   closeSubjectTopicMenus();
 
   if(!wasOpen){
-
-    menu.style.display =
-      "block";
-
+    menu.style.display = "block";
+    menu.closest(".topic-card")?.classList.add("flo-menu-open");
   }
-
 }
 
 
@@ -6687,7 +7474,7 @@ document.addEventListener(
         ".flo-topic-menu"
       ) &&
       !event.target.closest(
-        '[aria-label="Topic options"]'
+        '[aria-label="Topic options"], [aria-label="Subtopic options"]'
       )
     ){
 
@@ -8101,6 +8888,8 @@ function startQuizFor(
   window.pendingQuizTopic =
     topic;
 
+  window.pendingQuizSubtopic = "";
+
   const subject =
     SUBJECT_CATALOG.find(
       s =>
@@ -8172,10 +8961,15 @@ function quizStorageKey(questions){
 let soloQuizSaveQueue = Promise.resolve();
 
 function getSoloQuizKey(){
-  return "solo::" +
+  const base = "solo::" +
     normalize(window.pendingQuizSubject || "") +
     "::" +
-    normalize(window.pendingQuizTopic || "") +
+    normalize(window.pendingQuizTopic || "");
+
+  const subtopic = normalize(window.pendingQuizSubtopic || "");
+
+  return base +
+    (subtopic ? "::" + subtopic : "") +
     "::" +
     (window.__floSelectedQuizType || "mcq");
 }
@@ -8543,67 +9337,137 @@ function mtcLetter(index){
   return result;
 }
 
-function renderMatchQuizQuestion(){
-  const main = document.getElementById("main");
-  const q = currentQuiz.questions[currentQuiz.index];
-  if(!main || !q) return;
 
-  const number = currentQuiz.index + 1;
-  const total = currentQuiz.questions.length;
-  const key = String(q.id);
 
-  if(!currentQuiz.matchColumnBOrder){
-    currentQuiz.matchColumnBOrder = {};
-  }
+function mtcQuestionKey(q, index){
+  return String(q?.id ?? `mtc-${index}`);
+}
 
-  if(!Array.isArray(currentQuiz.matchColumnBOrder[key])){
-    const order = q.column_b.map((_, index) => index);
+function mtcBuildGlobalItems(){
+  const questions = currentQuiz.questions || [];
+  const columnA = [];
+  const columnB = [];
 
-    if(currentQuiz.order === "shuffle"){
-      for(let i = order.length - 1; i > 0; i--){
-        const j = Math.floor(Math.random() * (i + 1));
-        [order[i], order[j]] = [order[j], order[i]];
-      }
-    }
+  questions.forEach((q, qi) => {
+    const qKey = mtcQuestionKey(q, qi);
 
-    currentQuiz.matchColumnBOrder[key] = order;
-  }
+    (q.column_a || []).forEach((item, ai) => {
+      columnA.push({
+        id:`a-${qi}-${ai}`,
+        questionIndex:qi,
+        questionKey:qKey,
+        localIndex:ai,
+        text:String(item ?? "")
+      });
+    });
 
-  const order = currentQuiz.matchColumnBOrder[key];
-  const matches = q.matches || [];
-  const answered = currentQuiz.answered === true;
-  const result = currentQuiz.results?.find(item => item.questionId === q.id);
-
-  const correctMap = {};
-  matches.forEach(match => {
-    correctMap[match.a] = match.b;
+    (q.column_b || []).forEach((item, bi) => {
+      columnB.push({
+        id:`b-${qi}-${bi}`,
+        questionIndex:qi,
+        questionKey:qKey,
+        localIndex:bi,
+        text:String(item ?? "")
+      });
+    });
   });
 
-  const displayedLetterFor = originalIndex =>
-    mtcLetter(order.indexOf(originalIndex));
+  return {columnA, columnB};
+}
 
-  const rowCount = Math.max(q.column_a.length, q.column_b.length);
+function mtcGetGlobalOrder(columnB){
+  const validIds = columnB.map(item => item.id);
 
-  const rowsA = Array.from({length: rowCount}, (_, index) => {
-    if(index >= q.column_a.length) return `<div></div>`;
+  if(currentQuiz.mtcGlobalVersion !== 1){
+    // Migrate old individual-question MTC sessions to the combined exercise.
+    currentQuiz.results = [];
+    currentQuiz.answered = false;
 
-    const correctIndex = correctMap[index];
-    const selected = order[index];
-    const isCorrect = selected === correctIndex;
+    const shuffled = [...validIds];
 
-    const feedback = answered
+    for(let i = shuffled.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    currentQuiz.mtcGlobalBOrder = shuffled;
+    currentQuiz.mtcGlobalSubmitted = false;
+    currentQuiz.mtcGlobalShowAnswers = false;
+    currentQuiz.mtcGlobalVersion = 1;
+  }
+
+  if(!Array.isArray(currentQuiz.mtcGlobalBOrder)){
+    currentQuiz.mtcGlobalBOrder = [...validIds];
+  }
+
+  const saved = currentQuiz.mtcGlobalBOrder.map(String);
+
+  currentQuiz.mtcGlobalBOrder = [
+    ...saved.filter(id => validIds.includes(id)),
+    ...validIds.filter(id => !saved.includes(id))
+  ];
+
+  return currentQuiz.mtcGlobalBOrder;
+}
+
+function mtcGetCorrectMap(columnA, columnB){
+  const correctMap = new Map();
+
+  (currentQuiz.questions || []).forEach((q, qi) => {
+    (q.matches || []).forEach(match => {
+      correctMap.set(
+        `a-${qi}-${match.a}`,
+        `b-${qi}-${match.b}`
+      );
+    });
+  });
+
+  return correctMap;
+}
+
+function renderMatchQuizQuestion(){
+  const main = document.getElementById("main");
+  if(!main || !currentQuiz?.questions?.length) return;
+
+  const {columnA, columnB} = mtcBuildGlobalItems();
+  const bOrder = mtcGetGlobalOrder(columnB);
+  const bById = new Map(columnB.map(item => [item.id, item]));
+  const correctMap = mtcGetCorrectMap(columnA, columnB);
+  const submitted = currentQuiz.mtcGlobalSubmitted === true;
+  const totalPairs = correctMap.size;
+
+  // Capture old positions so the reordered items can slide smoothly.
+  const oldPositions = new Map();
+
+  main.querySelectorAll("[data-mtc-global-b]").forEach(element => {
+    oldPositions.set(
+      element.dataset.mtcGlobalB,
+      element.getBoundingClientRect().top
+    );
+  });
+
+  const rowsA = columnA.map((item, index) => {
+    const correctBId = correctMap.get(item.id);
+    const selectedBId = bOrder[index];
+    const isCorrect = selectedBId === correctBId;
+    const correctB = bById.get(correctBId);
+
+    const feedback = submitted
       ? isCorrect
-        ? `<span style="color:#237342;font-weight:700;">✓ Correct</span>`
-        : `<span style="color:#b23b3b;font-weight:700;">✕ Incorrect</span>`
+        ? `<span style="color:#237342;font-weight:700;white-space:nowrap;">✓</span>`
+        : `<span style="color:#b23b3b;font-weight:700;white-space:nowrap;">✕</span>`
       : "";
 
-    const answerReveal = answered && result?.showAnswer
-      ? `<span style="font-weight:700;color:var(--muted);">(${displayedLetterFor(correctIndex)})</span>`
+    const reveal = submitted && currentQuiz.mtcGlobalShowAnswers
+      ? `<div style="font-size:12px;color:var(--muted);margin-top:5px;">
+          Answer: ${correctB ? escapeHTML(correctB.text) : "—"}
+        </div>`
       : "";
 
     return `
       <div style="
         min-height:58px;
+        box-sizing:border-box;
         display:flex;
         align-items:center;
         justify-content:space-between;
@@ -8612,26 +9476,29 @@ function renderMatchQuizQuestion(){
         border:1px solid var(--line);
         border-radius:10px;
         margin-bottom:9px;
-        background:${answered ? (isCorrect ? "#e3f0e6" : "#f6dfdf") : "var(--bg)"};
+        background:${submitted ? (isCorrect ? "#e3f0e6" : "#f6dfdf") : "var(--bg)"};
       ">
-        <strong>${index + 1}. ${escapeHTML(q.column_a[index])} ${answerReveal}</strong>
+        <div style="min-width:0;">
+          <span style="display:flex;align-items:baseline;gap:8px;min-width:0;">
+            <span style="font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;">${index + 1}.</span>
+            <strong>${escapeHTML(item.text)}</strong>
+          </span>
+          ${reveal}
+        </div>
         ${feedback}
       </div>
     `;
   }).join("");
 
-  const options = Array.from({length: rowCount}, (_, displayIndex) => {
-    if(displayIndex >= q.column_b.length){
-      return `<div style="min-height:58px;margin-bottom:9px;"></div>`;
-    }
-
-    const originalIndex = order[displayIndex];
+  const rowsB = bOrder.map((id, index) => {
+    const item = bById.get(id);
+    if(!item) return "";
 
     return `
       <div
         class="mtc-option"
-        data-mtc-position="${displayIndex}"
-        draggable="${!answered}"
+        data-mtc-global-b="${escapeHTML(id)}"
+        data-mtc-global-position="${index}"
         style="
           min-height:58px;
           box-sizing:border-box;
@@ -8643,156 +9510,282 @@ function renderMatchQuizQuestion(){
           border-radius:10px;
           margin-bottom:9px;
           background:var(--card);
-          cursor:${answered ? "default" : "grab"};
+          cursor:${submitted ? "default" : "grab"};
           user-select:none;
           -webkit-user-select:none;
-          touch-action:${answered ? "auto" : "none"};
-          opacity:1;
+          touch-action:${submitted ? "auto" : "none"};
+          transition:transform 220ms cubic-bezier(.2,.75,.25,1), box-shadow 180ms ease;
         "
       >
-        ${!answered ? `<span style="color:var(--muted);font-size:20px;">⠿</span>` : ""}
-        <strong>${mtcLetter(displayIndex)}.</strong>
-        <span>${escapeHTML(q.column_b[originalIndex])}</span>
+        ${!submitted ? `<span style="color:var(--muted);font-size:20px;">⠿</span>` : ""}
+        <span class="mtc-global-number" style="font-size:12px;font-weight:600;color:var(--muted);min-width:18px;flex-shrink:0;">${index + 1}.</span>
+        <span>${escapeHTML(item.text)}</span>
       </div>
     `;
   }).join("");
 
-  const pairScore = answered
-    ? matches.filter(match => order[match.a] === match.b).length
-    : 0;
+  let correctTotal = 0;
+  let answeredQuestionCount = 0;
+
+  if(submitted){
+    currentQuiz.questions.forEach((q, qi) => {
+      const qCorrect = (q.matches || []).filter(match => {
+        const aId = `a-${qi}-${match.a}`;
+        const bId = `b-${qi}-${match.b}`;
+        const aIndex = columnA.findIndex(item => item.id === aId);
+        return aIndex >= 0 && bOrder[aIndex] === bId;
+      }).length;
+
+      correctTotal += qCorrect;
+      answeredQuestionCount++;
+    });
+  }
 
   main.innerHTML = `
-    <div class="quiz-shell">
+    <div class="quiz-shell mtc-global-page">
       <div class="quiz-top">
         <button class="btn light" onclick="exitQuiz()">← Exit Quiz</button>
-        <div class="quiz-count">Question ${number} / ${total}</div>
+        <div class="quiz-count">Match the Column</div>
       </div>
 
       <div class="quiz-progress">
-        <div class="fill" style="width:${number / total * 100}%"></div>
+        <div class="fill" style="width:${submitted ? 100 : 0}%"></div>
       </div>
 
-      <div class="question-card">
-        <h3>${escapeHTML(q.question)}</h3>
-
-        <p style="color:var(--muted);margin:0 0 16px;">
-          ${answered
-            ? "Your submitted arrangement is shown below."
-            : "Drag the items in Column B up or down to match the order in Column A."}
-        </p>
-
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;">
-          <section>
-            <h4 style="margin:0 0 12px;">Column A</h4>
-            ${rowsA}
-          </section>
-
-          <section>
-            <h4 style="margin:0 0 12px;">Column B</h4>
-            ${options}
-          </section>
-        </div>
-
-        <div id="mtcFeedback">
-          ${
-            answered
-              ? `<div class="explanation">
-                  <strong>${pairScore} / ${matches.length} pairs correct</strong>
-                  ${q.explanation ? `<div style="margin-top:8px;">${escapeHTML(q.explanation)}</div>` : ""}
-                  <button class="btn light" style="margin-top:12px;" onclick="showMtcAnswers()">Show Answer</button>
-                </div>`
-              : ""
-          }
-        </div>
-
-        <div class="quiz-actions">
-          ${
-            answered
-              ? ""
-              : `<button class="btn" onclick="submitMtcAnswer()">Submit Answer</button>`
-          }
-          <div class="quiz-next">
-            ${
-              answered
-                ? `<button class="btn" onclick="nextQuestion()">${number < total ? "Next Question →" : "Finish Quiz"}</button>`
-                : `<button class="btn" disabled style="opacity:.45;">Next Question →</button>`
-            }
-          </div>
+      <div style="margin:16px 0 20px;">
+        <h3 style="margin:0 0 6px;">Match the following</h3>
+        <div class="small" style="margin-top:8px;color:var(--muted);">
+          ${columnA.length} questions
         </div>
       </div>
+
+      <div style="
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        gap:14px;
+        align-items:start;
+      ">
+        <section>
+          <h4 style="margin:0 0 12px;">Column A</h4>
+          <div>${rowsA}</div>
+        </section>
+
+        <section>
+          <h4 style="margin:0 0 12px;">Column B</h4>
+          <div id="mtcGlobalColumnB">${rowsB}</div>
+        </section>
+      </div>
+
+      ${
+        submitted
+          ? `<div class="explanation" style="margin-top:18px;">
+              <strong>${correctTotal} / ${totalPairs} matches correct</strong>
+              <div style="margin-top:6px;color:var(--muted);">
+                ${answeredQuestionCount} original questions scored.
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+                <button class="btn light" onclick="showMtcAnswers()">
+                  ${currentQuiz.mtcGlobalShowAnswers ? "Hide Answers" : "Show Answers"}
+                </button>
+                <button class="btn" onclick="finishMtcQuiz()">Finish Quiz</button>
+              </div>
+            </div>`
+          : `<div style="display:flex;justify-content:flex-end;margin-top:18px;">
+              <button class="btn" onclick="submitMtcAnswer()">Submit Answers</button>
+            </div>`
+      }
     </div>
   `;
 
-  if(!answered){
-    let draggingPosition = null;
+  // Keep the two columns side by side on smaller screens too.
+  if(!document.getElementById("floMtcGlobalStyles")){
+    const style = document.createElement("style");
+    style.id = "floMtcGlobalStyles";
+    style.textContent = `
+      .mtc-global-page .mtc-option:active{
+        box-shadow:0 5px 16px rgba(0,0,0,.10);
+      }
+      .mtc-global-page .mtc-global-dragging{
+        opacity:.82;
+        box-shadow:0 10px 24px rgba(0,0,0,.16);
+        transform:scale(1.015);
+      }
+      @media(max-width:480px){
+        .mtc-global-page > div[style*="grid-template-columns"]{
+          gap:7px!important;
+        }
+        .mtc-global-page .mtc-option,
+        .mtc-global-page section > div > div{
+          padding:8px!important;
+          font-size:12px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
-    const optionElements = main.querySelectorAll("[data-mtc-position]");
+  if(!submitted){
+    const columnBContainer = main.querySelector("#mtcGlobalColumnB");
+    let dragging = null;
 
-    optionElements.forEach(option => {
+    const updateGlobalOrderFromDOM = () => {
+      const elements = [...columnBContainer.querySelectorAll("[data-mtc-global-b]")];
+
+      currentQuiz.mtcGlobalBOrder = elements.map(element =>
+        element.dataset.mtcGlobalB
+      );
+
+      elements.forEach((element, index) => {
+        element.dataset.mtcGlobalPosition = String(index);
+        const number = element.querySelector(".mtc-global-number");
+        if(number) number.textContent = `${index + 1}.`;
+      });
+    };
+
+    const animatePositions = before => {
+      const elements = [...columnBContainer.querySelectorAll("[data-mtc-global-b]")];
+
+      elements.forEach(element => {
+        const oldTop = before.get(element.dataset.mtcGlobalB);
+        if(oldTop === undefined) return;
+
+        const newTop = element.getBoundingClientRect().top;
+        const delta = oldTop - newTop;
+        if(!delta) return;
+
+        element.style.transition = "none";
+        element.style.transform = `translateY(${delta}px)`;
+
+        requestAnimationFrame(() => {
+          element.style.transition = "transform 160ms cubic-bezier(.2,.75,.25,1)";
+          element.style.transform = "translateY(0)";
+        });
+      });
+    };
+
+    columnBContainer?.querySelectorAll("[data-mtc-global-position]").forEach(option => {
+      option.setAttribute("draggable", "false");
+
       option.addEventListener("pointerdown", event => {
-        draggingPosition = Number(option.dataset.mtcPosition);
-        window.__floMtcDragging = draggingPosition;
-        option.style.opacity = ".65";
-        event.preventDefault();
-      });
+        if(event.button !== undefined && event.button !== 0) return;
 
-      option.addEventListener("dragstart", event => {
-        draggingPosition = Number(option.dataset.mtcPosition);
-        window.__floMtcDragging = draggingPosition;
-        event.dataTransfer.setData("text/plain", String(draggingPosition));
-      });
+        dragging = {
+          id: option.dataset.mtcGlobalB,
+          pointerId: event.pointerId
+        };
 
-      option.addEventListener("dragover", event => {
+        option.classList.add("mtc-global-dragging");
+        option.style.zIndex = "3";
+        option.style.position = "relative";
         event.preventDefault();
-      });
-
-      option.addEventListener("drop", event => {
-        event.preventDefault();
-        const from = Number(event.dataTransfer.getData("text/plain"));
-        const to = Number(option.dataset.mtcPosition);
-        reorderMtcColumnB(from, to);
       });
     });
 
-    main.onpointerup = event => {
-      if(draggingPosition === null) return;
+    main.onpointermove = event => {
+      if(!dragging || event.pointerId !== dragging.pointerId) return;
 
-      const target = document.elementFromPoint(event.clientX, event.clientY);
-      const targetOption = target?.closest("[data-mtc-position]");
+      const dragged = columnBContainer.querySelector(
+        `[data-mtc-global-b="${CSS.escape(dragging.id)}"]`
+      );
+      const target = document.elementFromPoint(event.clientX, event.clientY)
+        ?.closest("[data-mtc-global-b]");
 
-      if(targetOption){
-        const to = Number(targetOption.dataset.mtcPosition);
-        reorderMtcColumnB(draggingPosition, to);
+      if(!dragged || !target || target === dragged ||
+         !columnBContainer.contains(target)) return;
+
+      const rect = target.getBoundingClientRect();
+      const insertAfter = event.clientY > rect.top + rect.height / 2;
+
+      const shouldMove = insertAfter
+        ? dragged.nextElementSibling !== target.nextElementSibling
+        : target !== dragged.nextElementSibling;
+
+      if(!shouldMove) return;
+
+      const before = new Map(
+        [...columnBContainer.querySelectorAll("[data-mtc-global-b]")].map(element => [
+          element.dataset.mtcGlobalB,
+          element.getBoundingClientRect().top
+        ])
+      );
+
+      if(insertAfter){
+        columnBContainer.insertBefore(dragged, target.nextElementSibling);
       }else{
-        optionElements.forEach(option => {
-          option.style.opacity = "1";
-        });
+        columnBContainer.insertBefore(dragged, target);
       }
 
-      draggingPosition = null;
-      window.__floMtcDragging = null;
+      updateGlobalOrderFromDOM();
+      animatePositions(before);
+    };
+
+    main.onpointerup = event => {
+      if(!dragging || event.pointerId !== dragging.pointerId) return;
+
+      const dragged = columnBContainer.querySelector(
+        `[data-mtc-global-b="${CSS.escape(dragging.id)}"]`
+      );
+
+      if(dragged){
+        dragged.classList.remove("mtc-global-dragging");
+        dragged.style.zIndex = "";
+        dragged.style.position = "";
+      }
+
+      updateGlobalOrderFromDOM();
+      dragging = null;
+      saveCurrentQuiz();
     };
 
     main.onpointercancel = () => {
-      draggingPosition = null;
-      window.__floMtcDragging = null;
-      optionElements.forEach(option => {
-        option.style.opacity = "1";
-      });
+      if(!dragging) return;
+
+      const dragged = columnBContainer.querySelector(
+        `[data-mtc-global-b="${CSS.escape(dragging.id)}"]`
+      );
+
+      if(dragged){
+        dragged.classList.remove("mtc-global-dragging");
+        dragged.style.zIndex = "";
+        dragged.style.position = "";
+      }
+
+      dragging = null;
+      updateGlobalOrderFromDOM();
+      saveCurrentQuiz();
     };
   }
 
+  main.querySelectorAll("[data-mtc-global-b]").forEach(element => {
+    const oldTop = oldPositions.get(element.dataset.mtcGlobalB);
+    if(oldTop === undefined) return;
+
+    const newTop = element.getBoundingClientRect().top;
+    const delta = oldTop - newTop;
+    if(!delta) return;
+
+    element.style.transition = "none";
+    element.style.transform = `translateY(${delta}px)`;
+
+    requestAnimationFrame(() => {
+      element.style.transition = "transform 220ms cubic-bezier(.2,.75,.25,1)";
+      element.style.transform = "translateY(0)";
+    });
+  });
   saveCurrentQuiz();
 }
 
-function reorderMtcColumnB(from, to){
-  if(!currentQuiz || currentQuiz.answered) return;
+function reorderMtcGlobalColumnB(from, to){
+  if(!currentQuiz ||
+     currentQuiz.quizType !== "match" ||
+     currentQuiz.mtcGlobalSubmitted){
+    return;
+  }
 
-  const q = currentQuiz.questions[currentQuiz.index];
-  const key = String(q.id);
-  const order = currentQuiz.matchColumnBOrder[key];
+  const order = currentQuiz.mtcGlobalBOrder;
 
-  if(!Array.isArray(order) || from === to ||
+  if(!Array.isArray(order) ||
+     from === to ||
      from < 0 || to < 0 ||
      from >= order.length || to >= order.length){
     return;
@@ -8801,73 +9794,92 @@ function reorderMtcColumnB(from, to){
   const [moved] = order.splice(from, 1);
   order.splice(to, 0, moved);
 
-  currentQuiz.matchColumnBOrder[key] = order;
-  window.__floMtcDragging = null;
-
+  window.__floMtcGlobalDragging = null;
   saveCurrentQuiz();
   renderMatchQuizQuestion();
 }
 
 function submitMtcAnswer(){
-  if(!currentQuiz || currentQuiz.answered) return;
-
-  const q = currentQuiz.questions[currentQuiz.index];
-  const key = String(q.id);
-  const order = currentQuiz.matchColumnBOrder?.[key] || [];
-  const matches = q.matches || [];
-
-  if(order.length !== q.column_a.length ||
-     matches.some(match => order[match.a] === undefined)){
-    toast("Reorder every item before submitting.");
+  if(!currentQuiz ||
+     currentQuiz.quizType !== "match" ||
+     currentQuiz.mtcGlobalSubmitted){
     return;
   }
 
-  const correctPairs = matches.filter(
-    match => order[match.a] === match.b
-  ).length;
+  const {columnA, columnB} = mtcBuildGlobalItems();
+  const order = currentQuiz.mtcGlobalBOrder || [];
 
-  const result = correctPairs === matches.length ? "correct" : "wrong";
+  if(columnA.length !== columnB.length ||
+     order.length !== columnB.length){
+    toast("The two columns do not contain the same number of items.");
+    return;
+  }
 
+  const correctMap = mtcGetCorrectMap(columnA, columnB);
+  const bById = new Map(columnB.map(item => [item.id, item]));
+  const results = [];
+
+  currentQuiz.questions.forEach((q, qi) => {
+    const matches = q.matches || [];
+
+    const correctPairs = matches.filter(match => {
+      const aId = `a-${qi}-${match.a}`;
+      const bId = `b-${qi}-${match.b}`;
+      const aIndex = columnA.findIndex(item => item.id === aId);
+
+      return aIndex >= 0 && order[aIndex] === bId;
+    }).length;
+
+    const result = correctPairs === matches.length ? "correct" : "wrong";
+
+    recordAnswer(
+      q,
+      `${correctPairs}/${matches.length} pairs`,
+      result
+    );
+
+    results.push({
+      questionId:q.id,
+      choice:`${correctPairs}/${matches.length}`,
+      result,
+      pairScore:correctPairs,
+      pairTotal:matches.length
+    });
+  });
+
+  currentQuiz.results = results;
+  currentQuiz.mtcGlobalSubmitted = true;
   currentQuiz.answered = true;
 
-  recordAnswer(q, `${correctPairs}/${matches.length} pairs`, result);
-
-  if(!Array.isArray(currentQuiz.results)){
-    currentQuiz.results = [];
-  }
-
-  const quizResult = {
-    questionId: q.id,
-    choice: `${correctPairs}/${matches.length}`,
-    result,
-    pairScore: correctPairs,
-    pairTotal: matches.length
-  };
-
-  const existingIndex = currentQuiz.results.findIndex(
-    item => item.questionId === q.id
+  playAppSound(
+    results.every(item => item.result === "correct")
+      ? "correct"
+      : "wrong"
   );
 
-  if(existingIndex >= 0){
-    currentQuiz.results[existingIndex] = quizResult;
-  }else{
-    currentQuiz.results.push(quizResult);
-  }
-
-  playAppSound(result === "correct" ? "correct" : "wrong");
   saveCurrentQuiz();
   renderMatchQuizQuestion();
 }
 
 function showMtcAnswers(){
-  if(!currentQuiz) return;
+  if(!currentQuiz || !currentQuiz.mtcGlobalSubmitted) return;
 
-  const q = currentQuiz.questions[currentQuiz.index];
-  const result = currentQuiz.results?.find(item => item.questionId === q.id);
-  if(result) result.showAnswer = true;
+  currentQuiz.mtcGlobalShowAnswers =
+    !currentQuiz.mtcGlobalShowAnswers;
 
   saveCurrentQuiz();
   renderMatchQuizQuestion();
+}
+
+function finishMtcQuiz(){
+  if(!currentQuiz || currentQuiz.quizType !== "match") return;
+
+  if(!currentQuiz.mtcGlobalSubmitted){
+    toast("Submit all matches before finishing the quiz.");
+    return;
+  }
+
+  finishQuiz();
 }
 
 function renderQuiz(){
@@ -14339,24 +15351,21 @@ async function ensureUsername() {
     const content = document.getElementById("floQuizModeContent");
     if(!modal || !content) return;
 
-    window.__floPendingRemoteSoloSession = savedSession;
-    const topicLabel = String(window.pendingQuizTopic || "this topic")
-      .replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[ch]));
+    window.__floPendingRemoteSoloSession = savedSession || null;
+    const hasSavedProgress = !!(
+      savedSession?.session_data?.questions?.length ||
+      savedSession?.questions?.length
+    );
 
     content.innerHTML = `
-      <div class="flo-quiz-eyebrow">SAVED PROGRESS</div>
-      <h2 class="flo-quiz-title">Continue your quiz?</h2>
-      <p class="flo-quiz-subtitle">
-        An unfinished Solo Quiz for <strong>${topicLabel}</strong> was found.
-        You can continue where you stopped or begin again.
-      </p>
+      <div class="flo-quiz-eyebrow">QUIZ PROGRESS</div>
+      <h2 class="flo-quiz-title">Resume or Restart?</h2>
       <div class="flo-quiz-actions" style="flex-direction:column;">
         <button class="btn" type="button" style="width:100%;"
-          onclick="window.__floResumeSoloQuiz()">Resume Quiz</button>
+          ${hasSavedProgress ? "" : "disabled"}
+          onclick="window.__floResumeSoloQuiz()">Resume</button>
         <button class="btn light" type="button" style="width:100%;"
-          onclick="window.__floRestartSoloQuiz()">Start Again</button>
-        <button class="btn light" type="button" style="width:100%;"
-          onclick="window.__floCloseQuizMode()">Cancel</button>
+          onclick="window.__floRestartSoloQuiz()">Restart</button>
       </div>
     `;
     modal.classList.add("open");
@@ -14365,7 +15374,7 @@ async function ensureUsername() {
 
   window.__floResumeSoloQuiz = function(){
     const saved = window.__floPendingRemoteSoloSession;
-    const data = saved?.session_data;
+    const data = saved?.session_data || saved;
     if(!data || !Array.isArray(data.questions) || !data.questions.length){
       toast("The saved quiz could not be restored.");
       return;
@@ -14395,17 +15404,24 @@ async function ensureUsername() {
 
   window.__floRestartSoloQuiz = async function(){
     const key = getSoloQuizKey();
+    const pending = window.__floPendingRemoteSoloSession;
+
     window.__floCloseQuizMode();
+
     try{
       await soloQuizSaveQueue.catch(() => {});
-      await deleteRemoteSoloQuiz(key);
+
+      if(pending?.session_data?.questions?.length){
+        await deleteRemoteSoloQuiz(key);
+      }
     }catch(error){
-      console.error("Could not clear previous Solo Quiz:", error);
-      toast(error.message || "Could not reset the saved quiz.");
-      return;
+      // A new session will overwrite the old remote snapshot when saved.
+      console.warn("Could not delete old remote Solo Quiz; continuing restart:", error);
     }
+
     clearSavedQuiz();
     window.__floPendingRemoteSoloSession = null;
+
     if(window.__floSelectedQuizType === "match"){
       const questions = window.__floQuizQuestions || [];
       window.__floQuestionCountQuestions = [...questions];
@@ -14677,17 +15693,38 @@ async function ensureUsername() {
         );
         selectedSubject = subject || selectedSubject;
 
+        let savedSession = null;
+        const quizKey = getSoloQuizKey();
+        const selectedType = window.__floSelectedQuizType || "mcq";
+
         try{
-          const saved = await getRemoteSoloQuiz(getSoloQuizKey());
-          if(saved && saved.status === "in_progress" &&
-             saved.session_data?.questions?.length){
-            window.__floOpenSoloResumePopup(saved);
-            return;
+          const remote = await getRemoteSoloQuiz(quizKey);
+          const data = remote?.session_data;
+          if(
+            remote?.status === "in_progress" &&
+            data?.questions?.length &&
+            (data.quizType || "mcq") === selectedType
+          ){
+            savedSession = remote;
           }
         }catch(error){
-          console.error("Could not check saved Solo Quiz:", error);
-          toast("Saved quiz progress is temporarily unavailable. You can still start a new Solo Study session.");
+          console.error("Could not check remote Solo Quiz:", error);
         }
+
+        if(!savedSession){
+          const local = getSavedQuiz();
+          if(
+            local?.soloSession === true &&
+            local.quizKey === quizKey &&
+            (local.quizType || "mcq") === selectedType &&
+            local.questions?.length
+          ){
+            savedSession = local;
+          }
+        }
+
+        window.__floOpenSoloResumePopup(savedSession);
+        return;
 
         if(window.__floSelectedQuizType === "match"){
           window.__floQuestionCountQuestions = [...questions];

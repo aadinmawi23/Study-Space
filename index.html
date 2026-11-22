@@ -15492,6 +15492,113 @@ async function ensureUsername() {
     });
   };
 
+
+  // FLO_CHALLENGE_QUESTION_ORDER_V1
+  window.__floOpenChallengeQuestionOrderSelector = function(){
+    const modal = document.getElementById("floQuizModeModal");
+    const content = document.getElementById("floQuizModeContent");
+    if(!modal || !content) return;
+
+    content.innerHTML = `
+      <div class="flo-quiz-eyebrow">QUESTION ORDER</div>
+      <h2 class="flo-quiz-title">Choose question order</h2>
+      <p class="flo-quiz-subtitle">
+        Both players will receive the same question sequence.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <button class="flo-quiz-choice" type="button"
+          onclick="window.__floStartChallengeWithOrder('original')">
+          <strong>Sequential Order</strong>
+          <span>Follow the original order in the question bank.</span>
+        </button>
+        <button class="flo-quiz-choice" type="button"
+          onclick="window.__floStartChallengeWithOrder('shuffle')">
+          <strong>Shuffle Questions</strong>
+          <span>Randomise the selected questions for both players.</span>
+        </button>
+      </div>
+      <div class="flo-quiz-actions">
+        <button class="btn light" type="button"
+          onclick="window.__floOpenQuestionCountSelector('challenge', window.__floQuestionCountQuestions)">
+          Back
+        </button>
+      </div>
+    `;
+
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+  };
+
+  window.__floStartChallengeWithOrder = async function(order){
+    const source = window.__floQuestionCountQuestions || [];
+
+    if(!challenge.isHost || !challenge.opponentJoined ||
+       !challenge.ready || !challenge.opponentReady){
+      toast("Both players must be ready before starting.");
+      return;
+    }
+
+    if(!source.length || !["original", "shuffle"].includes(order)){
+      toast("The challenge questions could not be loaded.");
+      return;
+    }
+
+    const count = Math.max(
+      1,
+      Math.min(Number(window.__floChallengePendingCount) || 1, source.length)
+    );
+
+    const selected = [...source];
+
+    if(order === "shuffle"){
+      for(let i = selected.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [selected[i], selected[j]] = [selected[j], selected[i]];
+      }
+    }
+
+    const questions = selected.slice(0, count);
+    const ids = questions.map(q => q.id);
+
+    if(!ids.length || ids.some(id => id == null)){
+      toast("Some challenge questions are missing IDs.");
+      return;
+    }
+
+    challenge.questionIds = ids;
+    challenge.questions = questions;
+    challenge.index = 0;
+    challenge.answers = {};
+    challenge.myScore = 0;
+    challenge.opponentScore = 0;
+    challenge.myCorrect = 0;
+    challenge.opponentCorrect = 0;
+    challenge.active = false;
+    challenge.finished = false;
+    challenge.resumeMode = false;
+
+    try{
+      await savePersistentChallengeRoom({
+        status: "in_progress",
+        currentIndex: 0,
+        questionIds: ids
+      });
+
+      await broadcast("flo-start", {
+        subjectName: challenge.subjectName,
+        topic: challenge.topic,
+        questionIds: ids
+      });
+
+      window.__floCloseQuizMode();
+      beginChallenge(ids);
+
+    }catch(error){
+      console.error("Could not start challenge:", error);
+      toast(error?.message || "Could not start the challenge.");
+    }
+  };
+
   window.__floConfirmQuestionCount =
     async function(){
 
@@ -15521,6 +15628,13 @@ async function ensureUsername() {
             questions.length
           )
         );
+
+      if(mode === "challenge"){
+        window.__floChallengePendingCount = count;
+        window.__floCloseQuizMode();
+        window.__floOpenChallengeQuestionOrderSelector();
+        return;
+      }
 
       if(mode === "solo"){
         window.__floSoloPendingCount = count;
@@ -18501,6 +18615,8 @@ async function ensureUsername() {
 
       }
 
+
+      window.__floCloseChallengeModal();
 
       window.__floOpenQuestionCountSelector(
         "challenge",

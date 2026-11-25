@@ -9132,6 +9132,75 @@ function saveCurrentQuiz(){
     });
 }
 
+
+// FLO_QUIZ_BACKGROUND_PAUSE_RESUME_V1
+// Preserve the active quiz and browser scroll position when switching apps or tabs.
+(function installFloQuizPauseResume(){
+  if(window.__floQuizPauseResumeInstalled) return;
+  window.__floQuizPauseResumeInstalled = true;
+
+  const SCROLL_KEY = "flo_active_quiz_scroll_y";
+
+  function savePauseState(){
+    if(!currentQuiz || !currentQuiz.questions?.length) return;
+
+    try{
+      localStorage.setItem(
+        SCROLL_KEY,
+        String(window.scrollY || 0)
+      );
+    }catch(error){
+      console.warn("Could not save quiz scroll position:", error);
+    }
+
+    // Existing save function preserves answers, progress and MTC assignments.
+    saveCurrentQuiz();
+  }
+
+  function restorePausePosition(){
+    if(!currentQuiz || !currentQuiz.questions?.length) return;
+
+    try{
+      const savedY = Number(localStorage.getItem(SCROLL_KEY));
+      if(!Number.isFinite(savedY) || savedY < 0) return;
+
+      requestAnimationFrame(() => {
+        if(currentQuiz){
+          window.scrollTo({
+            top: savedY,
+            left: 0,
+            behavior: "instant"
+          });
+        }
+      });
+    }catch(error){
+      console.warn("Could not restore quiz scroll position:", error);
+    }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState === "hidden"){
+      savePauseState();
+    }else{
+      restorePausePosition();
+    }
+  });
+
+  window.addEventListener("pagehide", savePauseState);
+  window.addEventListener("pageshow", restorePausePosition);
+
+  // Keep the latest position available if the browser backgrounds the page.
+  window.addEventListener("scroll", () => {
+    if(!currentQuiz || !currentQuiz.questions?.length) return;
+
+    try{
+      localStorage.setItem(SCROLL_KEY, String(window.scrollY || 0));
+    }catch(error){
+      // The main quiz snapshot remains protected by saveCurrentQuiz().
+    }
+  }, {passive:true});
+})();
+
 function clearSavedQuiz(){
 
   try{
@@ -9470,6 +9539,36 @@ function mtcBuildGlobalItems(){
   return {columnA, columnB};
 }
 
+function mtcGetGlobalAOrder(columnA){
+  const validIds = columnA.map(item => item.id);
+
+  if(!Array.isArray(currentQuiz.mtcGlobalAOrder)){
+    const shuffled = [...validIds];
+
+    if(currentQuiz.order === "shuffle"){
+      for(let i = shuffled.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+    }
+
+    currentQuiz.mtcGlobalAOrder = shuffled;
+  }
+
+  const saved = currentQuiz.mtcGlobalAOrder.map(String);
+
+  currentQuiz.mtcGlobalAOrder = [
+    ...saved.filter(id => validIds.includes(id)),
+    ...validIds.filter(id => !saved.includes(id))
+  ];
+
+  const itemById = new Map(columnA.map(item => [item.id, item]));
+
+  return currentQuiz.mtcGlobalAOrder
+    .map(id => itemById.get(id))
+    .filter(Boolean);
+}
+
 function mtcGetGlobalOrder(columnB){
   const validIds = columnB.map(item => item.id);
 
@@ -9524,7 +9623,8 @@ function renderMatchQuizQuestion(){
   const main = document.getElementById("main");
   if(!main || !currentQuiz?.questions?.length) return;
 
-  const {columnA, columnB} = mtcBuildGlobalItems();
+  const {columnA: originalColumnA, columnB} = mtcBuildGlobalItems();
+  const columnA = mtcGetGlobalAOrder(originalColumnA);
   const bById = new Map(columnB.map(item => [item.id, item]));
   const correctMap = mtcGetCorrectMap(columnA, columnB);
   const submitted = currentQuiz.mtcGlobalSubmitted === true;
@@ -9759,7 +9859,10 @@ function renderMatchQuizQuestion(){
       .mtc-match-placed{cursor:grab}
       .mtc-answer-bank{
         min-width:0;padding:14px;border:1px solid var(--line);
-        border-radius:14px;background:rgba(255,255,255,.45)
+        border-radius:14px;background:rgba(255,255,255,.45);
+        position:sticky;top:16px;align-self:start;
+        max-height:calc(100vh - 32px);overflow-y:auto;
+        overscroll-behavior:contain
       }
       .mtc-answer-bank-heading{display:flex;justify-content:space-between;gap:8px;margin-bottom:12px}
       .mtc-answer-bank-heading span{font-size:11px;color:var(--muted)}
@@ -9779,7 +9882,9 @@ function renderMatchQuizQuestion(){
       .mtc-answer-bank-list.mtc-drop-hover{outline:2px dashed #b28bca;outline-offset:4px}
       @media(max-width:760px){
         .mtc-match-layout{grid-template-columns:1fr}
-        .mtc-answer-bank{order:2}
+        .mtc-answer-bank{
+          order:2;position:static;max-height:none;overflow:visible
+        }
       }
       @media(max-width:480px){
         .mtc-match-head,.mtc-match-row{gap:6px}

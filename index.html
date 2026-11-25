@@ -9525,95 +9525,107 @@ function renderMatchQuizQuestion(){
   if(!main || !currentQuiz?.questions?.length) return;
 
   const {columnA, columnB} = mtcBuildGlobalItems();
-  const bOrder = mtcGetGlobalOrder(columnB);
   const bById = new Map(columnB.map(item => [item.id, item]));
   const correctMap = mtcGetCorrectMap(columnA, columnB);
   const submitted = currentQuiz.mtcGlobalSubmitted === true;
   const totalPairs = correctMap.size;
 
-  // Capture old positions so the reordered items can slide smoothly.
-  const oldPositions = new Map();
+  // Version 2 uses fixed answer slots and a separate shuffled answer bank.
+  const validBIds = new Set(columnB.map(item => item.id));
 
-  main.querySelectorAll("[data-mtc-global-b]").forEach(element => {
-    oldPositions.set(
-      element.dataset.mtcGlobalB,
-      element.getBoundingClientRect().top
-    );
+  if(currentQuiz.mtcGlobalVersion !== 2){
+    const shuffled = columnB.map(item => item.id);
+
+    for(let i = shuffled.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    currentQuiz.mtcGlobalAssignments = {};
+    currentQuiz.mtcGlobalBankOrder = shuffled;
+    currentQuiz.mtcGlobalSubmitted = false;
+    currentQuiz.mtcGlobalShowAnswers = false;
+    currentQuiz.mtcGlobalVersion = 2;
+    currentQuiz.results = [];
+    currentQuiz.answered = false;
+  }
+
+  if(!currentQuiz.mtcGlobalAssignments ||
+     typeof currentQuiz.mtcGlobalAssignments !== "object"){
+    currentQuiz.mtcGlobalAssignments = {};
+  }
+
+  // Remove stale assignments and prevent one answer being used twice.
+  const used = new Set();
+  columnA.forEach(item => {
+    const answerId = currentQuiz.mtcGlobalAssignments[item.id];
+    if(!validBIds.has(answerId) || used.has(answerId)){
+      delete currentQuiz.mtcGlobalAssignments[item.id];
+    }else{
+      used.add(answerId);
+    }
   });
 
-  const rowsA = columnA.map((item, index) => {
-    const correctBId = correctMap.get(item.id);
-    const selectedBId = bOrder[index];
-    const isCorrect = selectedBId === correctBId;
-    const correctB = bById.get(correctBId);
+  const assignedIds = new Set(
+    Object.values(currentQuiz.mtcGlobalAssignments)
+  );
 
-    const feedback = submitted
-      ? isCorrect
-        ? `<span style="color:#237342;font-weight:700;white-space:nowrap;">✓</span>`
-        : `<span style="color:#b23b3b;font-weight:700;white-space:nowrap;">✕</span>`
-      : "";
+  let bankOrder = Array.isArray(currentQuiz.mtcGlobalBankOrder)
+    ? currentQuiz.mtcGlobalBankOrder.map(String)
+    : [];
 
-    const reveal = submitted && currentQuiz.mtcGlobalShowAnswers
-      ? `<div style="font-size:12px;color:var(--muted);margin-top:5px;">
-          Answer: ${correctB ? escapeHTML(correctB.text) : "—"}
-        </div>`
-      : "";
+  bankOrder = [
+    ...bankOrder.filter(id => validBIds.has(id) && !assignedIds.has(id)),
+    ...columnB.map(item => item.id).filter(id =>
+      !assignedIds.has(id) && !bankOrder.includes(id)
+    )
+  ];
+
+  currentQuiz.mtcGlobalBankOrder = bankOrder;
+
+  const assignments = currentQuiz.mtcGlobalAssignments;
+
+  const rows = columnA.map((item, index) => {
+    const answerId = assignments[item.id] || "";
+    const answer = answerId ? bById.get(answerId) : null;
+    const correctId = correctMap.get(item.id);
+    const isCorrect = submitted && answerId === correctId;
+    const isWrong = submitted && answerId !== correctId;
+    const correctAnswer = bById.get(correctId);
 
     return `
-      <div style="
-        min-height:58px;
-        box-sizing:border-box;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:8px;
-        padding:12px;
-        border:1px solid var(--line);
-        border-radius:10px;
-        margin-bottom:9px;
-        background:${submitted ? (isCorrect ? "#e3f0e6" : "#f6dfdf") : "var(--bg)"};
-      ">
-        <div style="min-width:0;">
-          <span style="display:flex;align-items:baseline;gap:8px;min-width:0;">
-            <span style="font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;">${index + 1}.</span>
-            <strong>${escapeHTML(item.text)}</strong>
-          </span>
-          ${reveal}
+      <div class="mtc-match-row">
+        <div class="mtc-match-question">
+          <span class="mtc-match-index">${index + 1}.</span>
+          <strong>${escapeHTML(item.text)}</strong>
+          ${submitted ? `<span class="mtc-match-feedback" style="color:${isCorrect ? '#237342' : '#b23b3b'};">${isCorrect ? '✓' : '✕'}</span>` : ""}
+          ${submitted && currentQuiz.mtcGlobalShowAnswers
+            ? `<small class="mtc-match-reveal">Correct answer: ${correctAnswer ? escapeHTML(correctAnswer.text) : "—"}</small>`
+            : ""}
         </div>
-        ${feedback}
+
+        <div
+          class="mtc-match-slot ${answer ? "has-answer" : "is-empty"} ${isCorrect ? "is-correct" : ""} ${isWrong ? "is-wrong" : ""}"
+          data-mtc-drop-index="${index}"
+          data-mtc-drop-a="${escapeHTML(item.id)}"
+          aria-label="Answer slot for ${escapeHTML(item.text)}"
+        >
+          ${answer
+            ? `<div class="mtc-match-placed" data-mtc-drag-id="${escapeHTML(answer.id)}" data-mtc-source-index="${index}" ${submitted ? "" : 'tabindex="0"'}>${!submitted ? '<span class="mtc-match-grip">⠿</span>' : ""}<span>${escapeHTML(answer.text)}</span></div>`
+            : `<span class="mtc-match-placeholder">${submitted ? "Not answered" : "Drop answer here"}</span>`
+          }
+        </div>
       </div>
     `;
   }).join("");
 
-  const rowsB = bOrder.map((id, index) => {
+  const bankCards = bankOrder.map(id => {
     const item = bById.get(id);
     if(!item) return "";
 
     return `
-      <div
-        class="mtc-option"
-        data-mtc-global-b="${escapeHTML(id)}"
-        data-mtc-global-position="${index}"
-        style="
-          min-height:58px;
-          box-sizing:border-box;
-          display:flex;
-          align-items:center;
-          gap:10px;
-          padding:12px;
-          border:1px solid var(--line);
-          border-radius:10px;
-          margin-bottom:9px;
-          background:var(--card);
-          cursor:${submitted ? "default" : "grab"};
-          user-select:none;
-          -webkit-user-select:none;
-          touch-action:${submitted ? "auto" : "none"};
-          transition:transform 220ms cubic-bezier(.2,.75,.25,1), box-shadow 180ms ease;
-        "
-      >
-        ${!submitted ? `<span style="color:var(--muted);font-size:20px;">⠿</span>` : ""}
-        <span class="mtc-global-number" style="font-size:12px;font-weight:600;color:var(--muted);min-width:18px;flex-shrink:0;">${index + 1}.</span>
+      <div class="mtc-answer-card" data-mtc-drag-id="${escapeHTML(item.id)}" ${submitted ? "" : 'tabindex="0"'}>
+        ${!submitted ? '<span class="mtc-match-grip">⠿</span>' : ""}
         <span>${escapeHTML(item.text)}</span>
       </div>
     `;
@@ -9627,8 +9639,7 @@ function renderMatchQuizQuestion(){
       const qCorrect = (q.matches || []).filter(match => {
         const aId = `a-${qi}-${match.a}`;
         const bId = `b-${qi}-${match.b}`;
-        const aIndex = columnA.findIndex(item => item.id === aId);
-        return aIndex >= 0 && bOrder[aIndex] === bId;
+        return assignments[aId] === bId;
       }).length;
 
       correctTotal += qCorrect;
@@ -9640,44 +9651,41 @@ function renderMatchQuizQuestion(){
     <div class="quiz-shell mtc-global-page">
       <div class="quiz-top">
         <button class="btn light" onclick="exitQuiz()">← Exit Quiz</button>
-        <div class="quiz-count">Match the Column</div>
+        <div class="quiz-count">Match the Columns</div>
       </div>
 
       <div class="quiz-progress">
         <div class="fill" style="width:${submitted ? 100 : 0}%"></div>
       </div>
 
-      <div style="margin:16px 0 20px;">
-        <h3 style="margin:0 0 6px;">Match the following</h3>
-        <div class="small" style="margin-top:8px;color:var(--muted);">
-          ${columnA.length} questions
-        </div>
+      <div class="mtc-match-intro">
+        <h3>Match the following</h3>
+        <p>${columnA.length} items · Drag answers from the shuffled bank into the empty slots in Column B.</p>
       </div>
 
-      <div style="
-        display:grid;
-        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-        gap:14px;
-        align-items:start;
-      ">
-        <section>
-          <h4 style="margin:0 0 12px;">Column A</h4>
-          <div>${rowsA}</div>
+      <div class="mtc-match-layout">
+        <section class="mtc-match-pairs">
+          <div class="mtc-match-head">
+            <div>Column A</div>
+            <div>Column B</div>
+          </div>
+          <div class="mtc-match-rows">${rows}</div>
         </section>
 
-        <section>
-          <h4 style="margin:0 0 12px;">Column B</h4>
-          <div id="mtcGlobalColumnB">${rowsB}</div>
-        </section>
+        <aside class="mtc-answer-bank" id="mtcGlobalAnswerBank">
+          <div class="mtc-answer-bank-heading">
+            <strong>Answer Bank</strong>
+            <span>${submitted ? "Your shuffled options" : "Shuffled"}</span>
+          </div>
+          <div class="mtc-answer-bank-list">${bankCards || '<div class="mtc-answer-bank-empty">All answers have been placed.</div>'}</div>
+        </aside>
       </div>
 
       ${
         submitted
           ? `<div class="explanation" style="margin-top:18px;">
               <strong>${correctTotal} / ${totalPairs} matches correct</strong>
-              <div style="margin-top:6px;color:var(--muted);">
-                ${answeredQuestionCount} original questions scored.
-              </div>
+              <div style="margin-top:6px;color:var(--muted);">${answeredQuestionCount} original questions scored.</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
                 <button class="btn light" onclick="showMtcAnswers()">
                   ${currentQuiz.mtcGlobalShowAnswers ? "Hide Answers" : "Show Answers"}
@@ -9692,213 +9700,224 @@ function renderMatchQuizQuestion(){
     </div>
   `;
 
-  // Keep the two columns side by side on smaller screens too.
   if(!document.getElementById("floMtcGlobalStyles")){
     const style = document.createElement("style");
     style.id = "floMtcGlobalStyles";
     style.textContent = `
-      .mtc-global-page .mtc-option:active{
-        box-shadow:0 5px 16px rgba(0,0,0,.10);
+      .mtc-global-page{max-width:1180px!important}
+      .mtc-match-intro{margin:16px 0 20px}
+      .mtc-match-intro h3{margin:0 0 6px}
+      .mtc-match-intro p{margin:0;color:var(--muted);font-size:13px}
+      .mtc-match-layout{
+        display:grid;
+        grid-template-columns:minmax(0,2fr) minmax(230px,1fr);
+        gap:18px;
+        align-items:start;
       }
-      .mtc-global-page .mtc-global-dragging{
-        opacity:.82;
-        box-shadow:0 10px 24px rgba(0,0,0,.16);
-        transform:scale(1.015);
+      .mtc-match-pairs{min-width:0}
+      .mtc-match-head,.mtc-match-row{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        gap:10px;
+      }
+      .mtc-match-head{margin-bottom:9px}
+      .mtc-match-head>div{
+        padding:12px;
+        border-radius:10px;
+        background:#e9e1d8;
+        font-weight:700;
+        text-align:center;
+      }
+      .mtc-match-rows{display:flex;flex-direction:column;gap:8px}
+      .mtc-match-row{align-items:stretch}
+      .mtc-match-question,.mtc-match-slot{
+        min-width:0;
+        min-height:64px;
+        box-sizing:border-box;
+        padding:12px;
+        border:1px solid var(--line);
+        border-radius:11px;
+        display:flex;
+        align-items:center;
+        gap:9px;
+        overflow-wrap:anywhere;
+      }
+      .mtc-match-question{background:var(--bg)}
+      .mtc-match-index{flex:0 0 auto;color:var(--muted);font-size:12px;font-weight:700}
+      .mtc-match-question strong{min-width:0}
+      .mtc-match-slot{justify-content:center;background:rgba(255,255,255,.55);border-style:dashed;border-color:#b9a99a}
+      .mtc-match-slot.is-empty{color:var(--muted)}
+      .mtc-match-placeholder{font-size:13px;text-align:center}
+      .mtc-match-slot.has-answer{border-style:solid;background:var(--card)}
+      .mtc-match-slot.is-correct{background:#e3f0e6;border-color:#9fc1a9}
+      .mtc-match-slot.is-wrong{background:#f6dfdf;border-color:#d59b9b}
+      .mtc-match-placed,.mtc-answer-card{
+        width:100%;min-width:0;display:flex;align-items:center;gap:9px;
+        padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+        background:var(--card);box-sizing:border-box;overflow-wrap:anywhere;
+      }
+      .mtc-match-placed{cursor:grab}
+      .mtc-answer-bank{
+        min-width:0;padding:14px;border:1px solid var(--line);
+        border-radius:14px;background:rgba(255,255,255,.45)
+      }
+      .mtc-answer-bank-heading{display:flex;justify-content:space-between;gap:8px;margin-bottom:12px}
+      .mtc-answer-bank-heading span{font-size:11px;color:var(--muted)}
+      .mtc-answer-bank-list{display:flex;flex-direction:column;gap:8px;min-height:60px}
+      .mtc-answer-card{cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+      .mtc-answer-card:hover,.mtc-match-placed:hover{border-color:#b9a99a}
+      .mtc-match-grip{flex:0 0 auto;color:var(--muted);font-size:18px;line-height:1}
+      .mtc-match-feedback{margin-left:auto;font-weight:700}
+      .mtc-match-reveal{display:block;width:100%;margin-top:5px;color:var(--muted)}
+      .mtc-answer-bank-empty{padding:12px;color:var(--muted);font-size:12px;text-align:center}
+      .mtc-drag-preview{
+        position:fixed;z-index:999999;pointer-events:none;margin:0;
+        box-shadow:0 14px 32px rgba(0,0,0,.22);opacity:.97;
+        transform:scale(1.025);background:var(--card);
+      }
+      .mtc-match-slot.mtc-drop-hover{outline:2px solid #b28bca;outline-offset:1px;background:#f3edf8}
+      .mtc-answer-bank-list.mtc-drop-hover{outline:2px dashed #b28bca;outline-offset:4px}
+      @media(max-width:760px){
+        .mtc-match-layout{grid-template-columns:1fr}
+        .mtc-answer-bank{order:2}
       }
       @media(max-width:480px){
-        .mtc-global-page > div[style*="grid-template-columns"]{
-          gap:7px!important;
-        }
-        .mtc-global-page .mtc-option,
-        .mtc-global-page section > div > div{
-          padding:8px!important;
-          font-size:12px;
-        }
+        .mtc-match-head,.mtc-match-row{gap:6px}
+        .mtc-match-question,.mtc-match-slot{padding:8px;font-size:12px;min-height:62px}
+        .mtc-match-head>div{padding:9px 5px;font-size:12px}
+        .mtc-answer-bank{padding:10px}
       }
     `;
     document.head.appendChild(style);
   }
 
   if(!submitted){
-    const columnBContainer = main.querySelector("#mtcGlobalColumnB");
     let dragging = null;
 
-    const updateGlobalOrderFromDOM = () => {
-      const elements = [...columnBContainer.querySelectorAll("[data-mtc-global-b]")];
-
-      currentQuiz.mtcGlobalBOrder = elements.map(element =>
-        element.dataset.mtcGlobalB
-      );
-
-      elements.forEach((element, index) => {
-        element.dataset.mtcGlobalPosition = String(index);
-        const number = element.querySelector(".mtc-global-number");
-        if(number) number.textContent = `${index + 1}.`;
-      });
-    };
-
-    const clearDrag = (save = true) => {
+    const clearDrag = () => {
       if(!dragging) return;
-
-      const { option, preview } = dragging;
-
-      if(preview) preview.remove();
-
-      if(option){
-        option.classList.remove("mtc-global-dragging");
-        option.style.opacity = "";
-        option.style.zIndex = "";
-      }
-
+      dragging.preview.remove();
+      dragging.source.style.opacity = "";
+      dragging.source.classList.remove("mtc-global-dragging");
+      main.querySelectorAll(".mtc-drop-hover").forEach(el =>
+        el.classList.remove("mtc-drop-hover")
+      );
       dragging = null;
-
-      if(save) saveCurrentQuiz();
     };
 
-    columnBContainer?.querySelectorAll("[data-mtc-global-position]").forEach(option => {
-      option.setAttribute("draggable", "false");
-      option.style.touchAction = "none";
+    main.onpointerdown = event => {
+      const source = event.target.closest("[data-mtc-drag-id]");
+      if(!source || !main.contains(source) || dragging) return;
+      if(event.button !== undefined && event.button !== 0) return;
 
-      option.addEventListener("pointerdown", event => {
-        if(event.button !== undefined && event.button !== 0) return;
-        if(dragging) return;
+      const rect = source.getBoundingClientRect();
+      const preview = source.cloneNode(true);
+      preview.classList.add("mtc-drag-preview");
+      preview.removeAttribute("data-mtc-drag-id");
 
-        const rect = option.getBoundingClientRect();
-        const preview = option.cloneNode(true);
-
-        preview.removeAttribute("data-mtc-global-b");
-        preview.removeAttribute("data-mtc-global-position");
-        preview.classList.add("mtc-global-dragging");
-
-        Object.assign(preview.style, {
-          position: "fixed",
-          left: `${rect.left}px`,
-          top: `${rect.top}px`,
-          width: `${rect.width}px`,
-          height: `${rect.height}px`,
-          margin: "0",
-          boxSizing: "border-box",
-          pointerEvents: "none",
-          zIndex: "99999",
-          opacity: "0.96",
-          transform: "scale(1.025)",
-          transition: "none",
-          boxShadow: "0 14px 32px rgba(0,0,0,.22)"
-        });
-
-        document.body.appendChild(preview);
-
-        dragging = {
-          id: option.dataset.mtcGlobalB,
-          option,
-          preview,
-          pointerId: event.pointerId,
-          offsetX: event.clientX - rect.left,
-          offsetY: event.clientY - rect.top
-        };
-
-        option.style.opacity = "0.18";
-        option.classList.add("mtc-global-dragging");
-
-        try {
-          option.setPointerCapture(event.pointerId);
-        } catch (_) {}
-
-        event.preventDefault();
+      Object.assign(preview.style,{
+        left:`${rect.left}px`,
+        top:`${rect.top}px`,
+        width:`${rect.width}px`,
+        minHeight:`${rect.height}px`,
+        height:"auto"
       });
-    });
+
+      document.body.appendChild(preview);
+
+      dragging = {
+        id:source.dataset.mtcDragId,
+        source,
+        preview,
+        sourceIndex:source.dataset.mtcSourceIndex ?? null,
+        pointerId:event.pointerId,
+        offsetX:event.clientX-rect.left,
+        offsetY:event.clientY-rect.top
+      };
+
+      source.style.opacity = ".22";
+      source.classList.add("mtc-global-dragging");
+
+      try{main.setPointerCapture(event.pointerId);}catch(_){}
+      event.preventDefault();
+    };
 
     main.onpointermove = event => {
       if(!dragging || event.pointerId !== dragging.pointerId) return;
 
-      const { preview, offsetX, offsetY } = dragging;
+      dragging.preview.style.left = `${event.clientX-dragging.offsetX}px`;
+      dragging.preview.style.top = `${event.clientY-dragging.offsetY}px`;
 
-      preview.style.left = `${event.clientX - offsetX}px`;
-      preview.style.top = `${event.clientY - offsetY}px`;
+      const under = document.elementFromPoint(event.clientX,event.clientY);
+      const slot = under?.closest("[data-mtc-drop-index]");
+      const bank = under?.closest("#mtcGlobalAnswerBank");
+
+      main.querySelectorAll(".mtc-drop-hover").forEach(el =>
+        el.classList.remove("mtc-drop-hover")
+      );
+
+      if(slot) slot.classList.add("mtc-drop-hover");
+      else if(bank) bank.querySelector(".mtc-answer-bank-list")?.classList.add("mtc-drop-hover");
     };
 
     main.onpointerup = event => {
       if(!dragging || event.pointerId !== dragging.pointerId) return;
 
-      const dragged = dragging.option;
-      const preview = dragging.preview;
+      const under = document.elementFromPoint(event.clientX,event.clientY);
+      const targetSlot = under?.closest("[data-mtc-drop-index]");
+      const targetBank = under?.closest("#mtcGlobalAnswerBank");
+      const dragged = {...dragging};
 
-      // Find the destination underneath the floating preview.
-      preview.style.display = "none";
+      clearDrag();
 
-      const target = document.elementFromPoint(event.clientX, event.clientY)
-        ?.closest("[data-mtc-global-b]");
+      if(targetSlot){
+        const targetIndex = Number(targetSlot.dataset.mtcDropIndex);
+        const targetA = columnA[targetIndex];
+        if(!targetA) return;
 
-      preview.remove();
+        const previousAnswer = assignments[targetA.id] || null;
 
-      if(target &&
-         target !== dragged &&
-         columnBContainer.contains(target)) {
+        if(dragged.sourceIndex !== null && dragged.sourceIndex !== ""){
+          const sourceIndex = Number(dragged.sourceIndex);
+          const sourceA = columnA[sourceIndex];
+          if(!sourceA) return;
 
-        const before = new Map(
-          [...columnBContainer.querySelectorAll("[data-mtc-global-b]")].map(element => [
-            element.dataset.mtcGlobalB,
-            element.getBoundingClientRect().top
-          ])
-        );
-
-        const rect = target.getBoundingClientRect();
-        const insertAfter = event.clientY > rect.top + rect.height / 2;
-
-        if(insertAfter){
-          columnBContainer.insertBefore(dragged, target.nextElementSibling);
-        }else{
-          columnBContainer.insertBefore(dragged, target);
+          if(sourceA.id !== targetA.id){
+            if(previousAnswer){
+              assignments[sourceA.id] = previousAnswer;
+            }else{
+              delete assignments[sourceA.id];
+            }
+          }
         }
 
-        updateGlobalOrderFromDOM();
-
-        const elements = [...columnBContainer.querySelectorAll("[data-mtc-global-b]")];
-
-        elements.forEach(element => {
-          const oldTop = before.get(element.dataset.mtcGlobalB);
-          if(oldTop === undefined) return;
-
-          const delta = oldTop - element.getBoundingClientRect().top;
-          if(!delta) return;
-
-          element.style.transition = "none";
-          element.style.transform = `translateY(${delta}px)`;
-
-          requestAnimationFrame(() => {
-            element.style.transition = "transform 200ms cubic-bezier(.2,.75,.25,1)";
-            element.style.transform = "translateY(0)";
-          });
-        });
+        assignments[targetA.id] = dragged.id;
+      }else if(targetBank &&
+               dragged.sourceIndex !== null &&
+               dragged.sourceIndex !== ""){
+        delete assignments[columnA[Number(dragged.sourceIndex)].id];
+      }else{
+        saveCurrentQuiz();
+        return;
       }
 
-      clearDrag(true);
+      const nowAssigned = new Set(Object.values(assignments));
+      currentQuiz.mtcGlobalBankOrder = [
+        ...bankOrder.filter(id => !nowAssigned.has(id)),
+        ...columnB.map(item => item.id).filter(id =>
+          !nowAssigned.has(id) && !bankOrder.includes(id)
+        )
+      ];
+
+      saveCurrentQuiz();
+      renderMatchQuizQuestion();
     };
 
-    main.onpointercancel = () => {
-      clearDrag(true);
-    };
+    main.onpointercancel = () => clearDrag();
   }
 
-  main.querySelectorAll("[data-mtc-global-b]").forEach(element => {
-    const oldTop = oldPositions.get(element.dataset.mtcGlobalB);
-    if(oldTop === undefined) return;
-
-    const newTop = element.getBoundingClientRect().top;
-    const delta = oldTop - newTop;
-    if(!delta) return;
-
-    element.style.transition = "none";
-    element.style.transform = `translateY(${delta}px)`;
-
-    requestAnimationFrame(() => {
-      element.style.transition = "transform 220ms cubic-bezier(.2,.75,.25,1)";
-      element.style.transform = "translateY(0)";
-    });
-  });
   saveCurrentQuiz();
 }
-
 function reorderMtcGlobalColumnB(from, to){
   if(!currentQuiz ||
      currentQuiz.quizType !== "match" ||
@@ -9931,16 +9950,21 @@ function submitMtcAnswer(){
   }
 
   const {columnA, columnB} = mtcBuildGlobalItems();
-  const order = currentQuiz.mtcGlobalBOrder || [];
+  const assignments = currentQuiz.mtcGlobalAssignments || {};
 
   if(columnA.length !== columnB.length ||
-     order.length !== columnB.length){
-    toast("The two columns do not contain the same number of items.");
+     columnA.some(item => !assignments[item.id]) ||
+     new Set(Object.values(assignments)).size !== columnB.length){
+    toast("Place every answer into Column B before submitting.");
     return;
   }
 
-  const correctMap = mtcGetCorrectMap(columnA, columnB);
-  const bById = new Map(columnB.map(item => [item.id, item]));
+  const validBIds = new Set(columnB.map(item => item.id));
+  if(Object.values(assignments).some(id => !validBIds.has(id))){
+    toast("One or more placed answers are invalid. Please check your matches.");
+    return;
+  }
+
   const results = [];
 
   currentQuiz.questions.forEach((q, qi) => {
@@ -9949,9 +9973,7 @@ function submitMtcAnswer(){
     const correctPairs = matches.filter(match => {
       const aId = `a-${qi}-${match.a}`;
       const bId = `b-${qi}-${match.b}`;
-      const aIndex = columnA.findIndex(item => item.id === aId);
-
-      return aIndex >= 0 && order[aIndex] === bId;
+      return assignments[aId] === bId;
     }).length;
 
     const result = correctPairs === matches.length ? "correct" : "wrong";
@@ -9984,7 +10006,6 @@ function submitMtcAnswer(){
   saveCurrentQuiz();
   renderMatchQuizQuestion();
 }
-
 function showMtcAnswers(){
   if(!currentQuiz || !currentQuiz.mtcGlobalSubmitted) return;
 

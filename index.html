@@ -9794,7 +9794,76 @@ function renderMatchQuizQuestion(){
   if(!submitted){
     let dragging = null;
 
+    // MTC drag auto-scroll
+    let autoScrollFrame = null;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+
+    const EDGE_SIZE = 90;
+    const MAX_SCROLL_SPEED = 18;
+
+    const runMtcAutoScroll = () => {
+      if(!dragging){
+        autoScrollFrame = null;
+        return;
+      }
+
+      const viewportHeight = window.innerHeight;
+      let scrollSpeed = 0;
+
+      if(lastPointerY < EDGE_SIZE){
+        const intensity = Math.min(
+          1,
+          (EDGE_SIZE - lastPointerY) / EDGE_SIZE
+        );
+        scrollSpeed = -Math.ceil(MAX_SCROLL_SPEED * intensity);
+
+      }else if(lastPointerY > viewportHeight - EDGE_SIZE){
+        const intensity = Math.min(
+          1,
+          (lastPointerY - (viewportHeight - EDGE_SIZE)) / EDGE_SIZE
+        );
+        scrollSpeed = Math.ceil(MAX_SCROLL_SPEED * intensity);
+      }
+
+      if(scrollSpeed !== 0){
+        window.scrollBy(0, scrollSpeed);
+
+        const under = document.elementFromPoint(
+          lastPointerX,
+          lastPointerY
+        );
+
+        const slot = under?.closest("[data-mtc-drop-index]");
+        const bank = under?.closest("#mtcGlobalAnswerBank");
+
+        main.querySelectorAll(".mtc-drop-hover").forEach(el =>
+          el.classList.remove("mtc-drop-hover")
+        );
+
+        if(slot){
+          slot.classList.add("mtc-drop-hover");
+        }else if(bank){
+          bank.querySelector(".mtc-answer-bank-list")
+            ?.classList.add("mtc-drop-hover");
+        }
+      }
+
+      autoScrollFrame = requestAnimationFrame(runMtcAutoScroll);
+    };
+
+    const startMtcAutoScroll = () => {
+      if(autoScrollFrame === null){
+        autoScrollFrame = requestAnimationFrame(runMtcAutoScroll);
+      }
+    };
+
     const clearDrag = () => {
+      if(autoScrollFrame !== null){
+        cancelAnimationFrame(autoScrollFrame);
+        autoScrollFrame = null;
+      }
+
       if(!dragging) return;
       dragging.preview.remove();
       dragging.source.style.opacity = "";
@@ -9844,6 +9913,11 @@ function renderMatchQuizQuestion(){
 
     main.onpointermove = event => {
       if(!dragging || event.pointerId !== dragging.pointerId) return;
+
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+
+      startMtcAutoScroll();
 
       dragging.preview.style.left = `${event.clientX-dragging.offsetX}px`;
       dragging.preview.style.top = `${event.clientY-dragging.offsetY}px`;

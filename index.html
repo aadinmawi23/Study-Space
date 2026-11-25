@@ -3698,6 +3698,73 @@ async function signOutFromGoogle() {
 }
 </style>
 
+
+<style id="flo-challenge-modal-responsive-v1">
+  #floQuizModeModal.flo-quiz-overlay,
+  #floChallengeModal.flo-quiz-overlay {
+    box-sizing: border-box;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: clamp(12px, 2.5vw, 24px);
+  }
+
+  #floQuizModeModal .flo-quiz-card,
+  #floChallengeModal .flo-quiz-card {
+    box-sizing: border-box;
+    max-width: 100%;
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  @media (max-width: 768px) {
+    #floQuizModeModal.flo-quiz-overlay,
+    #floChallengeModal.flo-quiz-overlay {
+      padding: 16px;
+    }
+
+    #floQuizModeModal .flo-quiz-card,
+    #floChallengeModal .flo-quiz-card {
+      width: min(100%, 560px);
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    #floQuizModeModal.flo-quiz-overlay,
+    #floChallengeModal.flo-quiz-overlay {
+      padding: 10px;
+    }
+
+    #floQuizModeModal .flo-quiz-card,
+    #floChallengeModal .flo-quiz-card {
+      width: 100%;
+      max-height: calc(100vh - 20px);
+      max-height: calc(100dvh - 20px);
+      border-radius: 18px;
+    }
+
+    #floQuizModeModal .flo-quiz-choice,
+    #floChallengeModal .flo-quiz-choice {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 16px;
+    }
+
+    #floQuizModeModal .flo-quiz-actions,
+    #floChallengeModal .flo-quiz-actions {
+      gap: 8px;
+    }
+
+    #floQuizModeModal .flo-quiz-actions .btn,
+    #floChallengeModal .flo-quiz-actions .btn {
+      max-width: 100%;
+    }
+  }
+</style>
+
 </head>
 
 <div id="usernameSetupModal" class="username-modal-overlay">
@@ -7035,10 +7102,7 @@ function renderSubjectTopics(container,subject){
               class="topic-card"
               draggable="true"
               data-topic-index="${index}"
-              onclick='openSubjectTopicPage(
-                ${JSON.stringify(subject.key)},
-                ${JSON.stringify(topic)}
-              )'
+              data-subject-key="${escapeHTML(subject.key)}" data-topic="${escapeHTML(topic)}"
               style="position:relative;cursor:pointer;--card-accent:${escapeHTML(floEnsureTopicColor(subject,topic))};"
             >
               <div style="
@@ -7139,6 +7203,22 @@ function renderSubjectTopics(container,subject){
   `;
 
   installSubjectTopicDragHandlers(subject);
+
+  if (!window.__floTopicCardClickHandlerInstalled) {
+    window.__floTopicCardClickHandlerInstalled = true;
+
+    document.addEventListener("click", function(event) {
+      const card = event.target.closest("#floTopicGrid .topic-card");
+      if (!card || event.target.closest("button")) return;
+
+      const subjectKey = card.dataset.subjectKey;
+      const topic = card.dataset.topic;
+
+      if (subjectKey && topic) {
+        openSubjectTopicPage(subjectKey, topic);
+      }
+    });
+  }
 }
 
 function floGetTopicQuestions(subject, topic, subtopic = ""){
@@ -17634,6 +17714,8 @@ async function ensureUsername() {
 
       challenge.finished = false;
 
+      challenge.resumeMode = false;
+
       challenge.username =
         currentUsername ||
         "Player";
@@ -18434,6 +18516,7 @@ async function ensureUsername() {
 
         ${
           challenge.resumeMode &&
+          challenge.active &&
           challenge.opponentJoined
             ? `
               <button

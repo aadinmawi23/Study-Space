@@ -5075,6 +5075,21 @@ function topicStats(subject,topic){
 
 async function loadBanks(){
 
+  // Preserve an open subject page when question banks reload.
+  const renderAfterBankLoad = () => {
+    if (
+      selectedSubject &&
+      document.getElementById("subjectContent")
+    ) {
+      console.log("Preserving open subject page after question-bank load.");
+      return;
+    }
+
+    render();
+  };
+
+
+
   let data;
 
   try{
@@ -5108,7 +5123,7 @@ async function loadBanks(){
 
     banks = [];
 
-    render();
+    renderAfterBankLoad();
 
     toast(
       "Could not load question banks. Check the server connection."
@@ -5150,7 +5165,7 @@ async function loadBanks(){
   // UI/authentication errors must not erase them.
   try{
 
-    render();
+    renderAfterBankLoad();
 
     updateAuthenticationUI();
 
@@ -5163,7 +5178,7 @@ async function loadBanks(){
 
     // Keep the successfully loaded banks.
     // Do not replace them with an empty array.
-    render();
+    renderAfterBankLoad();
   }
 }
 
@@ -9722,41 +9737,73 @@ function renderMatchQuizQuestion(){
       });
     };
 
-    const animatePositions = before => {
-      const elements = [...columnBContainer.querySelectorAll("[data-mtc-global-b]")];
+    const clearDrag = (save = true) => {
+      if(!dragging) return;
 
-      elements.forEach(element => {
-        const oldTop = before.get(element.dataset.mtcGlobalB);
-        if(oldTop === undefined) return;
+      const { option, preview } = dragging;
 
-        const newTop = element.getBoundingClientRect().top;
-        const delta = oldTop - newTop;
-        if(!delta) return;
+      if(preview) preview.remove();
 
-        element.style.transition = "none";
-        element.style.transform = `translateY(${delta}px)`;
+      if(option){
+        option.classList.remove("mtc-global-dragging");
+        option.style.opacity = "";
+        option.style.zIndex = "";
+      }
 
-        requestAnimationFrame(() => {
-          element.style.transition = "transform 160ms cubic-bezier(.2,.75,.25,1)";
-          element.style.transform = "translateY(0)";
-        });
-      });
+      dragging = null;
+
+      if(save) saveCurrentQuiz();
     };
 
     columnBContainer?.querySelectorAll("[data-mtc-global-position]").forEach(option => {
       option.setAttribute("draggable", "false");
+      option.style.touchAction = "none";
 
       option.addEventListener("pointerdown", event => {
         if(event.button !== undefined && event.button !== 0) return;
+        if(dragging) return;
+
+        const rect = option.getBoundingClientRect();
+        const preview = option.cloneNode(true);
+
+        preview.removeAttribute("data-mtc-global-b");
+        preview.removeAttribute("data-mtc-global-position");
+        preview.classList.add("mtc-global-dragging");
+
+        Object.assign(preview.style, {
+          position: "fixed",
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          margin: "0",
+          boxSizing: "border-box",
+          pointerEvents: "none",
+          zIndex: "99999",
+          opacity: "0.96",
+          transform: "scale(1.025)",
+          transition: "none",
+          boxShadow: "0 14px 32px rgba(0,0,0,.22)"
+        });
+
+        document.body.appendChild(preview);
 
         dragging = {
           id: option.dataset.mtcGlobalB,
-          pointerId: event.pointerId
+          option,
+          preview,
+          pointerId: event.pointerId,
+          offsetX: event.clientX - rect.left,
+          offsetY: event.clientY - rect.top
         };
 
+        option.style.opacity = "0.18";
         option.classList.add("mtc-global-dragging");
-        option.style.zIndex = "3";
-        option.style.position = "relative";
+
+        try {
+          option.setPointerCapture(event.pointerId);
+        } catch (_) {}
+
         event.preventDefault();
       });
     });
@@ -9764,75 +9811,72 @@ function renderMatchQuizQuestion(){
     main.onpointermove = event => {
       if(!dragging || event.pointerId !== dragging.pointerId) return;
 
-      const dragged = columnBContainer.querySelector(
-        `[data-mtc-global-b="${CSS.escape(dragging.id)}"]`
-      );
-      const target = document.elementFromPoint(event.clientX, event.clientY)
-        ?.closest("[data-mtc-global-b]");
+      const { preview, offsetX, offsetY } = dragging;
 
-      if(!dragged || !target || target === dragged ||
-         !columnBContainer.contains(target)) return;
-
-      const rect = target.getBoundingClientRect();
-      const insertAfter = event.clientY > rect.top + rect.height / 2;
-
-      const shouldMove = insertAfter
-        ? dragged.nextElementSibling !== target.nextElementSibling
-        : target !== dragged.nextElementSibling;
-
-      if(!shouldMove) return;
-
-      const before = new Map(
-        [...columnBContainer.querySelectorAll("[data-mtc-global-b]")].map(element => [
-          element.dataset.mtcGlobalB,
-          element.getBoundingClientRect().top
-        ])
-      );
-
-      if(insertAfter){
-        columnBContainer.insertBefore(dragged, target.nextElementSibling);
-      }else{
-        columnBContainer.insertBefore(dragged, target);
-      }
-
-      updateGlobalOrderFromDOM();
-      animatePositions(before);
+      preview.style.left = `${event.clientX - offsetX}px`;
+      preview.style.top = `${event.clientY - offsetY}px`;
     };
 
     main.onpointerup = event => {
       if(!dragging || event.pointerId !== dragging.pointerId) return;
 
-      const dragged = columnBContainer.querySelector(
-        `[data-mtc-global-b="${CSS.escape(dragging.id)}"]`
-      );
+      const dragged = dragging.option;
+      const preview = dragging.preview;
 
-      if(dragged){
-        dragged.classList.remove("mtc-global-dragging");
-        dragged.style.zIndex = "";
-        dragged.style.position = "";
+      // Find the destination underneath the floating preview.
+      preview.style.display = "none";
+
+      const target = document.elementFromPoint(event.clientX, event.clientY)
+        ?.closest("[data-mtc-global-b]");
+
+      preview.remove();
+
+      if(target &&
+         target !== dragged &&
+         columnBContainer.contains(target)) {
+
+        const before = new Map(
+          [...columnBContainer.querySelectorAll("[data-mtc-global-b]")].map(element => [
+            element.dataset.mtcGlobalB,
+            element.getBoundingClientRect().top
+          ])
+        );
+
+        const rect = target.getBoundingClientRect();
+        const insertAfter = event.clientY > rect.top + rect.height / 2;
+
+        if(insertAfter){
+          columnBContainer.insertBefore(dragged, target.nextElementSibling);
+        }else{
+          columnBContainer.insertBefore(dragged, target);
+        }
+
+        updateGlobalOrderFromDOM();
+
+        const elements = [...columnBContainer.querySelectorAll("[data-mtc-global-b]")];
+
+        elements.forEach(element => {
+          const oldTop = before.get(element.dataset.mtcGlobalB);
+          if(oldTop === undefined) return;
+
+          const delta = oldTop - element.getBoundingClientRect().top;
+          if(!delta) return;
+
+          element.style.transition = "none";
+          element.style.transform = `translateY(${delta}px)`;
+
+          requestAnimationFrame(() => {
+            element.style.transition = "transform 200ms cubic-bezier(.2,.75,.25,1)";
+            element.style.transform = "translateY(0)";
+          });
+        });
       }
 
-      updateGlobalOrderFromDOM();
-      dragging = null;
-      saveCurrentQuiz();
+      clearDrag(true);
     };
 
     main.onpointercancel = () => {
-      if(!dragging) return;
-
-      const dragged = columnBContainer.querySelector(
-        `[data-mtc-global-b="${CSS.escape(dragging.id)}"]`
-      );
-
-      if(dragged){
-        dragged.classList.remove("mtc-global-dragging");
-        dragged.style.zIndex = "";
-        dragged.style.position = "";
-      }
-
-      dragging = null;
-      updateGlobalOrderFromDOM();
-      saveCurrentQuiz();
+      clearDrag(true);
     };
   }
 
